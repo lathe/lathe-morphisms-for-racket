@@ -21,8 +21,6 @@
 
 (require rackunit)
 
-(require lathe-morphisms)
-
 ; (We provide nothing from this module.)
 
 
