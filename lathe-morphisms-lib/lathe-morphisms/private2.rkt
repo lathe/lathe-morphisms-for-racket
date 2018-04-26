@@ -19,11 +19,12 @@
 ;   language governing permissions and limitations under the License.
 
 
-(require #/only-in racket/contract/base -> ->* any any/c cons/c)
+(require #/only-in racket/contract/base
+  -> ->* any any/c cons/c listof)
 (require #/only-in racket/contract/region define/contract)
 
 (require #/only-in lathe-comforts dissect dissectfn expect fn)
-(require #/only-in lathe-comforts/list list-foldl list-foldr)
+(require #/only-in lathe-comforts/list list-foldl list-foldr list-map)
 (require #/only-in lathe-comforts/struct struct-easy)
 
 (provide #/all-defined-out)
@@ -67,6 +68,9 @@
   (-> any/c (-> (cons/c any/c any/c) any) category?)
   (category #/cons id #/dissectfn (cons g f) #/compose g f))
 
+; NOTE: The procedures `category-{compose,seq}{,-list}` are the same
+; aside from their calling conventions.
+
 (define/contract (category-compose-list c args)
   (-> category? list? any)
   (expect c (category #/cons id compose)
@@ -101,16 +105,28 @@
   (dissect ftr (functor map)
   #/map morphism))
 
-(define/contract (functor-id)
-  (-> functor?)
-  (make-functor #/fn morphism morphism))
+; NOTE: The procedures `functor-{compose,seq}{,-list}` are the same
+; aside from their calling conventions.
 
-(define/contract (functor-compose g f)
-  (-> functor? functor? functor?)
+(define/contract (functor-compose-list functors)
+  (-> (listof functor?) functor)
   (make-functor #/fn morphism
-    (functor-map g #/functor-map f morphism)))
+    (list-foldr functors morphism #/fn functor morphism
+      (functor-map functor morphism))))
 
-; TODO: Can we also represent horizontal functor composition?
+(define/contract (functor-compose . functors)
+  (->* () #:rest (listof functor?) functor)
+  (functor-compose-list functors))
+
+(define/contract (functor-seq-list functors)
+  (-> (listof functor?) functor)
+  (make-functor #/fn morphism
+    (list-foldl morphism functors #/fn morphism functor
+      (functor-map functor morphism))))
+
+(define/contract (functor-seq . functors)
+  (->* () #:rest (listof functor?) functor)
+  (functor-seq-list functors))
 
 
 (struct-easy (natural-transformation rep))
@@ -123,6 +139,85 @@
   (-> natural-transformation? any/c)
   (dissect nt (natural-transformation component)
     component))
+
+; NOTE: The procedures `natural-transformation-{compose,seq}{,-list}`
+; are the same aside from their calling conventions.
+
+(define/contract (natural-transformation-compose-list category-t nts)
+  (-> category? (listof natural-transformation?)
+    natural-transformation?)
+  (make-natural-transformation #/category-compose-list category-t
+  #/list-map nts #/fn nt #/natural-transformation-component nt))
+
+(define/contract (natural-transformation-compose category-t . nts)
+  (->* (category?) #:rest (listof natural-transformation?)
+    natural-transformation?)
+  (natural-transformation-compose-list category-t nts))
+
+(define/contract (natural-transformation-seq-list category-t nts)
+  (-> category? (listof natural-transformation?)
+    natural-transformation?)
+  (make-natural-transformation #/category-seq-list category-t
+  #/list-map nts #/fn nt
+    (dissect nt (natural-transformation component)
+      component)))
+
+(define/contract (natural-transformation-seq category-t . nts)
+  (->* (category?) #:rest (listof natural-transformation?)
+    natural-transformation?)
+  (natural-transformation-seq-list category-t nts))
+
+; NOTE: The procedure `natural-transformation-whisker-source` is the
+; identity function, but with a more specific type.
+(define/contract (natural-transformation-whisker-source nt)
+  (-> natural-transformation? natural-transformation?)
+  nt)
+
+; NOTE: The procedures
+; `natural-transformation-compose-whiskering-target` and
+; `natural-transformation-seq-whiskering-target` are the same but with
+; their arguments reversed.
+
+(define/contract
+  (natural-transformation-compose-whiskering-target functor nt)
+  (-> functor? natural-transformation? natural-transformation?)
+  (make-natural-transformation
+  #/functor-map functor #/natural-transformation-component nt))
+
+(define/contract
+  (natural-transformation-seq-whiskering-target nt functor)
+  (-> natural-transformation? functor? natural-transformation?)
+  (make-natural-transformation
+  #/functor-map functor #/natural-transformation-component nt))
+
+; NOTE: The nullary horizontal composition
+; `natural-transformation-horizontally-compose-zero` is a special case
+; of the nullary vertical composition performed by calling
+; `natural-transformation-compose`, with a more specific type.
+(define/contract
+  (natural-transformation-horizontally-compose-zero category-t)
+  (-> category? natural-transformation?)
+  (natural-transformation-compose category-t))
+
+(define/contract
+  (natural-transformation-horizontally-compose-two-with-source-functor
+    category-t functor-gs g f)
+  (->
+    category? functor? natural-transformation? natural-transformation?
+    natural-transformation?)
+  (natural-transformation-compose category-t
+    (natural-transformation-whisker-source g)
+    (natural-transformation-compose-whiskering-target functor-gs f)))
+
+(define/contract
+  (natural-transformation-horizontally-compose-two-with-target-functor
+    category-t functor-gt g f)
+  (->
+    category? functor? natural-transformation? natural-transformation?
+    natural-transformation?)
+  (natural-transformation-compose category-t
+    (natural-transformation-compose-whiskering-target functor-gt f)
+    (natural-transformation-whisker-source g)))
 
 
 (struct-easy (terminal-object rep))
