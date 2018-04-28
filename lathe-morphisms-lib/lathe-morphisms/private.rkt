@@ -583,3 +583,53 @@
 ;     of those constructions' givens, so that the `t`, `a`, `b`, `at`,
 ;     `bt`, and `(pullback t a b at bt)` postulated there are instead
 ;     expectations of the ones given or postulated here
+
+
+; TODO: Write signatures for these:
+;
+;   - A particular inverse morphism.
+;   - All inverse morphisms (groupoid structure).
+;     - This will be particularly good for representing equivalence
+;       relations so that we can have some "theories" where the run
+;       time witnesses of equivalence are nontrivial. Operations that
+;       need to manipulate equivalences can use a groupoid, and the
+;       equivalences *of that groupoid* may or may not be erased at
+;       run time.
+;   - A particular exponential object.
+;   - All exponential objects (closed category structure).
+;   - Monoidal category structure.
+;   - Monoidal ("applicative") functors.
+;     - Sometimes when people refer to these, they call them "lax,"
+;       and sometimes they don't, seemingly because it's already
+;       implied somehow. See if we should call them "lax" oourselves.
+;   - Tensorial strengths.
+;   - A monad.
+;     - Monads (and more specifically, strong monads) are one of the
+;       most practical uses this library is likely to have.
+;   - A particular dependent product.
+;   - All dependent products.
+;     - These will probably come in handy for making custom
+;       "theories."
+;   - A particular finite limit.
+;   - All finite limits.
+;   - A particular W-type.
+;   - All W-types.
+;   - Duals of the others mentioned:
+;     - An initial object.
+;     - A particular binary sum.
+;     - All binary sums.
+;     - A particular pushout.
+;     - All pushouts.
+;     - A particular dependent sum.
+;     - All dependent sums.
+;       - These will probably come in handy for making custom
+;         "theories."
+;     - A particular finite colimit.
+;     - All finite colimits.
+;     - A particular M-type.
+;     - All M-types.
+;   - Star-autonomous category structure.
+;
+; Also figure out how 2-categories, bicategories, various kinds of
+; higher categories, monomorphisms, anafunctors, toposes, and
+; Grothendieck toposes would fit into this approach.
