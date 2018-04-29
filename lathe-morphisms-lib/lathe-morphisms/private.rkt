@@ -316,10 +316,10 @@
 ;
 ;   expect <etc> according to Category, including its theories
 ;
-;   postulate a value at layer 1:
+;   expect a value at layer 1:
 ;     a : obj
 ;
-;   postulate a value at layer 1:
+;   expect a value at layer 1:
 ;     b : obj
 ;
 ;   postulate a value at layer 1:
@@ -378,36 +378,30 @@
 ;   given these at layer 1:
 ;     a : obj
 ;     b : obj
-;   postulate a value at layer 1:
-;     (product a b) : obj
-;
-;   given these at layer 1:
-;     a : obj
-;     b : obj
-;   expect <etc> according to "Binary product of two objects in
-;     particular", with each level of givens here prepended to the
-;     corresponding level of those constructions' givens, so that the
-;     `a`, `b`, and `(product a b)` postulated there are instead
-;     expectations of the ones given or postulated here
+;   postulate and/or expect <etc> according to
+;     "Binary product of two objects in particular", with each level
+;     of givens here prepended to the corresponding level of those
+;     constructions' givens, so that the `a` and `b` expected there
+;     are the ones given here
 
 
 ; Pullback of a particular cospan:
 ;
 ;   expect <etc> according to Category, including its theories
 ;
-;   postulate a value at layer 1:
+;   expect a value at layer 1:
 ;     t : obj
 ;
-;   postulate a value at layer 1:
+;   expect a value at layer 1:
 ;     a : obj
 ;
-;   postulate a value at layer 1:
+;   expect a value at layer 1:
 ;     b : obj
 ;
-;   postulate a value at layer 2:
+;   expect a value at layer 2:
 ;     at : (hom a t)
 ;
-;   postulate a value at layer 2:
+;   expect a value at layer 2:
 ;     bt : (hom b t)
 ;
 ;   postulate a value at layer 1:
@@ -565,24 +559,14 @@
 ;     t : obj
 ;     a : obj
 ;     b : obj
-;   given these layer 2 values interpreted at layer 1:
-;     at : (hom a t)
-;     bt : (hom b t)
-;   postulate a value at layer 1:
-;     (pullback t a b at bt) : obj
-;
-;   given these at layer 1:
-;     t : obj
-;     a : obj
-;     b : obj
 ;   given these at layer 2:
 ;     at : (hom a t)
 ;     bt : (hom b t)
-;   expect <etc> according to "Pullback of a particular cospan", with
-;     each level of givens here prepended to the corresponding level
-;     of those constructions' givens, so that the `t`, `a`, `b`, `at`,
-;     `bt`, and `(pullback t a b at bt)` postulated there are instead
-;     expectations of the ones given or postulated here
+;   postulate and/or expect <etc> according to
+;     "Pullback of a particular cospan", with each level of givens
+;     here prepended to the corresponding level of those
+;     constructions' givens, so that the `t`, `a`, `b`, `at`, and `bt`
+;     expected there are the ones given here
 
 
 ; TODO: Write signatures for these:

@@ -286,35 +286,25 @@
 
 (struct-easy (particular-pullback rep))
 
-(define/contract (make-particular-pullback at bt fst snd pair)
+(define/contract (make-particular-pullback fst snd pair)
   (-> any/c any/c any/c any/c (-> any/c any/c any/c)
     particular-pullback?)
-  (particular-pullback #/list* at bt fst snd #/dissectfn (cons sa sb)
+  (particular-pullback #/list* fst snd #/dissectfn (cons sa sb)
     (pair sa sb)))
-
-(define/contract (particular-pullback-at p)
-  (-> particular-pullback? any/c)
-  (dissect p (particular-pullback #/list* at bt fst snd pair)
-    at))
-
-(define/contract (particular-pullback-bt p)
-  (-> particular-pullback? any/c)
-  (dissect p (particular-pullback #/list* at bt fst snd pair)
-    bt))
 
 (define/contract (particular-pullback-fst p)
   (-> particular-pullback? any/c)
-  (dissect p (particular-pullback #/list* at bt fst snd pair)
+  (dissect p (particular-pullback #/list* fst snd pair)
     fst))
 
 (define/contract (particular-pullback-snd p)
   (-> particular-pullback? any/c)
-  (dissect p (particular-pullback #/list* at bt fst snd pair)
+  (dissect p (particular-pullback #/list* fst snd pair)
     snd))
 
 (define/contract (particular-pullback-pair p sa sb)
   (-> particular-pullback? any/c any/c any/c)
-  (dissect p (particular-pullback #/list* at bt fst snd pair)
+  (dissect p (particular-pullback #/list* fst snd pair)
   #/pair #/cons sa sb))
 
 
