@@ -37,8 +37,9 @@
 
 
 ; These definitions are based on the docummented signatures in
-; private.rkt. We're using an encoding where all those signatures are
-; thought of as a dependent sum at the top level, and:
+; lathe-morphisms/private/algebra/conceptual.rkt. We're using an
+; encoding where all those signatures are thought of as a dependent
+; sum at the top level, and:
 ;
 ;  - A dependent sum or binary product is represented as a cons cell
 ;    if both of its elements have run time content, with no run time
