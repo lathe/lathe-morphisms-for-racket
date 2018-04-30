@@ -290,8 +290,7 @@
 (struct-easy (particular-pullback rep))
 
 (define/contract (make-particular-pullback fst snd pair)
-  (-> any/c any/c any/c any/c (-> any/c any/c any/c)
-    particular-pullback?)
+  (-> any/c any/c (-> any/c any/c any/c) particular-pullback?)
   (particular-pullback #/list* fst snd #/dissectfn (cons sa sb)
     (pair sa sb)))
 
