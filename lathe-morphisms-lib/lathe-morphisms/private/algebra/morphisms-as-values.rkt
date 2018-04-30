@@ -1,8 +1,10 @@
 #lang parendown racket/base
 
-; lathe-morphisms/private2
+; lathe-morphisms/private/algebra/morphisms-as-values
 ;
-; More implementation details.
+; Implementations of category-theoretic concepts where a category's
+; morphisms correspond to values at run time, but its objects and
+; equivalences are erased.
 
 ;   Copyright 2018 The Lathe Authors
 ;

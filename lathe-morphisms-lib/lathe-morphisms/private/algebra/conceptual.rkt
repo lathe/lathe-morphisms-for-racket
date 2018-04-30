@@ -1,8 +1,9 @@
 #lang parendown racket/base
 
-; lathe-morphisms/private
+; lathe-morphisms/private/algebra/conceptual
 ;
-; Implementation details.
+; Algebraic concepts without a particular implementation here, but
+; with versatile documentation for each implementation to refer to.
 
 ;   Copyright 2018 The Lathe Authors
 ;
