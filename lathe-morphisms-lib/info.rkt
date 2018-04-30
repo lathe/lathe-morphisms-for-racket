@@ -2,4 +2,4 @@
 
 (define collection 'multi)
 
-(define deps (list "base" "parendown"))
+(define deps (list "base" "lathe-comforts-lib" "parendown-lib"))
