@@ -27,10 +27,11 @@
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/math natural?)
 
-(require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
+(require #/only-in lathe-comforts
+  dissect dissectfn expect fn mat w- w-loop)
 (require #/only-in lathe-comforts/maybe just maybe/c nothing)
 (require #/only-in lathe-comforts/list
-  list-each list-foldl list-foldr)
+  list-each list-foldl list-foldr list-map nat->maybe)
 (require #/only-in lathe-comforts/struct struct-easy)
 
 ; TODO: Document all of these exports.
@@ -40,14 +41,15 @@
     [-onum-base-omega-expansion onum-base-omega-expansion]
   )
   onum-compare onum<? onum>? onum<=? onum>=?
-  onum-zero nat->onum onum-plus1
+  onum-zero onum-one onum-omega nat->onum onum-plus1
   onum-plus-list onum-plus
   onum-drop1
   onum-drop
-  ; TODO: So far, the user of this module can't construct any infinite
-  ; ordinals. Fix this. We'll probably want exports called
-  ; `onum-omega`, `onum-times-list`, `onum-times`, `onum-pow-list`,
-  ; and `onum-pow`.
+  onum-times-list onum-times
+  onum-untimes
+  ; TODO: So far, the user of this module can only construct ordinals
+  ; less than omega to the omega power. Fix this. We'll probably want
+  ; exports called `onum-pow-list` and `onum-pow`.
 )
 
 
@@ -124,6 +126,8 @@
   (not #/onum<? a b))
 
 (define/contract onum-zero onum? (onum #/list))
+(define/contract onum-one onum? (onum #/list #/list onum-zero 1))
+(define/contract onum-omega onum? (onum #/list #/list onum-one 1))
 
 (define/contract (nat->onum n)
   (-> natural? onum?)
@@ -131,12 +135,11 @@
   #/onum #/list #/list onum-zero n))
 
 ; This is increment by way of addition on the left. We're finding
-; `(onum-plus (nat->onum 1) n)`.
+; `(onum-plus onum-one n)`.
 (define/contract (onum-plus1 n)
   (-> onum? onum?)
   (dissect n (onum n)
-  #/expect (reverse n) (cons last rev-past)
-    (nat->onum 1)
+  #/expect (reverse n) (cons last rev-past) onum-one
   #/dissect last (list power coefficient)
   #/if (equal? onum-zero power)
     (onum #/reverse #/cons (list power #/add1 coefficient) rev-past)
@@ -173,9 +176,9 @@
   (onum-plus-list ns))
 
 ; This is decrement by way of left subtraction. We're finding the
-; value `result` such that
-; `(equal? (onum-plus (nat->onum 1) result) n)`, if it exists. It
-; exists as long as `(nat->onum 1)` is less than or equal to `n`.
+; value `result` such that `(equal? (onum-plus onum-one result) n)`,
+; if it exists. It exists as long as `onum-one` is less than or equal
+; to `n`.
 (define/contract (onum-drop1 n)
   (-> onum? #/maybe/c onum?)
   (dissect n (onum n-expansion)
@@ -215,3 +218,95 @@
     #/onum
     #/cons (list n-power #/- n-coefficient amount-coefficient)
       n-rest)))
+
+(define/contract (onum-times-binary a b)
+  (-> onum? onum? onum?)
+  (dissect a (onum a)
+  #/dissect b (onum b)
+  #/expect a (cons a-first a-rest) onum-zero
+  #/dissect a-first (list a-power a-coefficient)
+  #/onum-plus-list
+  #/list-map b #/dissectfn (list b-power b-coefficient)
+    (onum #/cons
+      (list
+        (onum-plus-binary a-power b-power)
+        (if (equal? onum-zero b-power)
+          (* a-coefficient b-coefficient)
+          b-coefficient))
+      a-rest)))
+
+(define/contract (onum-times-list ns)
+  (-> (listof onum?) onum?)
+  (list-foldr ns onum-one #/fn a b #/onum-times-binary a b))
+
+(define/contract (onum-times . ns)
+  (->* () #:rest (listof onum?) onum?)
+  (onum-times-list ns))
+
+; TODO: All the procedures in this module need to be tested, but this
+; one is especially tricky. Be sure to test this one.
+;
+; TODO: See if there's a better name for this than `onum-untimes`.
+;
+; This is left division. We're finding the value
+; `(list quotient remainder)` such that `(onum<? remainder amount)`
+; and `(equal? (onum-plus (onum-times amount quotient) remainder) n)`,
+; if it exists. It exists as long as `amount` is nonzero.
+(define/contract (onum-untimes amount n)
+  (-> onum? onum? #/maybe/c #/list/c onum? onum?)
+  (dissect amount (onum amount-expansion)
+  #/expect amount-expansion (cons amount-first amount-rest) (nothing)
+  #/dissect amount-first (list amount-power amount-coefficient)
+  #/if (onum<? n amount) (just #/list onum-zero n)
+  #/dissect n (onum #/cons (list n-power n-coefficient) n-rest)
+  
+  ; OPTIMIZATION: If both ordinals are finite, we can use Racket's
+  ; `quotient/remainder` on the corresponding Racket integers.
+  ;
+  ; TODO: Test this without the optimization in place, for confidence
+  ; that it's not changing the behavior.
+  ;
+  #/if (equal? onum-zero n-power)
+    (let ()
+      (define-values (q r)
+        (quotient/remainder n-coefficient amount-coefficient))
+      (just #/list (nat->onum q) (nat->onum r)))
+  
+  #/dissect
+    (if (equal? amount-power n-power)
+      (w- q-first-1 (quotient n-coefficient amount-coefficient)
+      #/dissect (nat->maybe q-first-1) (just q-first-2)
+      #/list q-first-1 q-first-2)
+      (w- q-first
+        (onum #/list (onum-drop amount-power n-power) n-coefficient)
+      ; NOTE: The second element of this list doesn't matter because
+      ; the first one is guaranteed to multiply to a value less than
+      ; `n`.
+      #/list q-first q-first))
+    (list q-first-1 q-first-2)
+  #/dissect
+    
+    ; We use a long division method where we divide the most
+    ; significant digits, attempt to use that quotient of the digits
+    ; as the most significant digit of the overall quotient, and if
+    ; that's too big, we fall back to using the value one less than
+    ; that.
+    ;
+    ; We don't have to worry about what "one less" means for infinite
+    ; ordinals: If the quotient of the digits is infinite (because the
+    ; digits are associated with different powers of omega), the first
+    ; guess will always be small enough to work in the overall
+    ; quotient. Specifically, the digit quotient is equal to the digit
+    ; taken from `n`, and when it's multiplied by the `amount` digit
+    ; on the left, nothing will happen; hence the subtraction will
+    ; just remove that digit from `n`.
+    ;
+    (mat (onum-drop (onum-times-binary amount q-first-1) n)
+      (just n-rest-1)
+      (list q-first-1 n-rest-1)
+    #/dissect (onum-drop (onum-times-binary amount q-first-2) n)
+      (just n-rest-2)
+      (list q-first-2 n-rest-2))
+    (list q-first n-rest)
+  #/dissect (onum-untimes amount n-rest) (just #/list q-rest r)
+  #/just #/list (onum-plus-binary q-first q-rest) r))
