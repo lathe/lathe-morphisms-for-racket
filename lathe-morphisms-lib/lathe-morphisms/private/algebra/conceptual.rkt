@@ -20,7 +20,21 @@
 ;   language governing permissions and limitations under the License.
 
 
-(provide #/all-defined-out)
+(require #/only-in lathe-comforts/struct struct-easy)
+
+(provide
+  (struct-out category)
+  (struct-out functor)
+  (struct-out natural-transformation)
+  
+  (struct-out terminal-object)
+  (struct-out particular-binary-product)
+  (struct-out binary-products)
+  (struct-out particular-pullback)
+  (struct-out pullbacks)
+  (struct-out particular-exponential-object)
+  (struct-out exponential-objects)
+)
 
 
 
@@ -94,8 +108,8 @@
 ;     f : (hom a b)
 ;   postulate an equivalence over layer 2:
 ;     associator
-;       : (compose (compose h g) f) = (compose h (compose g f))
-;       : (hom a d)
+;     : (compose (compose h g) f) = (compose h (compose g f))
+;     : (hom a d)
 ;
 ;   given these at layer 1:
 ;     b : obj
@@ -112,6 +126,8 @@
 ;     f : (hom a b)
 ;   postulate an equivalence over layer 2:
 ;     right-unitor : (compose f id) = f : (hom a b)
+
+(struct-easy (category rep))
 
 
 ; Usually, we interpret each section of "givens" as a dependent
@@ -250,6 +266,8 @@
 ;     = (transport-hom (layers-a.compose g f))
 ;     : (layers-b.hom (transport-obj a) (transport-obj c))
 
+(struct-easy (functor rep))
+
 
 ; Natural transformation:
 ;
@@ -291,6 +309,8 @@
 ;     = (layers-b.compose (functor-b.transport-hom f) component)
 ;     : (hom (functor-a.transport-obj a) (functor-b.transport-obj b))
 
+(struct-easy (natural-transformation rep))
+
 
 ; Terminal object:
 ;
@@ -311,6 +331,8 @@
 ;   postulate an equivalence at layer 2:
 ;     terminal-map-unique :
 ;     imitation-terminal-map = terminal-map : (hom s one)
+
+(struct-easy (terminal-object rep))
 
 
 ; Binary product of two objects in particular:
@@ -371,6 +393,8 @@
 ;     pair-unique
 ;     : (imitation-pair sa sb) = (pair sa sb) : (hom s (product a b))
 
+(struct-easy (particular-binary-product rep))
+
 
 ; The quality of having all binary products:
 ;
@@ -384,6 +408,8 @@
 ;     of givens here prepended to the corresponding level of those
 ;     constructions' givens, so that the `a` and `b` expected there
 ;     are the ones given here
+
+(struct-easy (binary-products rep))
 
 
 ; Pullback of a particular cospan:
@@ -513,6 +539,8 @@
 ;     : (imitation-pair at bt sa sb) = (pair at bt sa sb)
 ;     : (hom s (pullback t a b at bt))
 
+(struct-easy (particular-pullback rep))
+
 
 ; Note that the construction `pair` here and the construction of
 ; `pullback` in "The quality of having all pullbacks" go against the
@@ -569,6 +597,104 @@
 ;     constructions' givens, so that the `t`, `a`, `b`, `at`, and `bt`
 ;     expected there are the ones given here
 
+(struct-easy (pullbacks rep))
+
+
+; A particular exponential object:
+;
+;   expect <etc> according to Category, including its theories
+;
+;   expect a value at layer 1:
+;     x : obj
+;
+;   expect a value at layer 1:
+;     y : obj
+;
+;   postulate a value at layer 1:
+;     (exponential-object x y) : obj
+;
+;   postulate and/or expect call-domain.<etc> according to
+;     "Binary product of two objects in particular", so that the `a`
+;     expected there is the `(exponential-object x y)` postulated
+;     here, the `b` expected there is the `x` expected here, and the
+;     `(product a b)` postulated there is known here as
+;     `(call-domain.product (exponential-object x y) x)`
+;
+;   postulate a value at layer 2:
+;     call : (hom (call-domain.product (exponential-object x y) x) y)
+;
+;   ; NOTE: Unlike the rest of the places we write
+;   ; "given imitation-call-domain.<etc> ...," this one has the
+;   ; layer 2 equivalences interpreted at layer 2.
+;   given these at layer 1:
+;     s : obj
+;   given imitation-call-domain.<etc> according to the postulations of
+;     "Binary product of two objects in particular" at appropriate
+;     layers, with the layer 2 equivalences interpreted at layer 2,
+;     the `a` expected there being the `s` given here, the `b`
+;     expected there being the `x` expected here, and the
+;     `(product a b)` postulated there being known here as
+;     `(imitation-call-domain.product s x)`:
+;   given these at layer 2:
+;     imitation-call : (hom (imitation-call-domain.product s x) y)
+;   postulate a value at layer 2:
+;     (curry imitation-call) : (hom s (exponential-object x y))
+;
+;   given these at layer 1:
+;     s : obj
+;   given imitation-call-domain.<etc> according to the postulations of
+;     "Binary product of two objects in particular" at appropriate
+;     layers, with the `a` expected there being the `s` given here,
+;     the `b` expected there being the `x` expected here, and the
+;     `(product a b)` postulated there being known here as
+;     `(imitation-call-domain.product s x)`:
+;   given these at layer 2:
+;     imitation-call : (hom (imitation-call-domain.product s x) y)
+;   postulate an equivalence at layer 2:
+;     call-inverts
+;     : imitation-call = (compose call (curry imitation-call))
+;     : (hom (imitation-call-domain.product s x) y)
+;
+;   given these at layer 1:
+;     s : obj
+;   given imitation-call-domain.<etc> according to the postulations of
+;     "Binary product of two objects in particular" at appropriate
+;     layers, with the `a` expected there being the `s` given here,
+;     the `b` expected there being the `x` expected here, and the
+;     `(product a b)` postulated there being known here as
+;     `(imitation-call-domain.product s x)`:
+;   given these at layer 2:
+;     imitation-call : (hom (imitation-call-domain.product s x) y)
+;     (imitation-curry imitation-call)
+;     : (hom s (exponential-object x y))
+;   given these equivalences at layer 2:
+;     imitation-call-inverts
+;     : imitation-call = (compose call (curry imitation-call))
+;     : (hom (imitation-call-domain.product s x) y)
+;   postulate an equivalence at layer 2:
+;     curry-unique
+;     : (imitation-curry imitation-call) = (curry imitation-call)
+;     : (hom s (exponential-object x y))
+
+(struct-easy (particular-exponential-object rep))
+
+
+; The quality of having all exponential objects
+; (closed category structure):
+;
+;   expect <etc> according to Category, including its theories
+;
+;   given these at layer 1:
+;     x : obj
+;     y : obj
+;   postulate and/or expect <etc> according to
+;     "A particular exponential object", with each level of givens
+;     here prepended to the corresponding level of those
+;     constructions' givens, so that the `x` and `y` expected there
+;     are the ones given here
+
+(struct-easy (exponential-objects rep))
+
 
 ; TODO: Write signatures for these:
 ;
@@ -580,8 +706,6 @@
 ;       need to manipulate equivalences can use a groupoid, and the
 ;       equivalences *of that groupoid* may or may not be erased at
 ;       run time.
-;   - A particular exponential object.
-;   - All exponential objects (closed category structure).
 ;   - Monoidal category structure.
 ;   - Monoidal ("applicative") functors.
 ;     - Sometimes when people refer to these, they call them "lax,"

@@ -27,7 +27,20 @@
 
 (require #/only-in lathe-comforts dissect dissectfn expect fn)
 (require #/only-in lathe-comforts/list list-foldl list-foldr list-map)
-(require #/only-in lathe-comforts/struct struct-easy)
+
+(require #/only-in lathe-morphisms/private/algebra/conceptual
+  category category?
+  functor functor?
+  natural-transformation natural-transformation?
+  
+  terminal-object terminal-object?
+  particular-binary-product particular-binary-product?
+  binary-products binary-products?
+  particular-pullback particular-pullback?
+  pullbacks pullbacks?
+  particular-exponential-object particular-exponential-object?
+  exponential-objects exponential-objects?
+)
 
 (provide #/all-defined-out)
 
@@ -65,7 +78,7 @@
 ;    them as an empty list.
 
 
-(struct-easy (category rep))
+; Category:
 
 (define/contract (make-category id compose)
   (-> any/c (-> (cons/c any/c any/c) any) category?)
@@ -97,7 +110,7 @@
   (category-seq-list c args))
 
 
-(struct-easy (functor rep))
+; Functor:
 
 (define/contract (make-functor map)
   (-> (-> any/c any) functor?)
@@ -132,7 +145,7 @@
   (functor-seq-list functors))
 
 
-(struct-easy (natural-transformation rep))
+; Natural transformation:
 
 (define/contract (make-natural-transformation component)
   (-> any/c natural-transformation?)
@@ -223,7 +236,7 @@
     (natural-transformation-whisker-source g)))
 
 
-(struct-easy (terminal-object rep))
+; Terminal object:
 
 (define/contract (make-terminal-object terminal-map)
   (-> any/c terminal-object?)
@@ -235,7 +248,7 @@
     terminal-map))
 
 
-(struct-easy (particular-binary-product rep))
+; Binary product of two objects in particular:
 
 (define/contract (make-particular-binary-product fst snd pair)
   (-> any/c any/c (-> any/c any/c any/c) particular-binary-product?)
@@ -258,7 +271,7 @@
   #/pair #/cons sa sb))
 
 
-(struct-easy (binary-products rep))
+; The quality of having all binary products:
 
 (define/contract (make-binary-products fst snd pair)
   (-> any/c any/c (-> any/c any/c any/c) binary-products?)
@@ -287,7 +300,7 @@
   #/particular-binary-product rep))
 
 
-(struct-easy (particular-pullback rep))
+; Pullback of a particular cospan:
 
 (define/contract (make-particular-pullback fst snd pair)
   (-> any/c any/c (-> any/c any/c any/c) particular-pullback?)
@@ -310,7 +323,7 @@
   #/pair #/cons sa sb))
 
 
-(struct-easy (pullbacks rep))
+; The quality of having all pullbacks:
 
 (define/contract (make-pullbacks fst snd pair)
   (->
@@ -345,3 +358,135 @@
     (pullbacks-fst p at bt)
     (pullbacks-snd p at bt)
     (fn sa sb #/pullbacks-pair p at bt sa sb)))
+
+
+; A particular exponential object:
+
+(define/contract
+  (make-particular-exponential-object call-domain-product call curry)
+  (->
+    particular-binary-product?
+    any/c
+    (-> particular-binary-product? any/c any/c)
+    particular-exponential-object?)
+  (expect call-domain-product
+    (particular-binary-product #/list*
+      call-domain-fst call-domain-snd call-domain-pair)
+    (error "Expected a particular-binary-product based on the morphisms-as-values theories")
+  #/particular-exponential-object #/list*
+    call-domain-fst call-domain-snd call-domain-pair call
+  #/dissectfn
+    (list*
+      imitation-call-domain-fst
+      imitation-call-domain-snd
+      imitation-call-domain-pair
+      imitation-call)
+    (curry
+      (particular-binary-product #/list*
+        imitation-call-domain-fst
+        imitation-call-domain-snd
+        imitation-call-domain-pair)
+      imitation-call)))
+
+(define/contract (particular-exponential-object-call-domain eo)
+  (-> particular-exponential-object? particular-binary-product?)
+  (dissect eo
+    (particular-exponential-object #/list*
+      call-domain-fst call-domain-snd call-domain-pair call curry)
+  #/particular-binary-product #/list*
+    call-domain-fst call-domain-snd call-domain-pair))
+
+(define/contract (particular-exponential-object-call eo)
+  (-> particular-exponential-object? any/c)
+  (dissect eo
+    (particular-exponential-object #/list*
+      call-domain-fst call-domain-snd call-domain-pair call curry)
+    call))
+
+(define/contract
+  (particular-exponential-object-curry
+    eo imitation-call-domain imitation-call)
+  (-> particular-exponential-object? particular-binary-product? any/c
+    any/c)
+  (dissect eo
+    (particular-exponential-object #/list*
+      call-domain-fst call-domain-snd call-domain-pair call curry)
+  #/dissect imitation-call-domain
+    (particular-binary-product #/list*
+      imitation-call-domain-fst
+      imitation-call-domain-snd
+      imitation-call-domain-pair)
+  #/curry
+    imitation-call-domain-fst
+    imitation-call-domain-snd
+    imitation-call-domain-pair
+    imitation-call))
+
+
+; The quality of having all exponential objects
+; (closed category structure):
+
+(define/contract
+  (make-exponential-objects call-domain-product call curry)
+  (->
+    particular-binary-product?
+    any/c
+    (-> particular-binary-product? any/c any/c)
+    exponential-objects?)
+  (expect call-domain-product
+    (particular-binary-product #/list*
+      call-domain-fst call-domain-snd call-domain-pair)
+    (error "Expected a particular-binary-product based on the morphisms-as-values theories")
+  #/exponential-objects #/list*
+    call-domain-fst call-domain-snd call-domain-pair call
+  #/dissectfn
+    (list*
+      imitation-call-domain-fst
+      imitation-call-domain-snd
+      imitation-call-domain-pair
+      imitation-call)
+    (curry
+      (particular-binary-product #/list*
+        imitation-call-domain-fst
+        imitation-call-domain-snd
+        imitation-call-domain-pair)
+      imitation-call)))
+
+(define/contract (exponential-objects-call-domain eo)
+  (-> exponential-objects? particular-binary-product?)
+  (dissect eo
+    (exponential-objects #/list*
+      call-domain-fst call-domain-snd call-domain-pair call curry)
+  #/particular-binary-product #/list*
+    call-domain-fst call-domain-snd call-domain-pair))
+
+(define/contract (exponential-objects-call eo)
+  (-> exponential-objects? any/c)
+  (dissect eo
+    (exponential-objects #/list*
+      call-domain-fst call-domain-snd call-domain-pair call curry)
+    call))
+
+(define/contract
+  (exponential-objects-curry eo imitation-call-domain imitation-call)
+  (-> particular-exponential-object? particular-binary-product? any/c
+    any/c)
+  (dissect eo
+    (exponential-objects #/list*
+      call-domain-fst call-domain-snd call-domain-pair call curry)
+  #/dissect imitation-call-domain
+    (particular-binary-product #/list*
+      imitation-call-domain-fst
+      imitation-call-domain-snd
+      imitation-call-domain-pair)
+  #/curry
+    imitation-call-domain-fst
+    imitation-call-domain-snd
+    imitation-call-domain-pair
+    imitation-call))
+
+
+(define/contract (general-to-particular-exponential-object eo)
+  (-> exponential-objects? particular-exponential-object?)
+  (dissect eo (exponential-objects rep)
+  #/particular-exponential-object rep))
