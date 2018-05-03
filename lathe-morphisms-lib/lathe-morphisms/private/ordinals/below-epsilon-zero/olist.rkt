@@ -91,6 +91,12 @@
   #/olist-rep-drop amount rep))
 
 
+; TODO: See if we should export this.
+(define/contract (olist-zero? x)
+  (-> any/c boolean?)
+  (and (olist? x) (equal? onum-zero #/olist-length x)))
+
+
 (struct-easy (olist-rep-zero)
   #:other
   #:methods gen:olist-rep
@@ -213,7 +219,9 @@
 
 (define/contract (olist-plus-binary a b)
   (-> olist? olist? olist?)
-  (dissect a (olist a)
+  (if (olist-zero? a) b
+  #/if (olist-zero? b) a
+  #/dissect a (olist a)
   #/dissect b (olist b)
   #/olist #/olist-rep-plus a b))
 
