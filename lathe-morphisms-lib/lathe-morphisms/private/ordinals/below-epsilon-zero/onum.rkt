@@ -1,6 +1,6 @@
 #lang parendown racket/base
 
-; lathe-morphisms/private/ordinals/under-epsilon-zero/onum
+; lathe-morphisms/private/ordinals/below-epsilon-zero/onum
 ;
 ; Cantor normal form numerals (in base omega) for computing on ordinal
 ; numbers less than epsilon zero. Epsilon zero is equal to omega
@@ -41,7 +41,7 @@
     [-onum-base-omega-expansion onum-base-omega-expansion]
   )
   onum-compare onum<? onum>? onum<=? onum>=?
-  onum-zero onum-one onum-omega nat->onum onum-plus1
+  onum-zero onum-one onum-omega nat->onum onum->maybe-nat onum-plus1
   onum-plus-list onum-plus
   onum-drop1
   onum-drop
@@ -131,6 +131,14 @@
   (-> natural? onum?)
   (mat n 0 onum-zero
   #/onum #/list #/list onum-zero n))
+
+(define/contract (onum->maybe-nat n)
+  (-> onum #/maybe/c natural?)
+  (if (equal? onum-zero n) (just 0)
+  #/expect n (onum #/list #/list power n) (nothing)
+  #/if (equal? onum-zero power)
+    (just n)
+    (nothing)))
 
 ; This is increment by way of addition on the left. We're finding
 ; `(onum-plus onum-one n)`.
