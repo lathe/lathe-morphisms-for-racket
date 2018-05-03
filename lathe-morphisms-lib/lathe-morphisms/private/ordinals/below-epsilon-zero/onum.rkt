@@ -47,9 +47,7 @@
   onum-drop
   onum-times-list onum-times
   onum-untimes
-  ; TODO: So far, the user of this module can only construct ordinals
-  ; less than omega to the omega power. Fix this. We'll probably want
-  ; exports called `onum-pow-list` and `onum-pow`.
+  onum-pow-list onum-pow
 )
 
 
@@ -247,6 +245,8 @@
 ; one is especially tricky. Be sure to test this one.
 ;
 ; TODO: See if there's a better name for this than `onum-untimes`.
+; Names connoting division would be great, but the order of arguments
+; is the opposite as it usually is for division notation.
 ;
 ; This is left division. We're finding the value
 ; `(list quotient remainder)` such that `(onum<? remainder amount)`
@@ -310,3 +310,58 @@
     (list q-first n-rest)
   #/dissect (onum-untimes amount n-rest) (just #/list q-rest r)
   #/just #/list (onum-plus-binary q-first q-rest) r))
+
+(define/contract (onum-pow-by-nat base exponent)
+  (-> onum? natural? onum?)
+  (mat exponent 0 onum-one
+  #/mat exponent 1 base
+  ; We proceed by the method of exponentiation by parts: We recur on
+  ; half the exponent and use that result twice in order to save on
+  ; the overall number of multiplications performed.
+  #/let-values
+    ([(half-exponent parity) (quotient/remainder exponent 2)])
+  #/w- sqrt-near-result (onum-pow-by-nat half-exponent)
+  #/w- near-result
+    (onum-times-binary sqrt-near-result sqrt-near-result)
+  #/mat parity 0
+    near-result
+    (onum-times base near-result)))
+
+; TODO: This one's also tricky. Let's make sure to test this.
+(define/contract (onum-pow-binary base exponent)
+  (-> onum? onum? onum?)
+  (dissect base (onum base-expansion)
+  #/dissect exponent (onum exponent-expansion)
+  #/if (equal? onum-zero exponent) onum-one
+  #/expect base-expansion (cons base-first base-rest) onum-zero
+  #/dissect base-first (list base-first-power base-first-coefficient)
+  #/dissect (onum-untimes onum-omega exponent)
+    (just #/list exponent-limit-part-div-omega exponent-finite-part)
+  #/dissect (onum->maybe-nat exponent-finite-part)
+    (just exponent-finite-part)
+  #/w- exponent-limit-part
+    (onum-times onum-omega exponent-limit-part-div-omega)
+  #/onum-times
+    (onum
+    #/list #/list (onum-times base-first-power exponent-limit-part) 1)
+    (onum-pow-by-nat base exponent-finite-part)))
+
+(define/contract (onum-pow-list ns)
+  (-> (listof onum?) onum?)
+  (list-foldr ns onum-one #/fn a b #/onum-pow-binary a b))
+
+(define/contract (onum-pow . ns)
+  (->* () #:rest (listof onum?) onum?)
+  (onum-pow-list ns))
+
+; TODO: See if we can define an `onum-log` operation that's related to
+; `onum-pow` the way `onum-untimes` is related to `onum-times` and
+; `onum-drop` is related to `onum-plus`. This operation would find
+; the value `(list exponent factor term)` that solves
+;
+;   (equal? n
+;     (onum-plus (onum-times (onum-pow amount exponent) factor) term))
+;
+; for a given `amount` and a given `n`, such that
+; `(onum<? factor amount)` and
+; `(onum<? term (onum-pow amount exponent))`.
