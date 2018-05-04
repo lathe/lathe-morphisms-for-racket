@@ -25,7 +25,8 @@
   -> ->* any any/c cons/c listof)
 (require #/only-in racket/contract/region define/contract)
 
-(require #/only-in lathe-comforts dissect dissectfn expect fn)
+(require #/only-in lathe-comforts
+  dissect dissectfn expect expectfn fn)
 (require #/only-in lathe-comforts/list list-foldl list-foldr list-map)
 
 (require #/only-in lathe-morphisms/private/algebra/conceptual
@@ -40,6 +41,8 @@
   pullbacks pullbacks?
   particular-exponential-object particular-exponential-object?
   exponential-objects exponential-objects?
+  morphism-inverses morphism-inverses?
+  category-monoidal-structure category-monoidal-structure?
 )
 
 (provide #/all-defined-out)
@@ -121,29 +124,6 @@
   (dissect ftr (functor map)
   #/map morphism))
 
-; NOTE: The procedures `functor-{compose,seq}{,-list}` are the same
-; aside from their calling conventions.
-
-(define/contract (functor-compose-list functors)
-  (-> (listof functor?) functor)
-  (make-functor #/fn morphism
-    (list-foldr functors morphism #/fn functor morphism
-      (functor-map functor morphism))))
-
-(define/contract (functor-compose . functors)
-  (->* () #:rest (listof functor?) functor)
-  (functor-compose-list functors))
-
-(define/contract (functor-seq-list functors)
-  (-> (listof functor?) functor)
-  (make-functor #/fn morphism
-    (list-foldl morphism functors #/fn morphism functor
-      (functor-map functor morphism))))
-
-(define/contract (functor-seq . functors)
-  (->* () #:rest (listof functor?) functor)
-  (functor-seq-list functors))
-
 
 ; Natural transformation:
 
@@ -155,6 +135,9 @@
   (-> natural-transformation? any/c)
   (dissect nt (natural-transformation component)
     component))
+
+; TODO: See if the rest of these natural transformation utilities
+; should be set apart as "[Metatheoretical construction]" concepts.
 
 ; NOTE: The procedures `natural-transformation-{compose,seq}{,-list}`
 ; are the same aside from their calling conventions.
@@ -294,6 +277,8 @@
   #/pair #/cons sa sb))
 
 
+; TODO: See if this should be set apart as a
+; "[Metatheoretical construction]".
 (define/contract (general-to-particular-binary-product bp)
   (-> binary-products? particular-binary-product?)
   (dissect bp (binary-products rep)
@@ -352,6 +337,8 @@
   #/pair #/list* at bt sa sb))
 
 
+; TODO: See if this should be set apart as a
+; "[Metatheoretical construction]".
 (define/contract (general-to-particular-pullback p at bt)
   (-> pullbacks? any/c any/c particular-pullback?)
   (make-particular-pullback
@@ -363,13 +350,13 @@
 ; A particular exponential object:
 
 (define/contract
-  (make-particular-exponential-object call-domain-product call curry)
+  (make-particular-exponential-object call-domain call curry)
   (->
     particular-binary-product?
     any/c
     (-> particular-binary-product? any/c any/c)
     particular-exponential-object?)
-  (expect call-domain-product
+  (expect call-domain
     (particular-binary-product #/list*
       call-domain-fst call-domain-snd call-domain-pair)
     (error "Expected a particular-binary-product based on the morphisms-as-values theories")
@@ -426,14 +413,13 @@
 ; The quality of having all exponential objects
 ; (closed category structure):
 
-(define/contract
-  (make-exponential-objects call-domain-product call curry)
+(define/contract (make-exponential-objects call-domain call curry)
   (->
     particular-binary-product?
     any/c
     (-> particular-binary-product? any/c any/c)
     exponential-objects?)
-  (expect call-domain-product
+  (expect call-domain
     (particular-binary-product #/list*
       call-domain-fst call-domain-snd call-domain-pair)
     (error "Expected a particular-binary-product based on the morphisms-as-values theories")
@@ -486,7 +472,183 @@
     imitation-call))
 
 
+; TODO: See if this should be set apart as a
+; "[Metatheoretical construction]".
 (define/contract (general-to-particular-exponential-object eo)
   (-> exponential-objects? particular-exponential-object?)
   (dissect eo (exponential-objects rep)
   #/particular-exponential-object rep))
+
+
+; A particular one-sided inverse on morphisms:
+;
+; (Nothing. There is no run time content to represent.)
+
+
+; A particular isomorphism:
+;
+; (Nothing. There is no run time content to represent.)
+
+
+; The quality of having all inverse morphisms (groupoid structure):
+
+(define/contract (make-morphism-inverses invert)
+  (-> (-> any/c any/c) morphism-inverses?)
+  (morphism-inverses invert))
+
+(define/contract (morphism-inverses-invert i morphism)
+  (-> morphism-inverses? any/c any/c)
+  (dissect i (morphism-inverses invert)
+  #/invert morphism))
+
+
+; Natural isomorphism:
+;
+; (Nothing. There is no run time content to represent.)
+
+
+; [Metatheoretical construction] Product category:
+
+(define/contract (product-category a b)
+  (-> category? category? category?)
+  (make-category (cons (category-compose a) (category-compose b))
+  #/fn g f
+    (expect g (cons ga gb)
+      (error "Expected each morphism of a product category to be a pair")
+    #/expect f (cons fa fb)
+      (error "Expected each morphism of a product category to be a pair")
+    #/cons (category-compose a ga fa) (category-compose b gb fb))))
+
+
+; [Metatheoretical construction] Terminal category:
+
+(define/contract (terminal-category)
+  (-> category?)
+  (make-category (list) #/fn g f
+    (expect g (list)
+      (error "Expected each morphism of the terminal category to be an empty list")
+    #/expect f (list)
+      (error "Expected each morphism of the terminal category to be an empty list")
+    #/list)))
+
+; [Metatheoretical construction] Bimap functor:
+
+(define/contract (bimap-functor a b)
+  (-> functor? functor? functor?)
+  (make-functor #/fn f
+    (expect f (cons fa fb)
+      (error "Expected each morphism of a product category to be a pair")
+    #/cons (functor-map a fa) (functor-map b fb))))
+
+
+; [Metatheoretical construction] Generalized element functor:
+
+(define/contract (generalized-element-functor c)
+  (-> category? functor?)
+  (make-functor #/expectfn (list)
+    (error "Expected each morphism of the terminal category to be an empty list")
+    (category-compose c)))
+
+
+; [Metatheoretical construction] Left unit introduction functor:
+
+(define/contract (left-unit-intro-functor)
+  (-> functor?)
+  (make-functor #/fn f
+    (cons (list) f)))
+
+
+; [Metatheoretical construction] Right unit introduction functor:
+
+(define/contract (right-unit-intro-functor)
+  (-> functor?)
+  (make-functor #/fn f
+    (cons f (list))))
+
+
+; [Metatheoretical construction] Left associator functor:
+
+(define/contract (left-associator-functor)
+  (-> functor?)
+  (make-functor #/expectfn (cons a (cons b c))
+    (error "Expected each morphism of a product category to be a pair")
+    (cons (cons a b) c)))
+
+
+; [Metatheoretical construction] Identity functor:
+; [Metatheoretical construction] Composition of functors:
+
+; NOTE: The procedures `functor-{compose,seq}{,-list}` are the same
+; aside from their calling conventions.
+
+(define/contract (functor-compose-list functors)
+  (-> (listof functor?) functor)
+  (make-functor #/fn morphism
+    (list-foldr functors morphism #/fn functor morphism
+      (functor-map functor morphism))))
+
+(define/contract (functor-compose . functors)
+  (->* () #:rest (listof functor?) functor)
+  (functor-compose-list functors))
+
+(define/contract (functor-seq-list functors)
+  (-> (listof functor?) functor)
+  (make-functor #/fn morphism
+    (list-foldl morphism functors #/fn morphism functor
+      (functor-map functor morphism))))
+
+(define/contract (functor-seq . functors)
+  (->* () #:rest (listof functor?) functor)
+  (functor-seq-list functors))
+
+
+; Monoidal structure on a category's objects
+; (monoidal category structure):
+
+; Since it might be unclear what's going on here: The only run time
+; component of one of these is a function, `append-functor-map`, that
+; takes a pair (cons cell) of two morphism values and returns a
+; morphism value. If the two input morphisms go from `a` to `b` and
+; from `c` to `d` respectively, then the output morphism goes from
+; `(append a c)` to `(append c d)`, where `append` is some monoidal
+; way to combine two objects.
+;
+; For instance, we might have a category of finite-length tuple types
+; and transformations between them, where each transformation is
+; tagged with the length of its domain tuple type. This category has a
+; monoidal structure where `append` concatenates two tuple types. In
+; this case, `append-functor-map` takes two transformations and
+; creates another transformation that works by applying the first one
+; to the first part of its tuple value and the second one to the rest,
+; concatenating the resulting tuple values.
+
+(define/contract (make-category-monoidal-structure append-functor)
+  (-> functor? category-monoidal-structure?)
+  (dissect append-functor (functor append-functor-map)
+  #/category-monoidal-structure append-functor-map))
+
+(define/contract (category-monoidal-structure-append-functor cms)
+  (-> category-monoidal-structure? functor?)
+  (dissect cms (category-monoidal-structure append-functor-map)
+  #/functor append-functor-map))
+
+; One of the most common examples of monoidal structure is when the
+; category has all finite products (i.e. has a terminal object and all
+; binary products). Then the binary product operation is the `append`
+; of this monoidal structure, and `append-functor-map` works by taking
+; the product apart with `binary-products-fst` and
+; `binary-products-snd`, composing those respectively with the two
+; morphisms in the product category morphism we're mapping over, and
+; then zipping the results back together with `binary-products-pair`.
+;
+; TODO: See if this should be set apart as a
+; "[Metatheoretical construction]".
+;
+(define/contract (finite-products-to-monoidal-structure c p)
+  (-> category? binary-products? category-monoidal-structure?)
+  (make-category-monoidal-structure
+  #/make-functor #/expectfn (cons a b)
+    (error "Expected each morphism of a product category to be a pair")
+    (binary-products-pair p
+      (category-compose c a #/binary-products-fst p)
+      (category-compose c b #/binary-products-snd p))))
