@@ -745,12 +745,14 @@
   (dissect m (monad #/cons empty append)
     append))
 
-; Given any Cartesian monoidal category, any strong monad over it, any
-; objects `a` and `b` in the category, and a particular exponential
-; object with domain `a` and codomain `b`, this constructs a morphism
-; with domain `(product (exponential-object a b) (f.transform-obj a))`
-; and codomain `(f.transform-obj b)`, where `f.<etc>` is the functor
-; underlying the strong monad.
+; Given any Cartesian monoidal category, any strong monad over it (in
+; the bicategory `Cat` of categories, functors, and natural
+; transformations), any objects `a` and `b` in the category, and a
+; particular exponential object with domain `a` and codomain `b`, this
+; constructs a morphism with domain
+; `(product (exponential-object a b) (f.transform-obj a))` and
+; codomain `(f.transform-obj b)`. Here, `f.<etc>` is the functor the
+; monad designates as its 1-cell in `Cat`.
 ;
 ; In most functional programming languages, the syntactic category
 ; (the category where the objects correspond to the language's types
@@ -759,6 +761,10 @@
 ; operation is available for every monad as long as the witnesses `m`
 ; and `f` for that monad and its underlying functor are available at
 ; run time.
+;
+; TODO: See if we can somehow extrapolate this to monads over
+; bicategories other than `Cat`. Perhaps instead of `functor-map`, we
+; can use horizontal composition.
 ;
 ; TODO: See if this should be set apart as a
 ; "[Metatheoretical construction]".

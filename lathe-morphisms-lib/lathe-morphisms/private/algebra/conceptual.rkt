@@ -1319,10 +1319,10 @@
 ;     m : (hom-category.obj a a)
 ;
 ;   postulate a value at layer 3:
-;     empty : (hom-category.hom a a id t)
+;     empty : (hom-category.hom a a id m)
 ;
 ;   postulate a value at layer 3:
-;     append : (hom-category.hom a a (compose t t) t)
+;     append : (hom-category.hom a a (compose m m) m)
 ;
 ;   postulate an equivalence over layer 3:
 ;     monad-left-unitor
@@ -1336,7 +1336,7 @@
 ;       left-unitor.ba.component)
 ;     =
 ;     (hom-category.id a a)
-;     : (hom-category.hom a a t t)
+;     : (hom-category.hom a a m m)
 ;
 ;   postulate an equivalence over layer 3:
 ;     monad-right-unitor
@@ -1350,7 +1350,7 @@
 ;       right-unitor.ba.component)
 ;     =
 ;     (hom-category.id a a)
-;     : (hom-category.hom a a t t)
+;     : (hom-category.hom a a m m)
 ;
 ;   postulate an equivalence over layer 3:
 ;     monad-associator
@@ -1368,7 +1368,7 @@
 ;       (compose-functor.transform-hom #/product-category-hom-pair
 ;         (hom-category.id a a)
 ;         append))
-;     : (hom-category.hom a a (compose t #/compose t t) t)
+;     : (hom-category.hom a a (compose m #/compose m m) m)
 
 (struct-easy (monad rep))
 
