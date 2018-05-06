@@ -43,6 +43,7 @@
   exponential-objects exponential-objects?
   morphism-inverses morphism-inverses?
   category-monoidal-structure category-monoidal-structure?
+  bicategory bicategory?
 )
 
 (provide #/all-defined-out)
@@ -652,3 +653,41 @@
     (binary-products-pair p
       (category-compose c a #/binary-products-fst p)
       (category-compose c b #/binary-products-snd p))))
+
+
+; Bicategory:
+
+; NOTE: In this case, we've had to reconsider what
+; "morphisms-as-values" means for bicategories. In this case it's
+; "2-cells-as-values," and the general case for higher categories will
+; be "strict-cells-as-values," where a "strict cell" is any cell
+; that's a type inhabitant in a theory that has a notion of
+; equivalence. Categories only require a notion of equivalence over
+; morphisms, and bicategories only require a notion of equivalence
+; over 2-cells.
+;
+; TODO: Consider rewriting the comment at the top of this file to
+; reflect this. Also consider renaming this file. We'll probably want
+; a better name for it than "strict-cells-as-values," though.
+
+(define/contract (make-bicategory hom-category compose-functor)
+  (-> category? functor? bicategory?)
+  (dissect hom-category
+    (category #/cons hom-category-id hom-category-compose)
+  #/dissect compose-functor (functor compose-functor-map)
+  #/bicategory #/list*
+    hom-category-id hom-category-compose compose-functor-map))
+
+(define/contract (bicategory-hom-category b)
+  (-> bicategory? category?)
+  (dissect b
+    (bicategory #/list*
+      hom-category-id hom-category-compose compose-functor-map)
+  #/category hom-category-id hom-category-compose))
+
+(define/contract (bicategory-compose-functor b)
+  (-> bicategory? functor?)
+  (dissect b
+    (bicategory #/list*
+      hom-category-id hom-category-compose compose-functor-map)
+  #/functor compose-functor-map))

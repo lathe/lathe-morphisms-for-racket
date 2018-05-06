@@ -39,6 +39,7 @@
   (struct-out morphism-inverses)
   (struct-out natural-isomorphism)
   (struct-out category-monoidal-structure)
+  (struct-out bicategory)
 )
 
 
@@ -74,13 +75,13 @@
 ;     layer 1 can interpret layer 2
 ;     layer 2 has a notion of equivalence
 ;
-;   postulate a type at layer 1:
+;   expect a type at layer 1:
 ;     obj
 ;
 ;   given these at layer 1:
 ;     b : obj
 ;     a : obj
-;   postulate a type at layer 2:
+;   expect a type at layer 2:
 ;     (hom a b)
 ;
 ;   given these at layer 1:
@@ -1002,20 +1003,22 @@
 ;       (composed-functor append-functor.<etc>
 ;       #/bimap-functor identity append-functor.<etc>)
 ;
-;   given these in layer 1:
+;   given these at layer 1:
 ;     x : obj
 ;     y : obj
 ;   postulate an equivalence over layer 2:
 ;     triangle
 ;     :
 ;     (compose
-;       (product-category-hom-pair id left-unitor.ab.component)
+;       (append-functor.transform-hom
+;       #/product-category-hom-pair id left-unitor.ab.component)
 ;       associator.ab.component)
 ;     =
-;     (product-category-hom-pair right-unitor.ab.component id)
+;     (append-functor.transform-hom
+;     #/product-category-hom-pair right-unitor.ab.component id)
 ;     : (hom (append (append x empty) y) (append x y))
 ;
-;   given these in layer 1:
+;   given these at layer 1:
 ;     w : obj
 ;     x : obj
 ;     y : obj
@@ -1026,16 +1029,217 @@
 ;     (compose associator.ab.component associator.ab.component)
 ;     =
 ;     (compose
-;       (product-category-hom-pair id associator.ab.component)
+;       (append-functor.transform-hom
+;       #/product-category-hom-pair id associator.ab.component)
 ;     #/compose
 ;       associator.ab.component
-;       (product-category-hom-pair associator.ab.component id))
+;       (append-functor.transform-hom
+;       #/product-category-hom-pair associator.ab.component id))
 ;     :
 ;     (hom
 ;       (append (append (append w x) y) z)
 ;       (append w (append x (append y z))))
 
 (struct-easy (category-monoidal-structure rep))
+
+
+; Bicategory:
+;
+;   ; NOTE: There's a lot of similarity between this and
+;   ; "Monoidal structure on a category's objects
+;   ; (monoidal category structure)". In fact, if we've formulated
+;   ; these signatures correctly, that one should be a special case of
+;   ; this one where `obj` has a single inhabitant.
+;   ;
+;   ; TODO: Hmm. That currently isn't quite the case right now,
+;   ; because we have Bicategory *postulate* the things Category
+;   ; postulates (for its hom-categories), whereas
+;   ; "Monoidal structure ..." merely *expects* the things Category
+;   ; postulates.
+;
+;   expect theories "layer 1", "layer 2", and "layer 3" such that:
+;     layer 1 can interpret layer 2
+;     layer 2 can interpret layer 3
+;     layer 3 has a notion of equivalence
+;
+;   expect a type at layer 1:
+;     obj
+;
+;   given these at layer 1:
+;     b : obj
+;     a : obj
+;   postulate and/or expect (hom-category.<etc> a b ...) according to
+;     Category, such that the theories "layer 1" and "layer 2"
+;     expected there are expected here as theories "layer 2" and
+;     "layer 3" respectively
+;
+;   given these at layer 1:
+;     b : obj
+;     a : obj
+;   postulate a value at layer 1:
+;     id : (hom-category.obj a b)
+;
+;   given these at layer 1:
+;     c : obj
+;     b : obj
+;     a : obj
+;   postulate and/or expect compose-functor.<etc> according to
+;     Functor, where certain things expected there correspond to
+;     things expected/computed here, like so:
+;
+;       "layer 1" --> "layer 2"
+;       "layer 2" --> "layer 3"
+;
+;       layers-a.<etc>
+;       -->
+;       (product-category
+;         (hom-category.<etc> b c ...)
+;         (hom-category.<etc> a b ...))
+;
+;       layers-b.<etc> --> (hom-category.<etc> a c ...)
+;
+;   let `(compose a b)` be shorthand for
+;     `(compose-functor.transform-obj #/product-category-obj-pair
+;        a b)`
+;
+;   given these at layer 1:
+;     b : obj
+;     a : obj
+;   postulate and/or expect left-unitor.<etc> according to
+;     "Natural isomorphism", where certain things expected there
+;     correspond to things expected/computed here, like so:
+;
+;       "layer 1" --> "layer 2"
+;       "layer 2" --> "layer 3"
+;
+;       layers-a.<etc> --> (hom-category.<etc> a b ...)
+;       layers-b.<etc> --> (hom-category.<etc> a b ...)
+;
+;       functor-a.<etc>
+;       -->
+;       (composed-functor append-functor.<etc>
+;       #/composed-functor
+;         (bimap-functor
+;           (global-element-functor id)
+;           (identity-functor))
+;         (left-unit-intro-functor))
+;
+;       functor-b.<etc> --> (identity-functor)
+;
+;   given these at layer 1:
+;     b : obj
+;     a : obj
+;   postulate and/or expect right-unitor.<etc> according to
+;     "Natural isomorphism", where certain things expected there
+;     correspond to things expected/computed here, like so:
+;
+;       "layer 1" --> "layer 2"
+;       "layer 2" --> "layer 3"
+;
+;       layers-a.<etc> --> (hom-category.<etc> b c ...)
+;       layers-b.<etc> --> (hom-category.<etc> b c ...)
+;       functor-a.<etc> --> (identity-functor)
+;
+;       functor-a.<etc>
+;       -->
+;       (composed-functor append-functor.<etc>
+;       #/composed-functor
+;         (bimap-functor
+;           (identity-functor)
+;           (global-element-functor id))
+;         (right-unit-intro-functor))
+;
+;       functor-b.<etc> --> (identity-functor)
+;
+;   given these at layer 1:
+;     d : obj
+;     c : obj
+;     b : obj
+;     a : obj
+;   postulate and/or expect associator.<etc> according to
+;     "Natural isomorphism", where certain things expected there
+;     correspond to things expected/computed here, like so:
+;
+;       "layer 1" --> "layer 2"
+;       "layer 2" --> "layer 3"
+;
+;       layers-a.<etc>
+;       -->
+;       (product-category (hom-category.<etc> c d ...)
+;       #/product-category (hom-category.<etc> b c ...)
+;         (hom-category.<etc> a b))
+;
+;       layers-b.<etc> --> (hom-category.<etc> a d ...)
+;
+;       functor-a.<etc>
+;       -->
+;       (composed-functor compose-functor.<etc>
+;       #/composed-functor
+;         (bimap-functor compose-functor.<etc> identity)
+;         (left-associator-functor))
+;
+;       functor-b.<etc>
+;       -->
+;       (composed-functor compose-functor.<etc>
+;       #/bimap-functor identity compose-functor.<etc>)
+;
+;   given these at layer 1:
+;     c : obj
+;     b : obj
+;     a : obj
+;   given these at layer 2:
+;     bc : (hom-category.obj b c)
+;     ab : (hom-category.obj a b)
+;   postulate an equivalence over layer 3:
+;     triangle
+;     :
+;     (hom-category.compose a c
+;       (compose-functor.transform-hom #/product-category-hom-pair
+;         (hom-category.id b c)
+;         left-unitor.ab.component)
+;       associator.ab.component)
+;     =
+;     (compose-functor.transform-hom #/product-category-hom-pair
+;       right-unitor.ab.component
+;       (hom-category.id a b))
+;     :
+;     (hom-category.hom a c
+;       (compose (compose bc id) ab)
+;       (compose bc ab))
+;
+;   given these at layer 1:
+;     e : obj
+;     d : obj
+;     c : obj
+;     b : obj
+;     a : obj
+;   given these at layer 2:
+;     de : (hom-category.obj d e)
+;     cd : (hom-category.obj c d)
+;     bc : (hom-category.obj b c)
+;     ab : (hom-category.obj a b)
+;   postulate an equivalence over layer 3:
+;     pentagon
+;     :
+;     (hom-category.compose a e
+;       associator.ab.component
+;       associator.ab.component)
+;     =
+;     (hom-category.compose a e
+;       (compose-functor.transform-hom #/product-category-hom-pair
+;         (hom-category.id d e)
+;         associator.ab.component)
+;     #/hom-category.compose a e
+;       associator.ab.component
+;       (compose-functor.transform-hom #/product-category-hom-pair
+;         associator.ab.component
+;         (hom-category.id a b)))
+;     :
+;     (hom-cagegory.hom a e
+;       (compose (compose (compose de cd) bc) ab)
+;       (compose de (compose cd (compose bc ab))))
+
+(struct-easy (bicategory rep))
 
 
 ; TODO: Write signatures for these:
@@ -1076,6 +1280,8 @@
 ;     - All M-types.
 ;   - Star-autonomous category structure.
 ;
-; Also figure out how 2-categories, bicategories, various kinds of
-; higher categories, monomorphisms, anafunctors, toposes, and
-; Grothendieck toposes would fit into this approach.
+; Also figure out how strict 2-categories, various kinds of higher
+; categories, monomorphisms, anafunctors, toposes, and
+; Grothendieck toposes would fit into this approach. (Note that we
+; already have bicategories, so strict 2-categories might be a short
+; hop from those.)
