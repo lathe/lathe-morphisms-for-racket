@@ -4,7 +4,9 @@
 ;
 ; Implementations of category-theoretic concepts where a category's
 ; morphisms correspond to values at run time, but its objects and
-; equivalences are erased.
+; equivalences are erased. For higher categories, the cells that
+; correspond to run time values are the ones that have notions of
+; equivalence.
 
 ;   Copyright 2018 The Lathe Authors
 ;
@@ -43,6 +45,7 @@
   exponential-objects exponential-objects?
   morphism-inverses morphism-inverses?
   category-monoidal-structure category-monoidal-structure?
+  tensorial-strength tensorial-strength?
   bicategory bicategory?
   monad monad?
 )
@@ -681,6 +684,19 @@
       (category-compose c b #/binary-products-snd p))))
 
 
+; Tensorial strength (the strong functor condition):
+
+(define/contract (make-tensorial-strength nt)
+  (-> natural-transformation? tensorial-strength?)
+  (dissect nt (natural-transformation nt-component)
+  #/tensorial-strength nt-component))
+
+(define/contract (tensorial-strength-nt ts)
+  (-> tensorial-strength? natural-transformation?)
+  (dissect ts (tensorial-strength nt-component)
+  #/natural-transformation nt-component))
+
+
 ; Bicategory:
 
 ; Since it might be unclear what's going on here: The only run time
@@ -728,3 +744,34 @@
   (-> monad? any/c)
   (dissect m (monad #/cons empty append)
     append))
+
+; Given any Cartesian monoidal category, any strong monad over it, any
+; objects `a` and `b` in the category, and a particular exponential
+; object with domain `a` and codomain `b`, this constructs a morphism
+; with domain `(product (exponential-object a b) (f.transform-obj a))`
+; and codomain `(f.transform-obj b)`, where `f.<etc>` is the functor
+; underlying the strong monad.
+;
+; In most functional programming languages, the syntactic category
+; (the category where the objects correspond to the language's types
+; and the morphisms correspond the language's terms) always has the
+; same implementation of `c`, `s`, and `eo` for every monad, so this
+; operation is available for every monad as long as the witnesses `m`
+; and `f` for that monad and its underlying functor are available at
+; run time.
+;
+; TODO: See if this should be set apart as a
+; "[Metatheoretical construction]".
+;
+(define/contract (strong-monad-bind c f s m eo)
+  (->
+    category?
+    functor?
+    tensorial-strength?
+    monad?
+    particular-exponential-object?
+    any/c)
+  (category-seq c
+    (natural-transformation-component #/tensorial-strength-nt s)
+    (functor-map f #/particular-exponential-object-call eo)
+    (monad-append m)))

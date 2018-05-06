@@ -39,6 +39,7 @@
   (struct-out morphism-inverses)
   (struct-out natural-isomorphism)
   (struct-out category-monoidal-structure)
+  (struct-out tensorial-strength)
   (struct-out bicategory)
   (struct-out monad)
 )
@@ -1046,6 +1047,65 @@
 (struct-easy (category-monoidal-structure rep))
 
 
+; Tensorial strength (the strong functor condition):
+;
+;   expect <etc> according to "Monoidal structure on a category's
+;     objects (monoidal category structure)", including its theories
+;
+;   expect f.<etc> according to Functor, where the `layers-a.<etc>`
+;     and `laters-b.<etc>` expected there are the `<etc>` and `<etc>`
+;     expected here
+;
+;   postulate and/or expect nt.<etc> according to
+;     "Natural transformation", where certain things expected there
+;     correspond to things expected/computed here, like so:
+;
+;       layers-a.<etc> --> (product-category <etc> <etc>)
+;       layers-b.<etc> --> <etc>
+;
+;       functor-a.<etc>
+;       -->
+;       (composed-functor append-functor.<etc>
+;       #/bimap-functor (identity-functor) f.<etc>)
+;
+;       functor-b.<etc>
+;       -->
+;       (composed-functor f.<etc> append-functor.<etc>)
+;
+;   given these at layer 1:
+;     a : obj
+;   postulate an equivalence over layer 2:
+;     monoidal-strength-unitor
+;     :
+;     (compose
+;       (f.transform-hom left-unitor.ab.component)
+;       nt.component)
+;     =
+;     left-unitor.ab.component
+;     : (hom (append empty #/f.transform-obj a) (f.transform-obj a))
+;
+;   given these at layer 1:
+;     a : obj
+;     b : obj
+;     c : obj
+;   postulate an equivalence over layer 2:
+;     monoidal-strength-associator
+;     :
+;     (compose (f.transform-hom associator.ab.component) nt.component)
+;     =
+;     (compose
+;       nt.component
+;     #/compose
+;       (bimap-functor (identity-functor) nt.component)
+;       associator.ab.component)
+;     :
+;     (hom
+;       (append (append a b) #/f.transform-obj c)
+;       (f.transform-obj #/append a #/append b c))
+
+(struct-easy (tensorial-strength rep))
+
+
 ; Bicategory:
 ;
 ;   ; NOTE: There's a lot of similarity between this and
@@ -1323,11 +1383,6 @@
 ;       structure are already rather lax. See if we should call them
 ;       "lax" oourselves. Either way, let's try to document the
 ;       reasons for our choice.
-;   - Tensorial strengths.
-;     - Between this and monads (which we now have), we'll have
-;       strong monads, the particular category-theoretical concept
-;       that the functional programming concept of "monad" is usually
-;       an instance of.
 ;   - A particular dependent product.
 ;   - All dependent products.
 ;     - These will probably come in handy for making custom
