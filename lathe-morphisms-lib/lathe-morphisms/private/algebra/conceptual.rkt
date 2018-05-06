@@ -40,6 +40,7 @@
   (struct-out natural-isomorphism)
   (struct-out category-monoidal-structure)
   (struct-out bicategory)
+  (struct-out monad)
 )
 
 
@@ -822,10 +823,12 @@
 ;   given these at layer 1a:
 ;     a : layers-a.obj
 ;   postulate and/or expect <etc> according to
-;     "A particular isomorphism", such that the theories "layer 1" and
-;     "layer 2" expected there are the ones expected here as
-;     "layer b1" and "layer b2" respectively and the `a`, `b`, `ab`,
-;     and `ba` expected there are the `(functor-a.transport-obj a)`,
+;     "A particular isomorphism", with each level of givens here
+;     prepended to the corresponding level of those constructions'
+;     givens, such that the theories "layer 1" and "layer 2" expected
+;     there are the ones expected here as "layer b1" and "layer b2"
+;     respectively and the `a`, `b`, `ab`, and `ba` expected there are
+;     the `(functor-a.transport-obj a)`,
 ;     `(functor-b.transport-obj a)`, `ab.component`, and
 ;     `ba.component` given/postulated here
 
@@ -1050,12 +1053,6 @@
 ;   ; (monoidal category structure)". In fact, if we've formulated
 ;   ; these signatures correctly, that one should be a special case of
 ;   ; this one where `obj` has a single inhabitant.
-;   ;
-;   ; TODO: Hmm. That currently isn't quite the case right now,
-;   ; because we have Bicategory *postulate* the things Category
-;   ; postulates (for its hom-categories), whereas
-;   ; "Monoidal structure ..." merely *expects* the things Category
-;   ; postulates.
 ;
 ;   expect theories "layer 1", "layer 2", and "layer 3" such that:
 ;     layer 1 can interpret layer 2
@@ -1068,10 +1065,11 @@
 ;   given these at layer 1:
 ;     b : obj
 ;     a : obj
-;   postulate and/or expect (hom-category.<etc> a b ...) according to
-;     Category, such that the theories "layer 1" and "layer 2"
-;     expected there are expected here as theories "layer 2" and
-;     "layer 3" respectively
+;   expect (hom-category.<etc> a b ...) according to Category, with
+;     each level of givens here prepended to the corresponding level
+;     of those constructions' givens, such that the theories "layer 1"
+;     and "layer 2" expected there are expected here as theories
+;     "layer 2" and "layer 3" respectively
 ;
 ;   given these at layer 1:
 ;     b : obj
@@ -1084,8 +1082,10 @@
 ;     b : obj
 ;     a : obj
 ;   postulate and/or expect compose-functor.<etc> according to
-;     Functor, where certain things expected there correspond to
-;     things expected/computed here, like so:
+;     Functor, with each level of givens here prepended to the
+;     corresponding level of those constructions' givens, where
+;     certain things expected there correspond to things
+;     expected/computed here, like so:
 ;
 ;       "layer 1" --> "layer 2"
 ;       "layer 2" --> "layer 3"
@@ -1106,8 +1106,10 @@
 ;     b : obj
 ;     a : obj
 ;   postulate and/or expect left-unitor.<etc> according to
-;     "Natural isomorphism", where certain things expected there
-;     correspond to things expected/computed here, like so:
+;     "Natural isomorphism", with each level of givens here prepended
+;     to the corresponding level of those constructions' givens, where
+;     certain things expected there correspond to things
+;     expected/computed here, like so:
 ;
 ;       "layer 1" --> "layer 2"
 ;       "layer 2" --> "layer 3"
@@ -1117,7 +1119,7 @@
 ;
 ;       functor-a.<etc>
 ;       -->
-;       (composed-functor append-functor.<etc>
+;       (composed-functor compose-functor.<etc>
 ;       #/composed-functor
 ;         (bimap-functor
 ;           (global-element-functor id)
@@ -1130,8 +1132,10 @@
 ;     b : obj
 ;     a : obj
 ;   postulate and/or expect right-unitor.<etc> according to
-;     "Natural isomorphism", where certain things expected there
-;     correspond to things expected/computed here, like so:
+;     "Natural isomorphism", with each level of givens here prepended
+;     to the corresponding level of those constructions' givens, where
+;     certain things expected there correspond to things
+;     expected/computed here, like so:
 ;
 ;       "layer 1" --> "layer 2"
 ;       "layer 2" --> "layer 3"
@@ -1142,7 +1146,7 @@
 ;
 ;       functor-a.<etc>
 ;       -->
-;       (composed-functor append-functor.<etc>
+;       (composed-functor compose-functor.<etc>
 ;       #/composed-functor
 ;         (bimap-functor
 ;           (identity-functor)
@@ -1157,8 +1161,10 @@
 ;     b : obj
 ;     a : obj
 ;   postulate and/or expect associator.<etc> according to
-;     "Natural isomorphism", where certain things expected there
-;     correspond to things expected/computed here, like so:
+;     "Natural isomorphism", with each level of givens here prepended
+;     to the corresponding level of those constructions' givens, where
+;     certain things expected there correspond to things
+;     expected/computed here, like so:
 ;
 ;       "layer 1" --> "layer 2"
 ;       "layer 2" --> "layer 3"
@@ -1242,6 +1248,71 @@
 (struct-easy (bicategory rep))
 
 
+; Monad:
+;
+;   expect <etc> according to Bicategory, including its theories
+;
+;   postulate a value at layer 1:
+;     a : obj
+;
+;   postulate a value at layer 2:
+;     m : (hom-category.obj a a)
+;
+;   postulate a value at layer 3:
+;     empty : (hom-category.hom a a id t)
+;
+;   postulate a value at layer 3:
+;     append : (hom-category.hom a a (compose t t) t)
+;
+;   postulate an equivalence over layer 3:
+;     monad-left-unitor
+;     :
+;     (hom-category.compose a a
+;       append
+;     #/hom-category.compose a a
+;       (compose-functor.transform-hom #/product-category-hom-pair
+;         empty
+;         (hom-category.id a a))
+;       left-unitor.ba.component)
+;     =
+;     (hom-category.id a a)
+;     : (hom-category.hom a a t t)
+;
+;   postulate an equivalence over layer 3:
+;     monad-right-unitor
+;     :
+;     (hom-category.compose a a
+;       append
+;     #/hom-category.compose a a
+;       (compose-functor.transform-hom #/product-category-hom-pair
+;         (hom-category.id a a)
+;         empty)
+;       right-unitor.ba.component)
+;     =
+;     (hom-category.id a a)
+;     : (hom-category.hom a a t t)
+;
+;   postulate an equivalence over layer 3:
+;     monad-associator
+;     :
+;     (hom-category.compose a a
+;       append
+;     #/hom-category.compose a a
+;       (compose-functor.transform-hom #/product-category-hom-pair
+;         append
+;         (hom-category.id a a))
+;       associator.ba.component)
+;     =
+;     (hom-category.compose a a
+;       append
+;       (compose-functor.transform-hom #/product-category-hom-pair
+;         (hom-category.id a a)
+;         append))
+;     : (hom-category.hom a a (compose t #/compose t t) t)
+
+(struct-easy (monad rep))
+
+
 ; TODO: Write signatures for these:
 ;
 ;   - Monoidal ("applicative") functors.
@@ -1253,9 +1324,10 @@
 ;       "lax" oourselves. Either way, let's try to document the
 ;       reasons for our choice.
 ;   - Tensorial strengths.
-;   - A monad.
-;     - Monads (and more specifically, strong monads) are one of the
-;       most practical uses this library is likely to have.
+;     - Between this and monads (which we now have), we'll have
+;       strong monads, the particular category-theoretical concept
+;       that the functional programming concept of "monad" is usually
+;       an instance of.
 ;   - A particular dependent product.
 ;   - All dependent products.
 ;     - These will probably come in handy for making custom

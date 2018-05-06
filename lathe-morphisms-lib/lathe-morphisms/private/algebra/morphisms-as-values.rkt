@@ -44,6 +44,7 @@
   morphism-inverses morphism-inverses?
   category-monoidal-structure category-monoidal-structure?
   bicategory bicategory?
+  monad monad?
 )
 
 (provide #/all-defined-out)
@@ -62,24 +63,49 @@
 ;    if both of its elements have run time content, with no run time
 ;    content at all if neither does, and as only the value that has
 ;    run time content if there's only one.
+;
 ;  - A dependent product is represented as a function if both its
 ;    domain and codomain have run time content, with no run time
 ;    content at all if the codomain doesn't have run time content, and
 ;    as only a codomain value if that one has run time content and the
 ;    domain doesn't.
+;
 ;  - A type has no run time content.
+;
 ;  - An equivalence has no run time content.
-;  - A value in layer 1 has no run time content.
-;  - A value in layer 2 does have run time content, and this run time
-;    content is a value that is completely unverified. As we reason
-;    about equivalences on these run time values, these values are
+;
+;  - An inhabitant of a type in a theory that has no concept of
+;    equivalence has no run time content, unless that inhabitant is
+;    the interpretation of an inhabitant in another theory that does
+;    have run time content.
+;
+;  - An inhabitant of a type in a theory that does have a concept of
+;    equivalence does have run time content, and this run time content
+;    is a value that is completely unverified. As we reason about
+;    equivalences on these run time values, these values are
 ;    considered equivalent when they lead to pretty much the same
-;    observations, with some exceptions so that `eq?` observations and
-;    other unsafe observations don't disturb equivalences that would
-;    otherwise hold just fine.
+;    observations, perhaps with a few informal exceptions so that
+;    `eq?` observations, performance measurements, unsafe pointer
+;    manipulations, and other hard-to-code-defensively-against
+;    observations don't really count as observations we care about.
+;
 ;  - At the outermost level, if the entire type has no run time
 ;    content but we must represent its values anyway, we represent
 ;    them as an empty list.
+;
+; For most of these utilities, we're dealing with categories, and they
+; require a notion of equivalence for morphisms but not for objects,
+; so the morphisms are our unrestricted first-class values there.
+;
+; For a few of these utilities, we're dealing with bicategories, and
+; they require a notion of equivalence for 2-cells, but not for
+; 1-cells or 0-cells, so the 2-cells are our unrestricted first-class
+; values there.
+;
+; TODO: The module name "morphisms-as-values" didn't really pan out as
+; a complete description of what we're doing once bicategories entered
+; the picture. See if we should call this module
+; "strict-cells-as-values" or something.
 
 
 ; Category:
@@ -611,8 +637,8 @@
 ; takes a pair (cons cell) of two morphism values and returns a
 ; morphism value. If the two input morphisms go from `a` to `b` and
 ; from `c` to `d` respectively, then the output morphism goes from
-; `(append a c)` to `(append c d)`, where `append` is some monoidal
-; way to combine two objects.
+; `(append a c)` to `(append b d)`, where `append` satisfies various
+; laws showing it's a monoidal way to combine two objects.
 ;
 ; For instance, we might have a category of finite-length tuple types
 ; and transformations between them, where each transformation is
@@ -657,37 +683,48 @@
 
 ; Bicategory:
 
-; NOTE: In this case, we've had to reconsider what
-; "morphisms-as-values" means for bicategories. In this case it's
-; "2-cells-as-values," and the general case for higher categories will
-; be "strict-cells-as-values," where a "strict cell" is any cell
-; that's a type inhabitant in a theory that has a notion of
-; equivalence. Categories only require a notion of equivalence over
-; morphisms, and bicategories only require a notion of equivalence
-; over 2-cells.
-;
-; TODO: Consider rewriting the comment at the top of this file to
-; reflect this. Also consider renaming this file. We'll probably want
-; a better name for it than "strict-cells-as-values," though.
+; Since it might be unclear what's going on here: The only run time
+; component of one of these is a function, `compose-functor-map`, that
+; takes a pair (cons cell) of two 2-cell values and returns the 2-cell
+; value that horizontally composes them. Suppose the two input 2-cells
+; go from `a` to `b` and from `c` to `d` respectively, where `a` and
+; `b` are 1-cells from `y` to `z`; `c` and `d` are 1-cells from `x` to
+; `y`; and `x`, `y`, and `z` are 0-cells. Then the output 2-cell goes
+; from `(compose a c)` to `(compose b d)`.
 
-(define/contract (make-bicategory hom-category compose-functor)
-  (-> category? functor? bicategory?)
-  (dissect hom-category
-    (category #/cons hom-category-id hom-category-compose)
-  #/dissect compose-functor (functor compose-functor-map)
-  #/bicategory #/list*
-    hom-category-id hom-category-compose compose-functor-map))
-
-(define/contract (bicategory-hom-category b)
-  (-> bicategory? category?)
-  (dissect b
-    (bicategory #/list*
-      hom-category-id hom-category-compose compose-functor-map)
-  #/category hom-category-id hom-category-compose))
+(define/contract (make-bicategory compose-functor)
+  (-> functor? bicategory?)
+  (dissect compose-functor (functor compose-functor-map)
+  #/bicategory compose-functor-map))
 
 (define/contract (bicategory-compose-functor b)
   (-> bicategory? functor?)
-  (dissect b
-    (bicategory #/list*
-      hom-category-id hom-category-compose compose-functor-map)
+  (dissect b (bicategory compose-functor-map)
   #/functor compose-functor-map))
+
+; A monoidal category is a bicategory with a single 0-cell.
+;
+; TODO: See if this should be set apart as a
+; "[Metatheoretical construction]".
+;
+(define/contract (category-monoidal-structure-to-bicategory cms)
+  (-> category-monoidal-structure? bicategory?)
+  (dissect cms (category-monoidal-structure append-functor-map)
+  #/bicategory append-functor-map))
+
+
+; Monad:
+
+(define/contract (make-monad empty append)
+  (-> any/c any/c monad?)
+  (monad #/cons empty append))
+
+(define/contract (monad-empty m)
+  (-> monad? any/c)
+  (dissect m (monad #/cons empty append)
+    empty))
+
+(define/contract (monad-append m)
+  (-> monad? any/c)
+  (dissect m (monad #/cons empty append)
+    append))
