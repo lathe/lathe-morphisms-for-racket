@@ -745,14 +745,14 @@
   (dissect m (monad #/cons empty append)
     append))
 
-; Given any Cartesian monoidal category, any strong monad over it (in
-; the bicategory `Cat` of categories, functors, and natural
-; transformations), any objects `a` and `b` in the category, and a
+; Given any Cartesian monoidal category, any monad over it (in the
+; bicategory `Cat` of categories, functors, and natural
+; transformations) with functor `f.<etc>`, any tensorial strength on
+; that functor `s`, any objects `a` and `b` in the category, and a
 ; particular exponential object with domain `a` and codomain `b`, this
 ; constructs a morphism with domain
 ; `(product (exponential-object a b) (f.transform-obj a))` and
-; codomain `(f.transform-obj b)`. Here, `f.<etc>` is the functor the
-; monad designates as its 1-cell in `Cat`.
+; codomain `(f.transform-obj b)`.
 ;
 ; In most functional programming languages, the syntactic category
 ; (the category where the objects correspond to the language's types
