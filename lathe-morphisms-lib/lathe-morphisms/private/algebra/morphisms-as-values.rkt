@@ -687,10 +687,10 @@
 ; component of one of these is a function, `compose-functor-map`, that
 ; takes a pair (cons cell) of two 2-cell values and returns the 2-cell
 ; value that horizontally composes them. Suppose the two input 2-cells
-; go from `a` to `b` and from `c` to `d` respectively, where `a` and
-; `b` are 1-cells from `y` to `z`; `c` and `d` are 1-cells from `x` to
-; `y`; and `x`, `y`, and `z` are 0-cells. Then the output 2-cell goes
-; from `(compose a c)` to `(compose b d)`.
+; go from `bcs` to `bct` and from `abs` to `abt` respectively, where
+; `bcs` and `bct` are 1-cells from `b` to `c`; `abs` and `abt` are
+; 1-cells from `a` to `b`; and `c`, `b`, and `a` are 0-cells. Then the
+; output 2-cell goes from `(compose bcs abs)` to `(compose bct abt)`.
 
 (define/contract (make-bicategory compose-functor)
   (-> functor? bicategory?)
