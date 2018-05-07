@@ -571,9 +571,9 @@
     #/cons (functor-map a fa) (functor-map b fb))))
 
 
-; [Metatheoretical construction] Generalized element functor:
+; [Metatheoretical construction] Global element functor:
 
-(define/contract (generalized-element-functor c)
+(define/contract (global-element-functor c)
   (-> category? functor?)
   (make-functor #/expectfn (list)
     (error "Expected each morphism of the terminal category to be an empty list")
@@ -762,14 +762,21 @@
 ; and `f` for that monad and its underlying functor are available at
 ; run time.
 ;
-; TODO: See if we can somehow extrapolate this to monads over
-; bicategories other than `Cat`. Perhaps instead of `functor-map`, we
-; can use horizontal composition.
+; TODO: Hmm, we should be able to generalize this to any monoidal
+; category, not just a Cartesian monoidal one. Instead of using a
+; particular exponential object, we would use a particular
+; internal hom. (An exponential object is an internal hom in a
+; Cartesian monoidal category.) Is there a way to define a
+; "particular" internal hom, or will we have to make it out of an
+; adjunction? If there is a way to specify particular ones, we can
+; just update this definition to use an internal hom; otherwise, each
+; approach could come in handy in different situations, so we might
+; want to define both.
 ;
 ; TODO: See if this should be set apart as a
 ; "[Metatheoretical construction]".
 ;
-(define/contract (strong-monad-bind c f s m eo)
+(define/contract (strong-monad-in-cat-bind c f s m eo)
   (->
     category?
     functor?
@@ -780,4 +787,48 @@
   (category-seq c
     (natural-transformation-component #/tensorial-strength-nt s)
     (functor-map f #/particular-exponential-object-call eo)
+    (natural-transformation-component #/monad-append m)))
+
+; TODO: See if we can somehow extrapolate that monadic bind utility to
+; monads in bicategories other than `Cat`. We're almost there with
+; this code, but there are various problems with it that I don't
+; understand how to approach yet:
+;
+;   - The `s` parameter is a `tensorial-strength`, and gives us a
+;     natural transformation with `tensorial-strength-nt`, but what we
+;     really want is a 2-cell this time. Is it standard to generalize
+;     tensorial strengths to bicategories?
+;
+;   - We're missing something we can use in the place where we used an
+;     exponential object's evaluation map above. What we needed there
+;     was a morphism, and what we need here is a 2-cell that goes from
+;     a functor shaped like
+;     `(cms.append (eo.exponential-object x -) x)` into the identity
+;     functor. Unfortunately, `eo.exponential-object` isn't even a
+;     functor here; we'll probably need to demand a witness of the
+;     closed Cartesian category structure (and hence we'll need to
+;     write a signature for that). That oughta give us some kind of
+;     adjunction-like mechanism we can work with to make the right
+;     2-cell out of an identity 2-cell on
+;     `(eo.exponential-object x -)`. But will the variable `x` here
+;     cause any trouble? The overall 2-cell we're building will be
+;     "extranatural" in `x`, if extranaturality is even a concept that
+;     makes sense when the 2-cells aren't necessarily natural
+;     transformations.
+;
+#;
+(define/contract
+  (strong-monad-in-a-bicategory-bind b hom-category s m eo)
+  (->
+    bicategory?
+    category?
+    tensorial-strength?
+    monad?
+    particular-exponential-object?
+    any/c)
+  (category-seq hom-category
+    (tensorial-strength-nt s)
+    (functor-map (bicategory-compose-functor b) #/cons
+      (category-compose hom-category)
+      'TODO)
     (monad-append m)))

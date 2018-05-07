@@ -880,12 +880,12 @@
 
 ; (TODO: See if there's a better name for this one.)
 ;
-; [Metatheoretical construction] Generalized element functor:
+; [Metatheoretical construction] Global element functor:
 ;
 ; For any category `<etc>`, given some object `a`,
-; `(generalized-element-functor a)` is a functor from
-; `(terminal-category)` to `<etc>` that transforms
-; `(terminal-category-obj-terminal-map)` into `a`.
+; `(global-element-functor a)` is a functor from `(terminal-category)`
+; to `<etc>` that transforms `(terminal-category-obj-terminal-map)`
+; into `a`.
 
 
 ; (TODO: See if there's a better name for this one.)
