@@ -40,7 +40,7 @@
   (rename-out [-olist? olist?])
   ; TODO: Consider providing `list->olist` and `olist->maybe-list`
   ; operations.
-  olist-zero olist-build olist-length
+  olist-zero olist-build olist-length olist-plus1
   olist-plus-list olist-plus
   olist-drop1
   olist-drop
@@ -62,7 +62,9 @@
   ; TODO: See if we'll ever use `olist-map-kv`.
   olist-map olist-map-kv olist-zip-map
   olist-tails
-  olist-ref-without-calling olist-ref-and-call
+  
+  olist-ref-thunk olist-ref-and-call olist-set-thunk
+  olist-update-thunk
 )
 
 
@@ -239,6 +241,10 @@
 (define/contract (olist-plus . lsts)
   (->* () #:rest (listof olist?) olist?)
   (olist-plus-list lsts))
+
+(define/contract (olist-plus1 get-first rest)
+  (-> (-> any/c) olist? olist?)
+  (olist-plus (olist-build onum-one #/fn _ #/get-first) rest))
 
 
 (struct-easy (olist-rep-map orig func)
@@ -443,7 +449,7 @@
   #/olist #/olist-rep-tails stop lst))
 
 
-(define/contract (olist-ref-without-calling lst i)
+(define/contract (olist-ref-thunk lst i)
   (->d ([lst olist?] [i onum?])
     #:pre (onum<? i #/olist-length lst)
     [_ (-> any/c)])
@@ -455,4 +461,20 @@
   (->d ([lst olist?] [i onum?])
     #:pre (onum<? i #/olist-length lst)
     [_ any/c])
-  (#/olist-ref-without-calling lst i))
+  (#/olist-ref-thunk lst i))
+
+(define/contract (olist-set-thunk lst i get-elem)
+  (->d ([lst olist?] [i onum?] [get-elem (-> any/c)])
+    #:pre (onum<? i #/olist-length lst)
+    [_ olist?])
+  (dissect (olist-drop i lst) (just #/list past lst)
+  #/dissect (olist-drop1 lst) (just #/list get-old-elem rest)
+  #/olist-plus past #/olist-plus1 get-elem rest))
+
+(define/contract (olist-update-thunk lst i func)
+  (->d ([lst olist?] [i onum?] [func (-> (-> any/c) (-> any/c))])
+    #:pre (onum<? i #/olist-length lst)
+    [_ olist?])
+  (dissect (olist-drop i lst) (just #/list past lst)
+  #/dissect (olist-drop1 lst) (just #/list get-elem rest)
+  #/olist-plus past #/olist-plus1 (func get-elem) rest))
