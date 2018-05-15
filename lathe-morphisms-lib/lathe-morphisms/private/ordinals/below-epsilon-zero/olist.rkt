@@ -20,7 +20,8 @@
 ;   language governing permissions and limitations under the License.
 
 
-(require #/only-in racket/contract/base -> ->* any/c list/c listof)
+(require #/only-in racket/contract/base
+  -> ->* ->d any/c list/c listof)
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/generic define/generic define-generics)
 
@@ -31,7 +32,8 @@
 
 (require #/only-in
   lathe-morphisms/private/ordinals/below-epsilon-zero/onum
-  onum? onum<? onum-compare onum-drop onum-one onum-plus onum-zero)
+  onum? onum<? onum<=? onum-compare onum-drop onum-drop1 onum-one
+  onum-plus onum-plus1 onum-zero)
 
 ; TODO: Document all of these exports.
 (provide
@@ -56,6 +58,11 @@
   
   ; TODO: If we ever implement an `onum-log`, consider its analogous
   ; `olist-log` as well.
+  
+  ; TODO: See if we'll ever use `olist-map-kv`.
+  olist-map olist-map-kv olist-zip-map
+  olist-tails
+  olist-ref-without-calling olist-ref-and-call
 )
 
 
@@ -81,7 +88,7 @@
   #/olist-rep-length rep))
 
 (define/contract (olist-drop1 lst)
-  (-> olist? #/maybe/c #/list/c any/c olist?)
+  (-> olist? #/maybe/c #/list/c (-> any/c) olist?)
   (dissect lst (olist rep)
   #/olist-rep-drop1 rep))
 
@@ -146,20 +153,20 @@
   [
     (define (olist-rep-length this)
       (expect this (olist-rep-dynamic start stop index->element)
-        (error "Expected this to be an olist-rep")
+        (error "Expected this to be an olist-rep-dynamic")
       #/onum-drop start stop))
     
     (define (olist-rep-drop1 this)
       (expect this (olist-rep-dynamic start stop index->element)
-        (error "Expected this to be an olist-rep")
+        (error "Expected this to be an olist-rep-dynamic")
       #/w- new-start (onum-plus start onum-one)
-      #/just #/list (index->element start)
+      #/just #/list (fn #/index->element start)
       #/if (equal? new-start stop) (olist-zero)
       #/olist #/olist-rep-dynamic new-start stop index->element))
     
     (define (olist-rep-drop amount this)
       (expect this (olist-rep-dynamic start stop index->element)
-        (error "Expected this to be an olist-rep")
+        (error "Expected this to be an olist-rep-dynamic")
       #/if (equal? onum-zero amount)
         (just #/list (olist-zero) #/olist this)
       #/w- new-start (onum-plus start amount)
@@ -192,19 +199,19 @@
     
     (define (olist-rep-length this)
       (expect this (olist-rep-plus a b)
-        (error "Expected this to be an olist-rep")
+        (error "Expected this to be an olist-rep-plus")
       #/onum-plus (-length a) (-length b)))
     
     (define (olist-rep-drop1 this)
       (expect this (olist-rep-plus a b)
-        (error "Expected this to be an olist-rep")
-      #/expect (-drop1 a) (just first-and-a-rest) (-drop1 b)
-      #/dissect first-and-a-rest (list first #/olist a-rest)
-      #/just #/list first #/olist #/olist-rep-plus a-rest b))
+        (error "Expected this to be an olist-rep-plus")
+      #/expect (-drop1 a) (just get-first-and-a-rest) (-drop1 b)
+      #/dissect get-first-and-a-rest (list get-first #/olist a-rest)
+      #/just #/list get-first #/olist #/olist-rep-plus a-rest b))
     
     (define (olist-rep-drop amount this)
       (expect this (olist-rep-plus a b)
-        (error "Expected this to be an olist-rep")
+        (error "Expected this to be an olist-rep-plus")
       #/if (equal? onum-zero amount)
         (just #/list (olist-zero) #/olist this)
       #/mat (-drop amount a) (just dropped-and-a-rest)
@@ -232,3 +239,220 @@
 (define/contract (olist-plus . lsts)
   (->* () #:rest (listof olist?) olist?)
   (olist-plus-list lsts))
+
+
+(struct-easy (olist-rep-map orig func)
+  (#:guard-easy
+    (unless (olist-rep? orig)
+      (error "Expected orig to be an olist-rep"))
+    (unless (procedure? func)
+      (error "Expected func to be a procedure")))
+  #:other
+  #:methods gen:olist-rep
+  [
+    (define/generic -length olist-rep-length)
+    (define/generic -drop1 olist-rep-drop1)
+    (define/generic -drop olist-rep-drop)
+    
+    (define (olist-rep-length this)
+      (expect this (olist-rep-map orig func)
+        (error "Expected this to be an olist-rep-map")
+      #/-length orig))
+    
+    (define (olist-rep-drop1 this)
+      (expect this (olist-rep-map orig func)
+        (error "Expected this to be an olist-rep-map")
+      #/expect (-drop1 orig) (just get-first-and-rest) (nothing)
+      #/dissect get-first-and-rest (list get-first #/olist rest)
+      #/just #/list (fn #/func #/get-first)
+      #/olist #/olist-rep-map rest func))
+    
+    (define (olist-rep-drop amount this)
+      (expect this (olist-rep-map orig func)
+        (error "Expected this to be an olist-rep-map")
+      #/expect (-drop amount orig) (just dropped-and-rest) (nothing)
+      #/dissect dropped-and-rest (list (olist dropped) (olist rest))
+      #/just #/list
+        (olist #/olist-rep-map dropped func)
+        (olist #/olist-rep-map rest func)))
+  ])
+
+(define/contract (olist-map lst func)
+  (-> olist? (-> any/c any/c) olist?)
+  (dissect lst (olist lst)
+  #/olist #/olist-rep-map lst func))
+
+
+(struct-easy (olist-rep-map-kv start orig func)
+  (#:guard-easy
+    (unless (onum? start)
+      (error "Expected start to be an onum"))
+    (unless (olist-rep? orig)
+      (error "Expected orig to be an olist-rep"))
+    (unless (procedure? func)
+      (error "Expected func to be a procedure")))
+  #:other
+  #:methods gen:olist-rep
+  [
+    (define/generic -length olist-rep-length)
+    (define/generic -drop1 olist-rep-drop1)
+    (define/generic -drop olist-rep-drop)
+    
+    (define (olist-rep-length this)
+      (expect this (olist-rep-map-kv start orig func)
+        (error "Expected this to be an olist-rep-map-kv")
+      #/-length orig))
+    
+    (define (olist-rep-drop1 this)
+      (expect this (olist-rep-map-kv start orig func)
+        (error "Expected this to be an olist-rep-map-kv")
+      #/expect (-drop1 orig) (just get-first-and-rest) (nothing)
+      #/dissect get-first-and-rest (list get-first #/olist rest)
+      #/just #/list (fn #/func start #/get-first)
+      #/olist #/olist-rep-map-kv (onum-plus1 start) rest func))
+    
+    (define (olist-rep-drop amount this)
+      (expect this (olist-rep-map-kv start orig func)
+        (error "Expected this to be an olist-rep-map-kv")
+      #/expect (-drop amount orig) (just dropped-and-rest) (nothing)
+      #/dissect dropped-and-rest (list (olist dropped) (olist rest))
+      #/just #/list
+        (olist #/olist-rep-map-kv start dropped func)
+        (olist
+        #/olist-rep-map-kv (onum-plus start amount) rest func)))
+  ])
+
+(define/contract (olist-map-kv lst func)
+  (-> olist? (-> onum? any/c any/c) olist?)
+  (dissect lst (olist lst)
+  #/olist #/olist-rep-map-kv onum-zero lst func))
+
+
+(struct-easy (olist-rep-zip-map a b func)
+  (#:guard-easy
+    (unless (olist-rep? a)
+      (error "Expected a to be an olist-rep"))
+    (unless (olist-rep? b)
+      (error "Expected b to be an olist-rep"))
+    (unless (equal? (olist-length a) (olist-length b))
+      (error "Expected the length of a and b to be the same"))
+    (unless (procedure? func)
+      (error "Expected func to be a procedure")))
+  #:other
+  #:methods gen:olist-rep
+  [
+    (define/generic -length olist-rep-length)
+    (define/generic -drop1 olist-rep-drop1)
+    (define/generic -drop olist-rep-drop)
+    
+    (define (olist-rep-length this)
+      (expect this (olist-rep-zip-map a b func)
+        (error "Expected this to be an olist-rep-zip-map")
+      #/-length a))
+    
+    (define (olist-rep-drop1 this)
+      (expect this (olist-rep-zip-map a b func)
+        (error "Expected this to be an olist-rep-zip-map")
+      #/expect (-drop1 a) (just a-get-first-and-rest) (nothing)
+      #/dissect a-get-first-and-rest (list a-get-first #/olist a-rest)
+      #/dissect (-drop1 b) (just #/list b-get-first #/olist b-rest)
+      #/just #/list (fn #/func (a-get-first) (b-get-first))
+      #/olist #/olist-rep-zip-map a-rest b-rest func))
+    
+    (define (olist-rep-drop amount this)
+      (expect this (olist-rep-zip-map a b func)
+        (error "Expected this to be an olist-rep-zip-map")
+      #/expect (-drop amount a) (just a-dropped-and-rest) (nothing)
+      #/dissect a-dropped-and-rest
+        (list (olist a-dropped) (olist a-rest))
+      #/dissect (-drop amount b)
+        (just #/list (olist b-dropped) (olist b-rest))
+      #/just #/list
+        (olist #/olist-rep-map-kv a-dropped b-dropped func)
+        (olist #/olist-rep-map-kv a-rest b-rest func)))
+  ])
+
+(define/contract (olist-zip-map a b func)
+  (->d ([a olist?] [b olist?] [func (-> any/c any/c any/c)])
+    #:pre (equal? (olist-length a) (olist-length b))
+    [_ olist?])
+  (dissect a (olist a)
+  #/dissect b (olist b)
+  #/olist #/olist-rep-zip-map a b func))
+
+
+; NOTE: While we could implement `olist-tails` in terms of
+; `olist-map-kv` and `olist-drop`, that would be inefficient.
+(struct-easy (olist-rep-tails stop orig)
+  (#:guard-easy
+    (unless (onum? stop)
+      (error "Expected stop to be an onum"))
+    (unless (olist-rep? orig)
+      (error "Expected orig to be an olist-rep"))
+    (when (equal? onum-zero stop)
+      (error "Expected stop to be nonzero"))
+    (unless (onum<=? stop #/onum-plus1 #/olist-length orig)
+      (error "Expected stop to be no greater than one plus the length of orig")))
+  #:other
+  #:methods gen:olist-rep
+  [
+    (define/generic -length olist-rep-length)
+    (define/generic -drop1 olist-rep-drop1)
+    (define/generic -drop olist-rep-drop)
+    
+    (define (olist-rep-length this)
+      (expect this (olist-rep-tails stop orig)
+        (error "Expected this to be an olist-rep-tails")
+        stop))
+    
+    (define (olist-rep-drop1 this)
+      (expect this (olist-rep-tails stop orig)
+        (error "Expected this to be an olist-rep-tails")
+      #/dissect (onum-drop1 stop) (just new-stop)
+      #/just #/list (fn orig)
+        (if (equal? onum-zero new-stop)
+          (olist #/olist-rep-zero)
+          (dissect (-drop1 orig) (just #/list get-first #/olist rest)
+          #/olist #/olist-rep-tails new-stop rest))))
+    
+    (define (olist-rep-drop amount this)
+      (expect this (olist-rep-tails stop orig)
+        (error "Expected this to be an olist-rep-tails")
+      #/expect (onum-drop amount stop) (just new-stop) (nothing)
+      #/just #/list
+        (if (equal? onum-zero amount)
+          (olist #/olist-rep-zero)
+          (olist #/olist-rep-tails amount orig))
+        (if (equal? onum-zero new-stop)
+          (olist #/olist-rep-zero)
+          (dissect (-drop amount orig)
+            (just #/list (olist dropped) (olist rest))
+          #/olist #/olist-rep-tails new-stop rest))))
+  ])
+
+(define/contract (olist-tails lst)
+  
+  ; TODO: If we ever have an `olistof` contract, use it here.
+  ;
+  ;   (-> olist? #/olistof olist?)
+  ;
+  (-> olist? olist?)
+  
+  (w- stop (onum-plus1 #/olist-length lst)
+  #/dissect lst (olist lst)
+  #/olist #/olist-rep-tails stop lst))
+
+
+(define/contract (olist-ref-without-calling lst i)
+  (->d ([lst olist?] [i onum?])
+    #:pre (onum<? i #/olist-length lst)
+    [_ (-> any/c)])
+  (dissect (olist-drop i lst) (just #/list dropped rest)
+  #/dissect (olist-drop1 rest) (just #/list get-first rest)
+    get-first))
+
+(define/contract (olist-ref-and-call lst i)
+  (->d ([lst olist?] [i onum?])
+    #:pre (onum<? i #/olist-length lst)
+    [_ any/c])
+  (#/olist-ref-without-calling lst i))
