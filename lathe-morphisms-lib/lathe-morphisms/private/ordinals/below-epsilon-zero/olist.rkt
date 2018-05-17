@@ -25,23 +25,26 @@
 (require #/only-in racket/contract/region define/contract)
 (require #/only-in racket/generic define/generic define-generics)
 
-(require #/only-in lathe-comforts dissect expect fn mat w-)
-(require #/only-in lathe-comforts/maybe just maybe/c nothing)
-(require #/only-in lathe-comforts/list list-foldr)
+(require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
+(require #/only-in lathe-comforts/maybe
+  just just? maybe/c maybe-map nothing)
+(require #/only-in lathe-comforts/list
+  list-foldl list-foldr nat->maybe)
 (require #/only-in lathe-comforts/struct struct-easy)
 
 (require #/only-in
   lathe-morphisms/private/ordinals/below-epsilon-zero/onum
-  onum? onum<? onum<=? onum-compare onum-drop onum-drop1 onum-one
-  onum-plus onum-plus1 onum-zero)
+  onum? onum<? onum<=? onum-base-omega-expansion onum-compare
+  onum-drop onum-drop1 onum-omega onum-one onum-plus onum-plus1
+  onum-zero)
 
 ; TODO: Document all of these exports.
 (provide
   (rename-out [-olist? olist?])
   ; TODO: Consider providing `list->olist` and `olist->maybe-list`
   ; operations.
-  olist-zero olist-build olist-length olist-plus1
-  olist-plus-list olist-plus
+  olist-zero olist-build olist-length olist-unext? olist-plus1
+  olist-plus-binary olist-plus-list olist-plus
   olist-drop1
   olist-drop
   
@@ -62,10 +65,59 @@
   ; TODO: See if we'll ever use `olist-map-kv`.
   olist-map olist-map-kv olist-zip-map
   olist-tails
+  onum-transfinite-fold
+  olist-transfinite-unfold
   
+  olist-has?
   olist-ref-thunk olist-ref-and-call olist-set-thunk
   olist-update-thunk
 )
+
+
+; TODO: Provide this so we can use it in signatures. We'll probably
+; want to provide it from onum.rkt. We'll probably want to provide all
+; the rest of these from there too.
+(define/contract (onumext? x)
+  (-> any/c boolean?)
+  (mat x (nothing) #t
+  #/mat x (just x) (onum? x)
+    #f))
+
+(define/contract (onum-onumext-compare a b)
+  (-> onum? onumext? boolean?)
+  (expect b (just b) '<
+  #/onum-compare a b))
+
+(define/contract (onum<onumext? a b)
+  (-> onum? onumext? boolean?)
+  (expect b (just b) #t
+  #/onum<? a b))
+
+(define/contract (onumext<=? a b)
+  (-> onumext? onumext? boolean?)
+  (expect b (just b) #t
+  #/expect a (just a) #f
+  #/onum<=? a b))
+
+(define/contract (onumext-plus1 n)
+  (-> onumext? onumext?)
+  (maybe-map n #/fn n #/onum-plus1 n))
+
+(define/contract (onumext-plus a b)
+  (-> onum? onumext? onumext?)
+  (maybe-map b #/fn b #/onum-plus a b))
+
+(define/contract (onumext-drop1 n)
+  (-> onumext? #/maybe/c onumext?)
+  (expect n (just n) (just #/nothing)
+  #/expect (onum-drop1 n) (just result) (nothing)
+  #/just #/just result))
+
+(define/contract (onumext-drop amount n)
+  (-> onum? onumext? #/maybe/c onumext?)
+  (expect n (just n) (just #/nothing)
+  #/expect (onum-drop amount n) (just result) (nothing)
+  #/just #/just result))
 
 
 (define-generics olist-rep
@@ -85,9 +137,14 @@
   (olist? x))
 
 (define/contract (olist-length lst)
-  (-> olist? onum?)
+  (-> olist? onumext?)
   (dissect lst (olist rep)
   #/olist-rep-length rep))
+
+; TODO: See if there's a better name for this.
+(define/contract (olist-unext? x)
+  (-> any/c boolean?)
+  (and (olist? x) (just? #/olist-length x)))
 
 (define/contract (olist-drop1 lst)
   (-> olist? #/maybe/c #/list/c (-> any/c) olist?)
@@ -103,7 +160,7 @@
 ; TODO: See if we should export this.
 (define/contract (olist-zero? x)
   (-> any/c boolean?)
-  (and (olist? x) (equal? onum-zero #/olist-length x)))
+  (and (olist? x) (equal? (just onum-zero) #/olist-length x)))
 
 
 (struct-easy (olist-rep-zero)
@@ -113,7 +170,7 @@
     (define (olist-rep-length this)
       (expect this (olist-rep-zero)
         (error "Expected this to be an olist-rep-zero")
-        onum-zero))
+      #/just onum-zero))
     
     (define (olist-rep-drop1 this)
       (expect this (olist-rep-zero)
@@ -146,9 +203,9 @@
   (#:guard-easy
     (unless (onum? start)
       (error "Expected start to be an onum"))
-    (unless (onum? stop)
-      (error "Expected stop to be an onum"))
-    (unless (onum<? start stop)
+    (unless (onumext? stop)
+      (error "Expected stop to be a maybe of an onum"))
+    (unless (onum<onumext? start stop)
       (error "Expected start to be less than stop")))
   #:other
   #:methods gen:olist-rep
@@ -156,14 +213,14 @@
     (define (olist-rep-length this)
       (expect this (olist-rep-dynamic start stop index->element)
         (error "Expected this to be an olist-rep-dynamic")
-      #/onum-drop start stop))
+      #/onumext-drop start stop))
     
     (define (olist-rep-drop1 this)
       (expect this (olist-rep-dynamic start stop index->element)
         (error "Expected this to be an olist-rep-dynamic")
       #/w- new-start (onum-plus start onum-one)
       #/just #/list (fn #/index->element start)
-      #/if (equal? new-start stop) (olist-zero)
+      #/if (equal? (just new-start) stop) (olist-zero)
       #/olist #/olist-rep-dynamic new-start stop index->element))
     
     (define (olist-rep-drop amount this)
@@ -172,17 +229,18 @@
       #/if (equal? onum-zero amount)
         (just #/list (olist-zero) #/olist this)
       #/w- new-start (onum-plus start amount)
-      #/w- comparison (onum-compare new-start stop)
+      #/w- comparison (onum-onumext-compare new-start stop)
       #/mat comparison '> (nothing)
       #/just #/list
-        (olist #/olist-rep-dynamic start new-start index->element)
+        (olist
+        #/olist-rep-dynamic start (just new-start) index->element)
         (mat comparison '= (olist-zero)
         #/olist #/olist-rep-dynamic new-start stop index->element)))
   ])
 
 (define/contract (olist-build len index->element)
-  (-> onum? (-> onum? any/c) olist?)
-  (if (equal? onum-zero len) (olist-zero)
+  (-> onumext? (-> onum? any/c) olist?)
+  (if (equal? (just onum-zero) len) (olist-zero)
   #/olist #/olist-rep-dynamic onum-zero len index->element))
 
 
@@ -190,6 +248,8 @@
   (#:guard-easy
     (unless (olist-rep? a)
       (error "Expected a to be an olist-rep"))
+    (unless (just? #/olist-rep-length a)
+      (error "Expected a to be an olist-rep of ordinal-bounded length"))
     (unless (olist-rep? b)
       (error "Expected b to be an olist-rep")))
   #:other
@@ -202,7 +262,8 @@
     (define (olist-rep-length this)
       (expect this (olist-rep-plus a b)
         (error "Expected this to be an olist-rep-plus")
-      #/onum-plus (-length a) (-length b)))
+      #/dissect (-length a) (just an)
+      #/onumext-plus an (-length b)))
     
     (define (olist-rep-drop1 this)
       (expect this (olist-rep-plus a b)
@@ -226,8 +287,13 @@
       #/nothing))
   ])
 
+; TODO: Currently we export this, since we provide no other way to
+; add an ordinal-bounded list to an ordinal-unbounded list. See if we
+; should slightly complicate the signatures of `olist-plus-list` and
+; `olist-plus` to accommodate an ordinal-unbounded list in the last
+; position.
 (define/contract (olist-plus-binary a b)
-  (-> olist? olist? olist?)
+  (-> olist-unext? olist? olist?)
   (if (olist-zero? a) b
   #/if (olist-zero? b) a
   #/dissect a (olist a)
@@ -235,11 +301,11 @@
   #/olist #/olist-rep-plus a b))
 
 (define/contract (olist-plus-list lsts)
-  (-> (listof olist?) olist?)
+  (-> (listof olist-unext?) olist-unext?)
   (list-foldr lsts (olist-zero) #/fn a b #/olist-plus-binary a b))
 
 (define/contract (olist-plus . lsts)
-  (->* () #:rest (listof olist?) olist?)
+  (->* () #:rest (listof olist-unext?) olist-unext?)
   (olist-plus-list lsts))
 
 (define/contract (olist-plus1 get-first rest)
@@ -387,6 +453,124 @@
   #/olist #/olist-rep-zip-map a b func))
 
 
+(struct-easy
+  (olist-rep-transfinite-unfold stop on-zero on-succ on-limit)
+  (#:guard-easy
+    (unless (onumext? stop)
+      (error "Expected stop to be a maybe of an onum"))
+    (expect (onumext-drop1 stop) (just stop-pred)
+      (error "Expected stop to be a maybe of a nonzero onum")
+    #/void)
+    (unless (procedure? on-zero)
+      (error "Expected on-zero to be a procedure"))
+    (unless (procedure? on-succ)
+      (error "Expected on-succ to be a procedure"))
+    (unless (procedure? on-limit)
+      (error "Expected on-limit to be a procedure")))
+  #:other
+  #:methods gen:olist-rep
+  [
+    (define/generic -length olist-rep-length)
+    (define/generic -drop1 olist-rep-drop1)
+    (define/generic -drop olist-rep-drop)
+    
+    (define (olist-rep-length this)
+      (expect this
+        (olist-rep-transfinite-unfold stop on-zero on-succ on-limit)
+        (error "Expected this to be an olist-rep-transfinite-unfold")
+        stop))
+    
+    (define (olist-rep-drop1 this)
+      (expect this
+        (olist-rep-transfinite-unfold stop on-zero on-succ on-limit)
+        (error "Expected this to be an olist-rep-transfinite-unfold")
+      #/expect (onumext-drop1 stop) (just new-stop) (nothing)
+      #/just #/list on-zero
+      #/olist #/olist-rep-transfinite-unfold
+        new-stop (on-succ on-zero) on-succ on-limit))
+    
+    (define (olist-rep-drop amount this)
+      (expect this
+        (olist-rep-transfinite-unfold stop on-zero on-succ on-limit)
+        (error "Expected this to be an olist-rep-transfinite-unfold")
+      #/expect (onumext-drop amount stop) (just new-stop) (nothing)
+      #/w- new-on-zero
+        (onum-transfinite-fold amount on-zero on-succ on-limit)
+      #/just #/list
+        (if (equal? onum-zero amount)
+          (olist-zero)
+          (olist #/olist-rep-transfinite-unfold (just amount)
+            on-zero on-succ on-limit))
+        (olist #/olist-rep-transfinite-unfold
+          new-stop new-on-zero on-succ on-limit)))
+  ])
+
+; Given an element thunk to put at position zero, a function to
+; produce an element thunk at a successor position from the element
+; thunk at its predecessor position, and an `on-limit` function to
+; compute an element thunk at a limit position, this returns an
+; ordinal-unbounded list where every element is computed in those
+; ways.
+;
+; The `on-limit` function must take an omega-sized list of element
+; thunks from strictly ascending positions which approach the limit
+; position. Its behavior should be the same regardless of which
+; ascending sequence of positions is chosen.
+;
+(define/contract (olist-transfinite-unfold on-zero on-succ on-limit)
+  (-> (-> any/c) (-> (-> any/c) #/-> any/c) (-> olist? #/-> any/c)
+    olist?)
+  (olist #/olist-rep-transfinite-unfold (just onum-zero)
+    on-zero on-succ on-limit))
+
+
+; Given an ordinal numeral, a result value to use for zero, a function
+; to produce a result value to use for a successor ordinal from the
+; result value to use for its predecessor, and an `on-limit` function
+; to compute a result value for a limit ordinal, this returns a result
+; value corresponding to the ordinal numeral given, computed in those
+; ways.
+;
+; The `on-limit` function must take an omega-sized list of element
+; thunks from strictly ascending positions which approach the limit
+; position. Its behavior should be the same regardless of which
+; ascending sequence of positions is chosen.
+;
+; TODO: See if we can write a similar `olist-transfinite-fold`
+; operation. One problem with that is that we have no way to 
+;
+(define/contract (onum-transfinite-fold n on-zero on-succ on-limit)
+  (-> onum? any/c (-> any/c any/c) (-> olist? any/c) any/c)
+  ; TODO: See if we should put `nat-fold` in Lathe Comforts.
+  (w- nat-fold
+    (fn n on-zero on-succ
+      (w-loop next result on-zero n n
+        (expect (nat->maybe n) (just n) result
+        #/next (on-succ result) n)))
+  ; TODO: See if we should export `omega-unfold`. If we do, we should
+  ; choose a different name.
+  #/w- omega-unfold
+    (fn on-zero on-succ
+      (dissect
+        (olist-drop onum-omega
+        #/olist-transfinite-unfold on-zero on-succ #/fn approach
+          (error "Accessed past the end of an omega-unfold"))
+        (just #/list result excess)
+        result))
+  #/list-foldl on-zero (onum-base-omega-expansion n)
+  #/fn on-zero n-term
+    (dissect n-term (list power coefficient)
+    #/nat-fold coefficient on-zero #/onum-transfinite-fold power
+      on-succ
+      (fn on-succ #/fn on-zero
+        (on-limit #/omega-unfold on-zero on-succ))
+      (fn on-succ-approach #/fn on-zero
+        ; TODO: See if we can prevent this from duplicating a lot of
+        ; work.
+        (on-limit #/olist-map on-succ-approach #/fn on-succ
+          (on-succ on-zero))))))
+
+
 ; NOTE: While we could implement `olist-tails` in terms of
 ; `olist-map-kv` and `olist-drop`, that would be inefficient.
 (struct-easy (olist-rep-tails stop orig)
@@ -395,9 +579,11 @@
       (error "Expected stop to be an onum"))
     (unless (olist-rep? orig)
       (error "Expected orig to be an olist-rep"))
-    (when (equal? onum-zero stop)
-      (error "Expected stop to be nonzero"))
-    (unless (onum<=? stop #/onum-plus1 #/olist-length orig)
+    (unless (onumext? stop)
+      (error "Expected stop to be a maybe of an onum"))
+    (expect (onumext-drop1 stop) (just stop-pred)
+      (error "Expected stop to be a maybe of a nonzero onum")
+    #/unless (onumext<=? stop-pred #/olist-length orig)
       (error "Expected stop to be no greater than one plus the length of orig")))
   #:other
   #:methods gen:olist-rep
@@ -414,9 +600,9 @@
     (define (olist-rep-drop1 this)
       (expect this (olist-rep-tails stop orig)
         (error "Expected this to be an olist-rep-tails")
-      #/dissect (onum-drop1 stop) (just new-stop)
+      #/expect (onumext-drop1 stop) (just new-stop) (nothing)
       #/just #/list (fn orig)
-        (if (equal? onum-zero new-stop)
+        (if (equal? (just onum-zero) new-stop)
           (olist #/olist-rep-zero)
           (dissect (-drop1 orig) (just #/list get-first #/olist rest)
           #/olist #/olist-rep-tails new-stop rest))))
@@ -424,12 +610,12 @@
     (define (olist-rep-drop amount this)
       (expect this (olist-rep-tails stop orig)
         (error "Expected this to be an olist-rep-tails")
-      #/expect (onum-drop amount stop) (just new-stop) (nothing)
+      #/expect (onumext-drop amount stop) (just new-stop) (nothing)
       #/just #/list
         (if (equal? onum-zero amount)
           (olist #/olist-rep-zero)
-          (olist #/olist-rep-tails amount orig))
-        (if (equal? onum-zero new-stop)
+          (olist #/olist-rep-tails (just amount) orig))
+        (if (equal? (just onum-zero) new-stop)
           (olist #/olist-rep-zero)
           (dissect (-drop amount orig)
             (just #/list (olist dropped) (olist rest))
@@ -444,14 +630,18 @@
   ;
   (-> olist? olist?)
   
-  (w- stop (onum-plus1 #/olist-length lst)
+  (w- stop (onumext-plus1 #/olist-length lst)
   #/dissect lst (olist lst)
   #/olist #/olist-rep-tails stop lst))
 
 
+(define/contract (olist-has? lst i)
+  (-> olist? onum? boolean?)
+  (onum<onumext? i #/olist-length lst))
+
 (define/contract (olist-ref-thunk lst i)
   (->d ([lst olist?] [i onum?])
-    #:pre (onum<? i #/olist-length lst)
+    #:pre (olist-has? lst i)
     [_ (-> any/c)])
   (dissect (olist-drop i lst) (just #/list dropped rest)
   #/dissect (olist-drop1 rest) (just #/list get-first rest)
@@ -459,13 +649,13 @@
 
 (define/contract (olist-ref-and-call lst i)
   (->d ([lst olist?] [i onum?])
-    #:pre (onum<? i #/olist-length lst)
+    #:pre (olist-has? lst i)
     [_ any/c])
   (#/olist-ref-thunk lst i))
 
 (define/contract (olist-set-thunk lst i get-elem)
   (->d ([lst olist?] [i onum?] [get-elem (-> any/c)])
-    #:pre (onum<? i #/olist-length lst)
+    #:pre (olist-has? lst i)
     [_ olist?])
   (dissect (olist-drop i lst) (just #/list past lst)
   #/dissect (olist-drop1 lst) (just #/list get-old-elem rest)
@@ -473,7 +663,7 @@
 
 (define/contract (olist-update-thunk lst i func)
   (->d ([lst olist?] [i onum?] [func (-> (-> any/c) (-> any/c))])
-    #:pre (onum<? i #/olist-length lst)
+    #:pre (olist-has? lst i)
     [_ olist?])
   (dissect (olist-drop i lst) (just #/list past lst)
   #/dissect (olist-drop1 lst) (just #/list get-elem rest)
