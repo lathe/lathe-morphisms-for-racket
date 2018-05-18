@@ -257,7 +257,7 @@
 ;   given these at layer a1:
 ;     a : layers-a.obj
 ;   postulate an equivalence at layer b2:
-;     naturality-id
+;     functoriality-id
 ;     : layers-b.id = (transport-hom layers-a.id)
 ;     : (layers-b.hom (transport-obj a) (transport-obj a))
 ;
@@ -269,7 +269,7 @@
 ;     g : (layers-a.hom b c)
 ;     f : (layers-a.hom a b)
 ;   postulate an equivalence at layer b2:
-;     naturality-compose
+;     functoriality-compose
 ;     : (layers-b.compose (transport-hom g) (transport-hom f))
 ;     = (transport-hom (layers-a.compose g f))
 ;     : (layers-b.hom (transport-obj a) (transport-obj c))
