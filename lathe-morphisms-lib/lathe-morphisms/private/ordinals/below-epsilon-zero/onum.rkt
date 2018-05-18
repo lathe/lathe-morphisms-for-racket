@@ -388,7 +388,7 @@
     #f))
 
 (define/contract (onumext-compare a b)
-  (-> onumext? onumext? boolean?)
+  (-> onumext? onumext? #/or/c '< '= '>)
   (expect a (just a) (expect b (just b) '= '>)
   #/expect b (just b) '<
   #/onum-compare a b))
