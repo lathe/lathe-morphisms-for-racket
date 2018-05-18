@@ -29,7 +29,8 @@
 
 (require #/only-in lathe-comforts
   dissect dissectfn expect fn mat w- w-loop)
-(require #/only-in lathe-comforts/maybe just maybe/c nothing)
+(require #/only-in lathe-comforts/maybe
+  just maybe/c maybe-map nothing)
 (require #/only-in lathe-comforts/list
   list-each list-foldl list-foldr list-map nat->maybe)
 (require #/only-in lathe-comforts/struct struct-easy)
@@ -48,6 +49,11 @@
   onum-times-list onum-times
   onum-untimes
   onum-pow-list onum-pow
+  
+  onumext?
+  onumext-compare onumext<? onumext>? onumext<=? onumext>=?
+  onumext-plus1 onumext-plus
+  onumext-drop1 onumext-drop
 )
 
 
@@ -373,3 +379,52 @@
 ; for a given `amount` and a given `n`, such that
 ; `(onum<? factor amount)` and
 ; `(onum<? term (onum-pow amount exponent))`.
+
+
+(define/contract (onumext? x)
+  (-> any/c boolean?)
+  (mat x (nothing) #t
+  #/mat x (just x) (onum? x)
+    #f))
+
+(define/contract (onumext-compare a b)
+  (-> onumext? onumext? boolean?)
+  (expect a (just a) (expect b (just b) '= '>)
+  #/expect b (just b) '<
+  #/onum-compare a b))
+
+(define/contract (onumext<? a b)
+  (-> onumext? onumext? boolean?)
+  (eq? '< #/onumext-compare a b))
+
+(define/contract (onumext>? a b)
+  (-> onumext? onumext? boolean?)
+  (eq? '> #/onumext-compare a b))
+
+(define/contract (onumext<=? a b)
+  (-> onumext? onumext? boolean?)
+  (not #/onumext>? a b))
+
+(define/contract (onumext>=? a b)
+  (-> onumext? onumext? boolean?)
+  (not #/onumext<? a b))
+
+(define/contract (onumext-plus1 n)
+  (-> onumext? onumext?)
+  (maybe-map n #/fn n #/onum-plus1 n))
+
+(define/contract (onumext-plus a b)
+  (-> onum? onumext? onumext?)
+  (maybe-map b #/fn b #/onum-plus a b))
+
+(define/contract (onumext-drop1 n)
+  (-> onumext? #/maybe/c onumext?)
+  (expect n (just n) (just #/nothing)
+  #/expect (onum-drop1 n) (just result) (nothing)
+  #/just #/just result))
+
+(define/contract (onumext-drop amount n)
+  (-> onum? onumext? #/maybe/c onumext?)
+  (expect n (just n) (just #/nothing)
+  #/expect (onum-drop amount n) (just result) (nothing)
+  #/just #/just result))

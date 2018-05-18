@@ -26,16 +26,16 @@
 (require #/only-in racket/generic define/generic define-generics)
 
 (require #/only-in lathe-comforts dissect expect fn mat w- w-loop)
-(require #/only-in lathe-comforts/maybe
-  just just? maybe/c maybe-map nothing)
+(require #/only-in lathe-comforts/maybe just just? maybe/c nothing)
 (require #/only-in lathe-comforts/list
   list-foldl list-foldr nat->maybe)
 (require #/only-in lathe-comforts/struct struct-easy)
 
 (require #/only-in
   lathe-morphisms/private/ordinals/below-epsilon-zero/onum
-  onum? onum<? onum<=? onum-base-omega-expansion onum-compare
-  onum-drop onum-drop1 onum-omega onum-one onum-plus onum-plus1
+  onum? onum-base-omega-expansion onum-drop onum-drop1 onumext?
+  onumext<? onumext<=? onumext-compare onumext-drop onumext-drop1
+  onumext-plus onumext-plus1 onum-omega onum-one onum-plus onum-plus1
   onum-zero)
 
 ; TODO: Document all of these exports.
@@ -43,7 +43,8 @@
   (rename-out [-olist? olist?])
   ; TODO: Consider providing `list->olist` and `olist->maybe-list`
   ; operations.
-  olist-zero olist-build olist-length olist-unext? olist-plus1
+  olist-zero olist-build olist-length olist-unext? olist-unext-length
+  olist-plus1
   olist-plus-binary olist-plus-list olist-plus
   olist-drop1
   olist-drop
@@ -74,52 +75,6 @@
 )
 
 
-; TODO: Provide this so we can use it in signatures. We'll probably
-; want to provide it from onum.rkt. We'll probably want to provide all
-; the rest of these from there too.
-(define/contract (onumext? x)
-  (-> any/c boolean?)
-  (mat x (nothing) #t
-  #/mat x (just x) (onum? x)
-    #f))
-
-(define/contract (onum-onumext-compare a b)
-  (-> onum? onumext? boolean?)
-  (expect b (just b) '<
-  #/onum-compare a b))
-
-(define/contract (onum<onumext? a b)
-  (-> onum? onumext? boolean?)
-  (expect b (just b) #t
-  #/onum<? a b))
-
-(define/contract (onumext<=? a b)
-  (-> onumext? onumext? boolean?)
-  (expect b (just b) #t
-  #/expect a (just a) #f
-  #/onum<=? a b))
-
-(define/contract (onumext-plus1 n)
-  (-> onumext? onumext?)
-  (maybe-map n #/fn n #/onum-plus1 n))
-
-(define/contract (onumext-plus a b)
-  (-> onum? onumext? onumext?)
-  (maybe-map b #/fn b #/onum-plus a b))
-
-(define/contract (onumext-drop1 n)
-  (-> onumext? #/maybe/c onumext?)
-  (expect n (just n) (just #/nothing)
-  #/expect (onum-drop1 n) (just result) (nothing)
-  #/just #/just result))
-
-(define/contract (onumext-drop amount n)
-  (-> onum? onumext? #/maybe/c onumext?)
-  (expect n (just n) (just #/nothing)
-  #/expect (onum-drop amount n) (just result) (nothing)
-  #/just #/just result))
-
-
 (define-generics olist-rep
   (olist-rep-length olist-rep)
   (olist-rep-drop1 olist-rep)
@@ -146,6 +101,11 @@
   (-> any/c boolean?)
   (and (olist? x) (just? #/olist-length x)))
 
+(define/contract (olist-unext-length lst)
+  (-> olist-unext? onumext?)
+  (dissect (olist-length lst) (just result)
+    result))
+
 (define/contract (olist-drop1 lst)
   (-> olist? #/maybe/c #/list/c (-> any/c) olist?)
   (dissect lst (olist rep)
@@ -160,7 +120,7 @@
 ; TODO: See if we should export this.
 (define/contract (olist-zero? x)
   (-> any/c boolean?)
-  (and (olist? x) (equal? (just onum-zero) #/olist-length x)))
+  (and (olist-unext? x) (equal? onum-zero #/olist-unext-length x)))
 
 
 (struct-easy (olist-rep-zero)
@@ -205,7 +165,7 @@
       (error "Expected start to be an onum"))
     (unless (onumext? stop)
       (error "Expected stop to be a maybe of an onum"))
-    (unless (onum<onumext? start stop)
+    (unless (onumext<? (just start) stop)
       (error "Expected start to be less than stop")))
   #:other
   #:methods gen:olist-rep
@@ -229,7 +189,7 @@
       #/if (equal? onum-zero amount)
         (just #/list (olist-zero) #/olist this)
       #/w- new-start (onum-plus start amount)
-      #/w- comparison (onum-onumext-compare new-start stop)
+      #/w- comparison (onumext-compare (just new-start) stop)
       #/mat comparison '> (nothing)
       #/just #/list
         (olist
@@ -637,7 +597,7 @@
 
 (define/contract (olist-has? lst i)
   (-> olist? onum? boolean?)
-  (onum<onumext? i #/olist-length lst))
+  (onumext<? (just i) #/olist-length lst))
 
 (define/contract (olist-ref-thunk lst i)
   (->d ([lst olist?] [i onum?])
