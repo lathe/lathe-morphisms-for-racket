@@ -387,7 +387,7 @@
   ; (1) formula
   [wff-unit monoidal-connective-wff-unit any/c]
   
-  ; (given A B. A * B) binary
+  ; (A * B) binary
   [times monoidal-connective-times binary-connective?]
   
   ; given A B C. |- A * (B * C) <=> (A * B) * C
@@ -550,7 +550,7 @@
   symmetric-monoidal-connective?
   make-symmetric-monoidal-connective
   
-  ; (1) (given A B. A * B) monoidal
+  ; (1) (A * B) monoidal
   [times symmetric-monoidal-connective-times monoidal-connective?]
   
   ; given A B. |- A * B => B * A
@@ -632,11 +632,94 @@
 ; same.
 
 
+; NOTE:
+;
+; In the following logics, we start to combine rules from multiple
+; logics that came before, and this can cause some duplication. When a
+; logic contains two `monoidal-connective?` logics, they each have a
+; `deductive-system?`. When we have diamond dependencies like this, we
+; choose a design that reduces ambiguity by specifying a particular
+; unambiguous value for that dependency, and then expressing the other
+; two dependencies as functions of it.
+;
+; For instance, a `linearly-distributive-logic?` has a method that
+; returns a `deductive-system?`, and it has two methods that each
+; *takes* a `deductive-system?` and returns a `monoidal-connective?`.
+;
+; The functionality we define here will always pass in the same
+; `deductive-system?` we get from that disambiguating method, and it
+; will attempt to interpret language terms in terms of the
+; deductive system interpreter *before* delegating to the monoidal
+; connective interpreters.
+;
+; As long as all users use this kind of discipline to access these
+; dependencies, there shouldn't be any need for users to worry that
+; they're using a bizarre mix of deductive systems in their
+; computation.
+
+
+; A logic analogous to a linearly distributive category.
+; Multiplicative linear logic (MLL) is analogour to this, except that
+; it has negation, atoms, and commutativity of `times` and `par`.
+; We add commutativity to this later and call that variation
+; `intermediary-mll?`.
+;
+(struct-of-procedures
+  linearly-distributive-logic-rep
+  linearly-distributive-logic?
+  make-linearly-distributive-logic
+  
+  [deductive-system deductive-system?]
+  
+  ; (one) (A times B) monoidal
+  [times linearly-distributive-logic-times
+    [deductive-system deductive-system?]
+    monoidal-connective?]
+  ; (bot) (A par B) monoidal
+  [par linearly-distributive-logic-par
+    [deductive-system deductive-system?]
+    monoidal-connective?]
+  
+  ; given A B C. |- A times (B par C) => (A times B) par C
+  [switchl linearly-distributive-logic-switch any/c]
+  
+  ; given A B C. |- (A par B) times C => A par (B times C)
+  [switchr linearly-distributive-logic-switch any/c]
+  
+  ; The switch rules above work for binary `times` and binary `par`,
+  ; but they just as easily apply to any instance of `times` or `par`
+  ; with two or more subformulas:
+  ;
+  ;   (A0 times A1 times ...) times (B par (C0 par C1 par ...))
+  ;   -- apply the binary switchl rule once --
+  ;   ((A0 times A1 times ...) times B) par (C0 par C1 par ...)
+  ;
+  ; Note that when either of them has only one subformula, the rule
+  ; trivially holds even without using the binary-binary switch rule:
+  ;
+  ;   (A0 times A1 times ...) times (B)
+  ;   -- apply no rules --
+  ;   ((A0 times A1 times ...) times B)
+  ;
+  ;   (B par (C0 par C1 par ...))
+  ;   -- apply no rules --
+  ;   (B) par (C0 par C1 par ...)
+  ;
+  ; This pattern doesn't extend to nullary-N-ary or N-ary-nullary
+  ; switch rules since there would be no subformula `B` to pivot on.
+  
+  )
+
+; TODO: Implement languages, transparent instances, and interpreters
+; for the `linearly-distributive-logic?` interface.
+
+
 ; Multiplicative Linear Logic (MLL) without atoms or a notation for
 ; negation. Without guaranteed atoms or guaranteed negation, it's not
 ; really MLL so much as it's the proof-theoretical analogue of a
-; linearly distributive category, so we're referring to it as a
-; linearly distributive logic.
+; symmetric linearly distributive category, but we're referring to it
+; as "intermediary MLL" to convey that it's MLL as long as the atoms
+; cooperate.
 ;
 ; If any extensions provide new atoms or new connectives and want to
 ; continue to treat this as MLL, they should make sure to supply their
@@ -680,62 +763,225 @@
 ; system it would have to be an interpreter *for* anyway.
 ;
 (struct-of-procedures
-  linearly-distributive-logic-rep
-  linearly-distributive-logic?
-  make-linearly-distributive-logic
-  
-  ; Our two monoidal connectives could provide us with two deductive
-  ; systems. For the sake of reducing the ambiguity, we instead
-  ; specify a single deductive system, and we express the two monoidal
-  ; connectives as functions that take a deductive system. The
-  ; functionality we define here will never pass those functions a
-  ; deductive system except the one obtained here. As long as clients'
-  ; extensions continue with this policy, there won't be any need for
-  ; their clients to worry that a single
-  ; `linearly-distributive-logic?` value could use a bizarre mix of
-  ; deductive systems.
+  intermediary-mll-rep
+  intermediary-mll?
+  make-intermediary-mll
   
   [deductive-system deductive-system?]
   
-  ; (one) (A and B) monoidal
-  [times linearly-distributive-logic-times
+  ; (one) (A times B) symmetric-monoidal
+  [times intermediary-mll-times
     [deductive-system deductive-system?]
-    monoidal-connective?]
-  ; (bot) (A or B) monoidal
-  [par linearly-distributive-logic-par
+    symmetric-monoidal-connective?]
+  ; (bot) (A par B) symmetric-monoidal
+  [par intermediary-mll-par
     [deductive-system deductive-system?]
-    monoidal-connective?]
+    symmetric-monoidal-connective?]
   
+  ; (one) (A times B) (bot) (A par B) linearly-distributive
+  ; i.e.
   ; given A B C. |- A and (B or C) => (A and B) or C
-  [switch linearly-distributive-logic-switch any/c])
+  [switch intermediary-mll-switch
+    [deductive-system deductive-system?]
+    [and monoidal-connective?]
+    [or monoidal-connective?]
+    linearly-distributive-logic?])
 
 ; TODO: Implement languages, transparent instances, and interpreters
-; for the `linearly-distributive-logic?` interface.
+; for the `intermediary-mll?` interface.
+
+
+; What we're calling a "duoidal logic" is a logic that corresponds
+; with a duoidal category. The distinguishing feature of a duoidal
+; category is that its two monoidal structures have an exchange law,
+; and when logics are presented in the calculus of structures, the
+; same kind of law is known as a medial law.
+;
+; A logic in the calculus of structures often has several medial laws.
+; In that case, we'll say it has duoidal logic structure in multiple
+; ways, and the interface we model here will have multiple methods
+; returning `duoidal-logic?` values.
+;
+(struct-of-procedures
+  duoidal-logic-rep
+  duoidal-logic?
+  make-duoidal-logic
+  
+  [deductive-system deductive-system?]
+  
+  ; (0) (A + B) monoidal
+  [times duoidal-logic-plus [deductive-system deductive-system?]
+    monoidal-connective?]
+  ; (top) (A & B) monoidal
+  [par duoidal-logic-with [deductive-system deductive-system?]
+    monoidal-connective?]
+  
+  ; given A B C D. |- (A & B) + (C & D) => (A + C) & (B + D)
+  [medial duoidal-logic-medial any/c]
+  
+  ; The medial rule above works for binary `+` and binary `&`, but it
+  ; can also apply to any other arities of those connectives. Let's
+  ; call a medial rule "M by N" when it applies to a `+` of arity M
+  ; and a `&` of arity N. Let's go over the cases.
+  ;
+  ; 0 by 0:
+  ;
+  ; We show that the rule `|- 0 => top` is deducible:
+  ;
+  ;    0
+  ;    0        +        0
+  ;   (0 & top) + (top & 0)
+  ;   -- 2 by 2 medial rule --
+  ;   (0 + top) & (top + 0)
+  ;        top  &  top
+  ;        top
+  ;
+  ; 0 by 1:
+  ;
+  ; The rule `|- 0 => 0` needs only an empty deduction.
+  ;
+  ; 0 by 2:
+  ;
+  ; We show that the rule `|- 0 => 0 & 0` is deducible:
+  ;
+  ;    0
+  ;    0      &      top
+  ;   (0 + 0) & (0 + top)
+  ;   -- medial rule --
+  ;   (0 & 0) + (0 & top)
+  ;   (0 & 0) +  0
+  ;    0 & 0
+  ;
+  ; 0 by N for (3 <= N):
+  ;
+  ; These rules can be deduced straightforwardly from the 0 by 2
+  ; medial rule we've just shown:
+  ;
+  ;   |- 0 => 0 & 0 & 0
+  ;   |- 0 => 0 & 0 & 0 & 0
+  ;   ...
+  ;
+  ; 1 by 0:
+  ;
+  ; This is the dual of the 0 by 1 case. All our deduction rules are
+  ; dualizable if we also dualize the formulas so that `0`, `+`,
+  ; `bot`, and `&` are respectively replaced with `bot`, `&`, `0`, and
+  ; `+`, so that's all we need to do here.
+  ;
+  ; 1 by N for (1 <= N):
+  ;
+  ; These rules also need only empty deductions:
+  ;
+  ;   given A. |- A => A
+  ;   given A B. |- (A & B) => (A) & (B)
+  ;   given A B C. |- (A & B & C) => (A) & (B) & (C)
+  ;   ...
+  ;
+  ; M by N for (M <= 1):
+  ;
+  ; These are duals of cases we've already shown.
+  ;
+  ; 2 by 2:
+  ;
+  ; This is the medial rule we're building the rest of these from in
+  ; the first place.
+  ;
+  ; M by 2 for (3 <= M):
+  ;
+  ; What we need to show is:
+  ;
+  ;   given A00 A10 ... A01 A11 ... .
+  ;   |- (A00 & A01) + (A10 & A11) + ...
+  ;   => (A00 + A10 + ...) & (A01 + A11 + ...)
+  ;
+  ; We can use induction here, relying on the (M - 1) by 2 medial
+  ; rule:
+  ;
+  ;   (A00 & A01) + (A10 & A11) + ...
+  ;   -- add parentheses --
+  ;   (A00 & A01) + ((A10 & A11) + (A20 & A21) + ...))
+  ;   -- apply the (M - 1) by 2 medial rule on the second term --
+  ;   (A00 & A01) + ((A10 + A20 + ...) & (A11 + A21 + ...))
+  ;   -- apply the 2 by 2 medial rule on the whole formula --
+  ;   (A00 + (A10 + A20 + ...)) & (A01 + (A11 + A21 + ...))
+  ;   -- remove parentheses --
+  ;   (A00 + A10 + ...) & (A01 + A11 + ...)
+  ;
+  ; 2 by N for (3 <= N):
+  ;
+  ; These cases are duals of the ones we've just shown.
+  ;
+  ; M by N for (3 <= M) and (3 <= N):
+  ;
+  ; This covers the remaining cases, and actually, our argument for
+  ; the M by 2 case is a special case of what we'll do here. What we
+  ; need to show is:
+  ;
+  ;   given A00 A01 ... A10 A11 ... ... .
+  ;   |- (A00 & A01 & ...) + (A10 & A11 & ...) + ...
+  ;   => (A00 + A10 + ...) & (A01 + A11 + ...) & ...
+  ;
+  ; We'll use induction again, relying on the (M - 1) by N and 2 by N
+  ; medial rules. Here's how we compose them to reach our goal:
+  ;
+  ;   (A00 & A01 & ...) + (A10 & A11 & ...) + ...
+  ;
+  ;   -- add parentheses --
+  ;
+  ;   (A00 & A01 & ...
+  ;   ) + ((A10 & A11 & ...) + (A20 & A21 & ...) + ...)
+  ;
+  ;   -- apply the (M - 1) by N medial rule on the second term --
+  ;
+  ;   (A00 & A01 & ...
+  ;   ) + ((A10 + A20 + ...) & (A11 + A21 + ...) & ...)
+  ;
+  ;   -- apply the 2 by N medial rule on the whole formula --
+  ;
+  ;   (A00 + (A10 + A20 + ...)) & (A01 + (A11 + A21 + ...)) & ...
+  ;
+  ;   -- remove parentheses --
+  ;
+  ;   (A00 + A10 + ...) & (A01 + A11 + ...) & ...
+  ;
+  ; And there we have it.
+  ;
+  ;
+  ; It's interesting that none of these proofs rely on having
+  ; commutativity of `&` or commutativity of `+`. In fact, it seems
+  ; this argument might apply just as well without associativity
+  ; either. The arities would be something more general than natural
+  ; numbers, but we could probably still get the (M1 + M2) by N medial
+  ; rule by composing the M2 by N and (M1 + 1) by N rules.
+  ;
+  ; We only needed the unit laws for the nullary case, too. So it's
+  ; possible we don't even need monoidal structures for the medial
+  ; rule to be interesting.
+  
+  )
 
 
 ; This system nearly corresponds to KS, a presentation of classical
 ; logic ("K") in the calculus of structures ("S"). The difference is
 ; that this system doesn't have atoms or negation. That makes it
-; related to classical logic the same way our "linearly distributive
-; logics" are related to MLL.
+; related to classical logic the same way our "intermediary MLL" is
+; related to MLL, so we call this "intermediary classical logic."
 ;
-; We're dubbing this system a "classically medial logic" since the
-; feature it introduces is the medial rule, but it uses the medial
-; rule in a particular way: Not all calculus of structures systems
-; that offer a medial rule (or several of them) offer it on the same
-; connectives that are already linearly distributive.
+; Intermediary classical logic is just like intermediary MLL, but it
+; introduces one medial rule that lets `or` and `and` distribute in
+; the opposite way they distribute in MLL.
 ;
-; For instance, system ALLS (additive linear logic (ALL) in the
-; calculus of structures (S)) has medial rules acting on four
-; different pairs of the four monoidal connectives in that logic, but
-; since none of those pairs acts on the two multiplicative connectives
-; (much less in the particular direction this does), it doesn't cause
-; the multiplicative connectives to form a classical logic on their
-; own.
+; Not all calculus of structures systems use this particular medial
+; rule. For instance, system LLS (linear logic (LL) in the calculus
+; of structures (S)) has medial rules acting on three different pairs
+; of the four monoidal connectives in that logic, but since none of
+; those pairs is the two multiplicative connectives (much less those
+; connectives in the same direction this system uses), it doesn't
+; cause the multiplicative connectives to form a classical logic on
+; their own.
 ;
-; System ALLS (and the symmetric system SKS which is no more potent,
-; as well as many other systems up to classical linear logic with
-; quantifiers) is discussed here:
+; System LLS (and the symmetric system SLLS which is no more potent)
+; is discussed here:
 ;
 ;   A Local System for Linear Logic
 ;   Lutz Straßburger 2002
@@ -749,216 +995,137 @@
 ;   http://cs.bath.ac.uk/ag/kai/phd.pdf
 ;
 (struct-of-procedures
-  classically-medial-logic-rep
-  classically-medial-logic?
-  make-classically-medial-logic
+  intermediary-classical-logic-rep
+  intermediary-classical-logic?
+  make-intermediary-classical-logic
   
-  ; (true) (A and B) (false) (A or B) linearly-distributive
-  [switch classically-medial-logic-switch
-    linearly-distributive-logic?]
+  ; (true) (A and B) (false) (A or B) intermediary-mll
+  ; i.e.
+  ; given A B C. |- A and (B or C) => (A and B) or C
+  [mll intermediary-classical-logic-mll intermediary-mll?]
   
+  ; (false) (A or B) (true) (A and B) duoidal
+  ; i.e.
   ; given A B C D. |- (A and B) or (C and D) => (A or C) and (B or D)
-  [medial classically-medial-logic-medial any/c]
-  
-  
-  (a00 and a01) => (a00) and (a01)
-  
-  ; In this system we can consider the medial rule to be a special
-  ; case of a multiary medial rule commutativity between the two
-  ; monoidal structures. These are the other three cases:
-  ;
-  ; |- false => true
-  ; |- false => false and false
-  ; |- true or true => true
-  ;
-  ; The last two are duals of each other, so we only need to show the
-  ; deduction of one of them. All three proofs only need to use the
-  ; unit rules a few times and the (binary) medial rule once:
-  ;
-  ;    false
-  ;    false           or           false
-  ;   (false and true) or (true and false)
-  ;   -- medial rule --
-  ;   (false or true) and (true or false)
-  ;             true  and  true
-  ;             true
-  ;
-  ;    false
-  ;    false           and           true
-  ;   (false or false) and (false or true)
-  ;   -- medial rule --
-  ;   (false and false) or (false and true)
-  ;   (false and false) or  false
-  ;    false and false
-  ;
-  ;
-  ; That gives us a multiplication table where four slots have been
-  ; filled in:
-  ;
-  ;     0 1 2 ...
-  ;   0 *   *
-  ;   1
-  ;   2 *   *
-  ;   ...
-  ;
-  ; The remaining nullary medial rules are all straightforward
-  ; consequences of what we have...
-  ;
-  ;   |- true => true
-  ;   |- false => false
-  ;
-  ;   |- true or true or true => true
-  ;   |- false => false and false and false
-  ;   |- true or true or true or true => true
-  ;   |- false => false and false and false and false
-  ;   ...
-  ;
-  ; And the unary rules are even more trivial than that:
-  ;
-  ;   given A. |- A => A
-  ;   given A B. |- (A and B) => (A) and (B)
-  ;   given A B. |- (A) or (B) => (A or B)
-  ;   given A B C. |- (A and B and C) => (A) and (B) and (C)
-  ;   given A B C. |- (A) or (B) or (C) => (A or B or C)
-  ;   ...
-  ;
-  ; Let's do induction to get the rest. We want to show this for some
-  ; dimensions M and N:
-  ;
-  ;   given A00 A01 ... A10 A11 ... ... .
-  ;   |- (A00 and A01 and ...) or (A10 and A11 and ...) or ...
-  ;   => (A00 or A10 or ...) and (A01 or A11 or ...) and ...
-  ;
-  ; We can apply any switch rule smaller than this one. All it takes
-  ; is two:
-  ;
-  ;   (A00 and A01 and ...) or (A10 and A11 and ...) or ...
-  ;
-  ;   -- add parentheses --
-  ;
-  ;   (A00 and A01 and ...
-  ;   ) or ((A10 and A11 and ...) or (A20 and A21 and ...) or ...))
-  ;
-  ;   -- apply (M - 1) by N switch rule on the second term --
-  ;
-  ;   (A00 and A01 and ...
-  ;   ) or ((A10 or A20 or ...) and (A11 or A21 or ...) and ...)
-  ;
-  ;   -- apply 2 by N switch rule on the whole formula --
-  ;
-  ;   (A00 or (A10 or A20 or ...)
-  ;   ) or (A01 or (A11 or A21 or ...)
-  ;   ) or ...
-  ;
-  ;   -- remove parentheses --
-  ;
-  ;   (A00 or A10 or ...) or (A01 or A11 or ...) or ...
-  ;
-  ; It's interesting that none of these proofs rely on having
-  ; commutativity of `and`, commutativity of `or`, linear
-  ; distributivity. All we've used here are the unit laws, the 2 by 2
-  ; medial rule, and... well, we used associativity so we could choose
-  ; where to add parentheses.
-  ;
-  ; If we take away associativity, we have to think about things like
-  ; ((1 + 1) + (1 + 1)) by (1 + (1 + (1 + 1))) switch rules, but I
-  ; think the above argument continues to apply: To get the
-  ; (M1 + M2) by N switch rule, compose the M2 by N switch rule with
-  ; the (M1 + 1) by N switch rule.
-  ;
-  ; And we only needed the unit laws for the nullary case. Switch is
-  ; an interesting property of a category with two binary functors
-  ; even if those functors aren't monoidal!
-  ;
-  ; At least in the monoidal case (which indeed is the case for the
-  ; interface I'm writing a big comment at the end of), it seems to be
-  ; known as a "duoidal category." A duoidal category doesn't
-  ; necessarily have linear distributivity, so that's where we differ.
-  ;
-  ; (TODO: Let's make a `duoidal-logic?` interface and then represent
-  ; this interface using a `linearly-distributive-logic?` and a
-  ; `duoidal-logic?` that share the same two `monoidal-connective?`
-  ; instances that share the same `deductive-system?` instance.)
+  [medial intermediary-classical-logic-medial
+    [deductive-system deductive-system?]
+    [or monoidal-connective?]
+    [and monoidal-connective?]
+    duoidal-logic?]
   
   )
 
 ; TODO: Implement languages, transparent instances, and interpreters
-; for the `classically-medial-logic?` interface.
+; for the `intermediary-classical-logic?` interface.
+
+
+; The full logic of MLL as presented in the calculus of structures,
+; including a notation for negation and rules for axioms.
+;
+; Note that this also requires a way to compute the dual of any
+; deduction so that the negation notation doesn't obstruct our access
+; to deep inference. Even in instances of `intermediary-mll?` where
+; duals of deductions are admissible (as they should be if every
+; extension obeys the conditions that preserve the illusion that it's
+; full MLL), the dual of a deduction might not be *computable*
+; starting from only the original deduction value.
+;
+; The categories analogous to this logic are the star-autonomous
+; categories.
+;
+(struct-of-procedures
+  mll-rep
+  mll?
+  make-mll
+  
+  ; (1) (A * B) symmetric-monoidal
+  [times mll-times symmetric-monoidal-connective?]
+  
+  ; (1) (A * B) (~1) (~(~A * ~B)) intermediary-mll
+  [intermediation mll-intermediation
+    [deductive-system deductive-system?]
+    [times symmetric-monoidal-connective?]
+    [par symmetric-monoidal-connective?]
+    intermediary-mll?]
+  
+  ; forall A. ~A formula
+  [wff-not classical-logic-not [a any/c] any/c]
+  
+  ; given A A'. A => A', |- ~A' => ~A
+  [not-bimap mll-not-bimap [a1 any/c] [a2 any/c] [a1a2 any/c] any/c]
+  
+  ; forall A. |- ~~A <=> A
+  [double-negation-elimination mll-double-negation-elimination
+    [a any/c]
+    (list/c any/c any/c)]
+  
+  ; NOTE: We choose to put the negation on the side of the `*` that
+  ; makes this like a left-to-right implication. If linear implication
+  ; is `A -o B`, then the formula `~(A * ~B)` is equivalent to
+  ; `A -o B`, and `A * ~B` is equivalent to `~(A -o B)`).
+  ;
+  ; forall A. |- 1 => ~(A * ~A)
+  ; forall A. |- (A * ~A) => ~1
+  [intro mll-intro (list/c any/c any/c)])
 
 
 ; This is an expression of full classical logic in the SKS style.
-; (That's the symmetric version of the KS presentation of classical
-; logic.) This version is not concerned with enforcing
-; proof-theoretical properties at the deduction level, such as cut
-; eliminnation or the ability to translate from SKS derivations to KS
-; derivations. However, it does enforce similar properties at the
-; formula level, like the ability to negate every formula and the
-; ability to deduce intro, weakening, and contraction rules for every
-; formula.
+; (That's the symmetric version (S) of the presentation of classical
+; logic (K) in the calculus of structures.) This version offers
+; introduction, cut, (co-)contraction, and (co-)weakening rules on all
+; atoms, and it offers a negation notation.
 ;
-; The similarity is that cut elimination is an algorithm that would
-; apply to every derivation, and these are operations that apply to
-; every formula. If they're not enforced, they can just be upheld on a
-; good-faith basis. But this interface finally enforces them at the
-; formula level.
+; NOTE:
 ;
-; Enforcing the properties at the proof-theoretic level would require
-; us to have been keeping track of more structure and properties at
-; dimension one (operations on and properties of deductions),
-; essentially making this proper category theory. It's category theory
-; we're interested in in the first place, but we need classical logic
-; to express deductions involving (clasical) category-theoretic
-; properties, so our logical interfaces here are specifically set up
-; to not demand higher-dimensional structure.
+; In a way, this "enforces" some proof-theoretic properties that the
+; `intermediary-classical-logic?` allows to be upheld in a good-faith
+; way. In particular, it enforces that intro, cut, (co-)contraction,
+; and (co-)weakening rules can be computed for any given formula, and
+; it enforces that a dual can be computed for any given deduction.
 ;
-; It's possible many of the things we do with categories will only
-; rely on weaker deductive systems. The `classically-medial-logic?` is
-; probably all we need, since categories can supply introduction,
-; contraction, and weakening rules for their own identity and
+; An `intermediary-classical-logic?` value may have already offered
+; those features external to the `intermediary-classical-logic?`
+; interface, and we expect `intermediary-classical-logic?` to be a
+; sufficient amount of functionality for systems we build here in
+; Lathe Morphisms. We're building these proof-theoretic interfaces
+; just so we can use them to express the laws of our
+; category-theoretic interfaces, and when we do that, we can simply
+; have our categories provide their own bespoe intro, cut,
+; (co-)contraction, and (co-)weakening rules for their equality and
 ; apartness relations.
+;
+; We've built this `classical-logic?` interface basically just to show
+; we can. We could potentially go even further and make other other
+; proof-theoretic properties available in a constructive way, like
+; providing the ability to compute from any deduction to a cut-free
+; deduction. We don't do this; the sweet spot we've chosen is to offer
+; a full set of inference rules on atoms while mostly ignoring the
+; possibility that one deduction value might be preferred over
+; another.
+;
+; If we ever model proof systems where we care about operations on
+; deduction values, we will probably find success in treting those
+; deductions as the morphisms of a category and taking advantage of
+; the category-theoretic infrastructure we already intend to develop.
 ;
 (struct-of-procedures
   classical-logic-rep
   classical-logic?
   make-classical-logic
   
-  ; (true) (A and B) (false) (A or B) classically-medial
-  [medial classical-logic-medial classically-medial-logic?]
+  ; (true) (A and B) (false) (A or B) intermediary-classical-logic
+  [intermediation classical-logic-intermediation
+    intermediary-classical-logic?]
   
-  ; forall A. ~A formula
-  [wff-not classical-logic-not [a any/c] any/c]
-  
-  ; forall A B. |- ~(A and B) <=> ~A or ~B
-  [and-de-morgan classical-logic [a any/c] [b any/c]
-    (list/c any/c any/c)]
-  
-  ; forall A B. |- ~(A or B) <=> ~A and ~B
-  [or-de-morgan classical-logic [a any/c] [b any/c]
-    (list/c any/c any/c)]
-  
-  ; forall A B. |- ~true <=> false
-  [true-de-morgan classical-logic (list/c any/c any/c)]
-  
-  ; forall A B. |- ~false <=> true
-  [false-de-morgan classical-logic (list/c any/c any/c)]
-  
-  ; NOTE: We have to make a choice when we dualize this negation. We
-  ; choose to put the negation to the left of an `or` and to the right
-  ; of an `and`, to make it as convenient as possible to treat these
-  ; as classical implications (as in, `~A or B` is `A implies B`, and
-  ; `A and ~B` is `~(A implies B)`).
-  ;
-  ; forall A. |- true => (~A or A)
-  ; forall A. |- (A and ~A) => false
-  [intro classical-logic-intro (list any/c any/c)]
+  [mll classical-logic-mll [intermediation intermediary-mll?] mll?]
   
   ; forall A. |- false => A
   ; forall A. |- A => true
-  [weakening classical-logic-weakening (list any/c any/c)]
+  [weakening classical-logic-weakening (list/c any/c any/c)]
   
   ; forall A. |- (A and A) => A
   ; forall A. |- A => (A or A)
-  [contraction classical-logic-contraction (list any/c any/c)])
+  [contraction classical-logic-contraction (list/c any/c any/c)])
 
 
 
