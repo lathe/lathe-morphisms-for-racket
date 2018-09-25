@@ -231,17 +231,25 @@
   #/interpret-derivation derivation))
 
 
+; What we call a "semi deductive system" has a way to compose
+; derivations, but it doesn't necessarily have identity derivations
+; for every formula.
+;
+; This makes it like a semicategory; a semicategory has compositions
+; of morphisms but not necessarily an identity morphism for every
+; object.
+;
+; This is the first of a few "semi" proof-theoretic structures we'll
+; make.
+;
 (struct-of-procedures
-  deductive-system-rep
-  deductive-system?
-  unmatchable-make-deductive-system
-  make-deductive-system
-  
-  ; given A. |- A => A
-  [id deductive-system-id [a any/c] any/c]
+  semi-deductive-system-rep
+  semi-deductive-system?
+  unmatchable-make-semi-deductive-system
+  make-semi-deductive-system
   
   ; given A B C. A => B, B => C |- A => B
-  [chain deductive-system-chain
+  [chain semi-deductive-system-chain
     [a any/c]
     [b any/c]
     [c any/c]
@@ -250,49 +258,263 @@
     any/c])
 
 (struct-with-contracts
+  semi-deductive-system-language-rep
+  semi-deductive-system-language?
+  unmatchable-make-semi-deductive-system-language
+  make-semi-deductive-system-language
+  [chain-sym symbol?])
+
+(define/contract (transparent-semi-deductive-system lang)
+  (-> semi-deductive-system-language? semi-deductive-system?)
+  (dissect lang (make-semi-deductive-system-language chain-sym)
+  #/make-semi-deductive-system
+    (fn a b c ab bc
+      (list chain-sym a b c ab bc))))
+
+(define/contract (semi-deductive-system-interpreter lang system)
+  (-> semi-deductive-system-language? semi-deductive-system?
+    (fix/c interpreter #/-> interpreter any/c any/c))
+  (dissect lang (make-semi-deductive-system-language chain-sym)
+  #/loopfn self delegate expr
+    (mat expr (list (? #/issym chain-sym) a b c ab bc)
+      (semi-deductive-system-chain a b c ab bc)
+    #/delegate self expr)))
+
+
+; Unlike a `semi-deductive-system?`, a `deductive-system?` has an
+; identity deduction for any given formula.
+;
+(struct-of-procedures
+  deductive-system-rep
+  deductive-system?
+  unmatchable-make-deductive-system
+  make-deductive-system
+  
+  ; (A => B) semi-deductive-system
+  ; i.e.
+  ; given A B C. A => B, B => C |- A => B
+  [semi deductive-system-semi semi-deductive-system?]
+  
+  ; given A. |- A => A
+  [id deductive-system-id [a any/c] any/c])
+
+(struct-with-contracts
   deductive-system-language-rep
   deductive-system-language?
   unmatchable-make-deductive-system-language
   make-deductive-system-language
-  [id-sym symbol?]
-  [chain-sym symbol?])
+  [semi-lang semi-deductive-system-language?]
+  [id-sym symbol?])
 
-(define/contract (transparent-deductive-system lang)
+(define/contract (transparent-deductive-system derivation-lang)
   (-> deductive-system-language? deductive-system?)
-  (dissect lang (make-deductive-system-language id-sym chain-sym)
+  (dissect derivation-lang
+    (make-deductive-system-language semi-lang id-sym)
   #/make-deductive-system
+    (fn #/semi-deductive-system semi-lang)
     (fn a
-      (list id-sym a))
-    (fn a b c ab bc
-      (list chain-sym a b c ab bc))))
+      (list id-sym a))))
 
-(define/contract (deductive-system-interpreter lang system)
+(define/contract (deductive-system-interpreter derivation-lang system)
   (-> deductive-system-language? deductive-system?
     (fix/c interpreter #/-> interpreter any/c any/c))
-  (dissect lang (make-deductive-system-language id-sym chain-sym)
+  (dissect derivation-lang
+    (make-deductive-system-language semi-lang id-sym)
+  #/w- semi-terp
+    (semi-deductive-system-interpreter semi-lang
+      (deductive-system-semi system))
   #/loopfn self delegate expr
     (mat expr (list (? #/issym id-sym) a)
       (deductive-system-id a)
-    #/mat expr (list (? #/issym chain-sym) a b c ab bc)
-      (deductive-system-chain a b c ab bc)
+    #/semi-terp expr #/fn delegate-after-progress
     #/delegate self expr)))
+
+(struct-of-procedures
+  nullary-connective-rep
+  nullary-connective?
+  make-nullary-connective
+  
+  [semi-deductive-system nullary-connective-semi-deductive-system
+    semi-deductive-system?]
+  
+  ; (*) formula
+  [wff-connect nullary-connective-wff-connect any/c]
+  
+  ; |- * => *
+  [connect-map nullary-connective-connect-map any/c])
+
+(struct-with-contracts
+  nullary-connective-formula-language-rep
+  nullary-connective-formula-language?
+  unmatchable-make-nullary-connective-formula-language
+  make-nullary-connective-formula-language
+  [connect-sym symbol?])
+
+(struct-with-contracts
+  nullary-connective-derivation-language-rep
+  nullary-connective-derivation-language?
+  unmatchable-make-nullary-connective-derivation-language
+  make-nullary-connective-derivation-language
+  [semi-deductive-system-lang semi-deductive-system-language?]
+  [connect-map-sym symbol?])
+
+(define/contract
+  (transparent-nullary-connective formula-lang derivation-lang)
+  (->
+    nullary-connective-formula-language?
+    nullary-connective-derivation-language?
+    nullary-connective?)
+  (dissect formula-lang
+    (make-nullary-connective-formula-language connect-sym)
+  #/dissect derivation-lang
+    (make-nullary-connective-derivation-language
+      semi-deductive-system-lang connect-map-sym)
+  #/make-nullary-connective
+    (fn
+      (transparent-semi-deductive-system semi-deductive-system-lang))
+    (fn
+      (list connect-sym))
+    (fn
+      (list connect-map-sym))))
+
+(define/contract
+  (nullary-connective-interpreter formula-lang derivation-lang system)
+  (->
+    nullary-connective-formula-language?
+    nullary-connective-derivation-language?
+    nullary-connective?
+    (fix/c interpreter #/-> interpreter #/list/c
+      (-> any/c any/c)
+      (-> any/c any/c)))
+  (dissect formula-lang
+    (make-nullary-connective-formula-language connect-sym)
+  #/dissect derivation-lang
+    (make-nullary-connective-derivation-language
+      semi-deductive-system-lang connect-map-sym)
+  #/w- ds-terp
+    (semi-deductive-system-interpreter semi-deductive-system-lang
+      (nullary-connective-semi-deductive-system system))
+  #/loopfn self delegate
+    
+    (define (interpret-formula formula)
+      (mat formula (list #/? #/issym connect-sym)
+        (nullary-connective-wff-connect)
+      #/interpret-formula-via-without-progress delegate formula self))
+    
+    (define (interpret-derivation derivation)
+      (mat derivation (list #/? #/issym connect-map-sym)
+        (nullary-connective-connect-map)
+      #/ds-terp derivation #/fn delegate-after-progress
+      #/interpret-derivation-via-without-progress delegate derivation
+        self))
+    
+    (list interpret-formula interpret-derivation)))
+
+(struct-of-procedures
+  contra-unary-connective-rep
+  contra-unary-connective?
+  make-contra-unary-connective
+  
+  [semi-deductive-system contra-unary-connective-semi-deductive-system
+    semi-deductive-system?]
+  
+  ; (~A) formula
+  [wff-connect contra-unary-connective-wff-connect [a any/c] any/c]
+  
+  ; given A A'. A => A' |- A' => ~A
+  [connect-map contra-unary-connective-connect-map
+    [a1 any/c]
+    [a2 any/c]
+    [a1a2 any/c]
+    any/c])
+
+(struct-with-contracts
+  contra-unary-connective-formula-language-rep
+  contra-unary-connective-formula-language?
+  unmatchable-make-contra-unary-connective-formula-language
+  make-contra-unary-connective-formula-language
+  [connect-sym symbol?])
+
+(struct-with-contracts
+  contra-unary-connective-derivation-language-rep
+  contra-unary-connective-derivation-language?
+  unmatchable-make-contra-unary-connective-derivation-language
+  make-contra-unary-connective-derivation-language
+  [semi-deductive-system-lang semi-deductive-system-language?]
+  [connect-map-sym symbol?])
+
+(define/contract
+  (transparent-contra-unary-connective formula-lang derivation-lang)
+  (->
+    contra-unary-connective-formula-language?
+    contra-unary-connective-derivation-language?
+    contra-unary-connective?)
+  (dissect formula-lang
+    (make-contra-unary-connective-formula-language connect-sym)
+  #/dissect derivation-lang
+    (make-contra-unary-connective-derivation-language
+      semi-deductive-system-lang connect-map-sym)
+  #/make-contra-unary-connective
+    (fn
+      (transparent-semi-deductive-system semi-deductive-system-lang))
+    (fn a
+      (list connect-sym a))
+    (fn a1 a2 a1a2
+      (list connect-map-sym a1 a2 a1a2))))
+
+(define/contract
+  (contra-unary-connective-interpreter
+    formula-lang derivation-lang system)
+  (->
+    contra-unary-connective-formula-language?
+    contra-unary-connective-derivation-language?
+    contra-unary-connective?
+    (fix/c interpreter #/-> interpreter #/list/c
+      (-> any/c any/c)
+      (-> any/c any/c)))
+  (dissect formula-lang
+    (make-contra-unary-connective-formula-language connect-sym)
+  #/dissect derivation-lang
+    (make-contra-unary-connective-derivation-language
+      semi-deductive-system-lang connect-map-sym)
+  #/w- ds-terp
+    (semi-deductive-system-interpreter semi-deductive-system-lang
+      (contra-unary-connective-semi-deductive-system system))
+  #/loopfn self delegate
+    
+    (define (interpret-formula formula)
+      (mat formula (list (? #/issym connect-sym) a)
+        (contra-unary-connective-wff-connect (interpret-formula a))
+      #/interpret-formula-via-without-progress delegate formula self))
+    
+    (define (interpret-derivation derivation)
+      (mat derivation (list (? #/issym connect-map-sym) a1 a2 a1a2)
+        (contra-unary-connective-connect-map
+          (interpret-formula a1)
+          (interpret-formula a2)
+          (interpret-connective a1a2))
+      #/ds-terp derivation #/fn delegate-after-progress
+      #/interpret-derivation-via-without-progress delegate derivation
+        self))
+    
+    (list interpret-formula interpret-derivation)))
 
 (struct-of-procedures
   binary-connective-rep
   binary-connective?
   make-binary-connective
   
-  [deductive-system binary-connective-deductive-system
-    deductive-system?]
+  [semi-deductive-system binary-connective-semi-deductive-system
+    semi-deductive-system?]
   
-  ; given A B. (A * B) formula
+  ; (A * B) formula
   [wff-connect binary-connective-wff-connect
     [left any/c]
     [right any/c]
     any/c]
   
   ; given A A' B B'. A => A', B => B' |- (A * B) => (A' * B')
-  [connect-bimap binary-connective-connect-bimap
+  [connect-map binary-connective-connect-map
     [a1 any/c]
     [a2 any/c]
     [b1 any/c]
@@ -313,8 +535,8 @@
   binary-connective-derivation-language?
   unmatchable-make-binary-connective-derivation-language
   make-binary-connective-derivation-language
-  [deductive-system-lang deductive-system-language?]
-  [connect-bimap-sym symbol?])
+  [semi-deductive-system-lang semi-deductive-system-language?]
+  [connect-map-sym symbol?])
 
 (define/contract
   (transparent-binary-connective formula-lang derivation-lang)
@@ -326,13 +548,14 @@
     (make-binary-connective-formula-language connect-sym)
   #/dissect derivation-lang
     (make-binary-connective-derivation-language
-      deductive-system-lang connect-bimap-sym)
+      semi-deductive-system-lang connect-map-sym)
   #/make-binary-connective
-    (fn #/transparent-deductive-system deductive-system-lang)
+    (fn
+      (transparent-semi-deductive-system semi-deductive-system-lang))
     (fn a b
       (list connect-sym a b))
     (fn a1 a2 b1 b2 on-a on-left on-right
-      (list connect-bimap-sym a1 a2 b1 b2 a1a2 b1b2))))
+      (list connect-map-sym a1 a2 b1 b2 a1a2 b1b2))))
 
 (define/contract
   (binary-connective-interpreter formula-lang derivation-lang system)
@@ -347,10 +570,10 @@
     (make-binary-connective-formula-language connect-sym)
   #/dissect derivation-lang
     (make-binary-connective-derivation-language
-      deductive-system-lang connect-bimap-sym)
+      semi-deductive-system-lang connect-map-sym)
   #/w- ds-terp
-    (deductive-system-interpreter deductive-system-lang
-      (binary-connective-deductive-system system))
+    (semi-deductive-system-interpreter semi-deductive-system-lang
+      (binary-connective-semi-deductive-system system))
   #/loopfn self delegate
     
     (define (interpret-formula formula)
@@ -358,48 +581,102 @@
         (binary-connective-wff-connect
           (interpret-formula a)
           (interpret-formula b))
-      #/dissect (delegate self)
-        (list interpret-formula interpret-derivation)
-      #/interpret-formula formula))
+      #/interpret-formula-via-without-progress delegate formula self))
     
     (define (interpret-derivation derivation)
       (mat derivation
-        (list (? #/issym connect-bimap-sym) a1 a2 b1 b2 a1a2 b1b2)
-        (binary-connective-connect-bimap
+        (list (? #/issym connect-map-sym) a1 a2 b1 b2 a1a2 b1b2)
+        (binary-connective-connect-map
           (interpret-formula a1)
           (interpret-formula a2)
           (interpret-formula b1)
           (interpret-formula b2)
           (interpret-derivation a1a2)
           (interpret-derivation b1b2))
-      #/ds-terp derivation #/fn after-progress-delegate
-      #/dissect (delegate self)
-        (list interpret-formula interpret-derivation)
-      #/interpret-derivation derivation))
+      #/ds-terp derivation #/fn delegate-after-progress
+      #/interpret-derivation-via-without-progress delegate derivation
+        self))
     
     (list interpret-formula interpret-derivation)))
+
+
+; NOTE:
+;
+; In the following logics, we start to combine rules from multiple
+; logics that came before, and this can cause some duplication. When a
+; logic contains a `nullary-connective?` logic and a
+; `binary-connective?` logic, they each have a
+; `semi-deductive-system?`. When we have diamond dependencies like
+; this, we usually choose a design that reduces ambiguity by
+; specifying a particular unambiguous value for that dependency and
+; then expressing the other two dependencies as functions of it.
+;
+; For instance, a `linearly-distributive-logic?` has a method that
+; returns a `semi-deductive-system?`, and it has two methods that each
+; *takes* a `semi-deductive-system?` and returns a
+; `monoidal-connective?`.
+;
+; Sometimes we treat one of the dependencies as being more essential
+; than another, in which case only the less essential dependency is
+; expressed as a function. For instance, a `semi-classical-logic?` is
+; made up of a `semi-mll?` and a `duoidal-logic?` that share a
+; `semi-deductive-system?` and two `monoidal-connective?` logics, but
+; only the `duoidal-logic?` is expressed as a function of those
+; things. The `semi-mll?` is considered to be where those things come
+; from.
+;
+; When the functionality we define here has to access a dependency
+; that's expressed as a function this way, it'll always pass in the
+; indirect dependency it gets from the appropriate method of the
+; logic; it won't pass in a value from somewhere else. Likewise, the
+; interpreters we define here will attempt to delegate to the indirect
+; dependency *before* attempting to delegate to a more direct
+; dependency that depends on it.
+;
+; When the functionality we define here *constructs* a logic, it won't
+; always use the passed-in indirect dependency to construct the direct
+; dependency. Sometimes it'll just trust that the passed-in value is
+; the same as what it constructed for that indirect dependency.
+;
+; As long as all users use this kind of discipline to access these
+; dependencies, there shouldn't be any need for users to worry that
+; they're invoking a mismatched mix of subsystems when they compute
+; with a logic.
+
 
 (struct-of-procedures
   monoidal-connective-rep
   monoidal-connective?
   make-monoidal-connective
   
+  [semi-deductive-system semi-deductive-system?]
+  
   ; (1) formula
-  [wff-unit monoidal-connective-wff-unit any/c]
+  [one monoidal-connective-one
+    [semi-deductive-system semi-deductive-system?]
+    nullary-connective?]
   
   ; (A * B) binary
-  [times monoidal-connective-times binary-connective?]
+  [times monoidal-connective-times
+    [semi-deductive-system semi-deductive-system?]
+    binary-connective?]
   
-  ; given A B C. |- A * (B * C) <=> (A * B) * C
-  [assocr monoidal-connective-assocl [a any/c] [b any/c] [c any/c]
+  ; given A B C. A => A, B => B, C => C |- A * (B * C) <=> (A * B) * C
+  [assocr monoidal-connective-assocl
+    [a any/c]
+    [b any/c]
+    [c any/c]
+    [aa any/c]
+    [bb any/c]
+    [cc any/c]
     (list/c any/c any/c)]
   
-  ; given A. |- 1 * A <=> A
-  [uniteliml monoidal-connective-uniteliml [a any/c]
+  ; given A. A => A |- 1 * A <=> A
+  [uniteliml monoidal-connective-uniteliml [a any/c] [aa any/c]
     (list/c any/c any/c)]
   
-  ; given A. |- A * 1 <=> A
-  [unitelimr monoidal-connective-unitelimr [a any/c]
+  ; given A. A => A |- A * 1 <=> A
+  [unitelimr monoidal-connective-unitelimr [a any/c] [aa any/c]
     (list/c any/c any/c)])
 
 (struct-with-contracts
@@ -407,7 +684,7 @@
   monoidal-connective-formula-language?
   unmatchable-make-monoidal-connective-formula-language
   make-monoidal-connective-formula-language
-  [one-sym symbol?]
+  [one-lang nullary-connective-language?]
   [times-lang binary-connective-language?])
 
 (struct-with-contracts
@@ -415,7 +692,13 @@
   monoidal-connective-derivation-language?
   unmatchable-make-monoidal-connective-derivation-language
   make-monoidal-connective-derivation-language
-  [times-lang binary-connective-derivation-language?]
+  [semi-deductive-system-lang semi-deductive-system-language?]
+  [one-lang
+    (-> semi-deductive-system-language?
+      nullary-connective-derivation-language?)]
+  [times-lang
+    (-> semi-deductive-system-language?
+      binary-connective-derivation-language?)]
   [assocl-syms (list/c symbol? symbol?)]
   [uniteliml-syms (list/c symbol? symbol?)]
   [unitelimr-syms (list/c symbol? symbol?)])
@@ -428,23 +711,34 @@
     monoidal-connective?)
   (dissect formula-lang
     (make-monoidal-connective-formula-language
-      one-sym times-formula-lang)
+      one-formula-lang times-formula-lang)
   #/dissect derivation-lang
     (make-monoidal-connective-derivation-language
+      semi-deductive-system-lang
+      one-derivation-lang
       times-derivation-lang
       (list assocl-sym assocr-sym)
       (list uniteliml-sym unitintrol-sym)
       (list unitelimr-sym unitintror-sym))
   #/make-monoidal-connective
     (fn
+      (transparent-semi-deductive-system semi-deductive-system-lang))
+    (fn semi-deductive-system
+      (transparent-nullary-connective
+        one-formula-lang
+        (one-derivation-lang semi-deductive-system-lang)))
+    (fn semi-deductive-system
       (transparent-binary-connective
-        times-formula-lang times-derivation-lang))
-    (fn a b c
-      (list (list assocl-sym a b c) (list assocr-sym a b c)))
-    (fn a
-      (list (list uniteliml-sym a) (list unitintrol-sym a)))
-    (fn a
-      (list (list unitelimr-sym a) (list unitintror-sym a)))))
+        times-formula-lang
+        (times-derivation-lang semi-deductive-system-lang)))
+    (fn a b c aa bb cc
+      (list
+        (list assocl-sym a b c aa bb cc)
+        (list assocr-sym a b c aa bb cc)))
+    (fn a aa
+      (list (list uniteliml-sym a aa) (list unitintrol-sym a aa)))
+    (fn a aa
+      (list (list unitelimr-sym a aa) (list unitintror-sym a aa)))))
 
 (define/contract
   (monoidal-connective-interpreter
@@ -458,62 +752,91 @@
       (-> any/c any/c)))
   (dissect formula-lang
     (make-monoidal-connective-formula-language
-      one-sym times-formula-lang)
+      one-formula-lang times-formula-lang)
   #/dissect derivation-lang
     (make-monoidal-connective-derivation-language
+      semi-deductive-system-lang
+      one-derivation-lang
       times-derivation-lang
       (list assocl-sym assocr-sym)
       (list uniteliml-sym unitintrol-sym)
       (list unitelimr-sym unitintror-sym))
+  #/w- one-terp
+    (nullary-connective-interpreter
+      one-formula-lang
+      (one-derivation-lang semi-deductive-system-lang)
+      (monoidal-connective-one system))
   #/w- times-terp
     (binary-connective-interpreter
-      times-formula-lang times-derivation-lang
+      times-formula-lang
+      (times-derivation-lang semi-deductive-system-lang)
       (monoidal-connective-times system))
   #/loopfn self delegate
     
     (define (interpret-formula formula)
-      (mat formula (list (? #/issym one-sym))
-        (binary-connective-wff-one)
+      (interpret-formula-via-without-progress one-terp formula
+      #/fn delegate-after-progress
       #/interpret-formula-via-without-progress times-terp formula
       #/fn delegate-after-progress
-      #/interpret-formula-via-without-progress delegate self))
+      #/interpret-formula-via-without-progress delegate formula self))
     
     (define (interpret-derivation derivation)
-      (mat derivation (list (? #/issym assocl-sym) a b c)
+      (mat derivation (list (? #/issym assocl-sym) a b c aa bb cc)
         (dissect
           (monoidal-connective-assocl
             (interpret-formula a)
             (interpret-formula b)
-            (interpret-formula c))
+            (interpret-formula c)
+            (interpret-derivation aa)
+            (interpret-derivation bb)
+            (interpret-derivation cc))
           (list assocl assocr)
           assocl)
-      #/mat derivation (list (? #/issym assocr-sym) a b c)
+      #/mat derivation (list (? #/issym assocr-sym) a b c aa bb cc)
         (dissect
           (monoidal-connective-assocl
             (interpret-formula a)
             (interpret-formula b)
-            (interpret-formula c))
+            (interpret-formula c)
+            (interpret-derivation aa)
+            (interpret-derivation bb)
+            (interpret-derivation cc))
           (list assocl assocr)
           assocr)
-      #/mat derivation (list (? #/issym uniteliml-sym) a)
-        (dissect (monoidal-connective-assocl (interpret-formula a))
+      #/mat derivation (list (? #/issym uniteliml-sym) a aa)
+        (dissect
+          (monoidal-connective-uniteliml
+            (interpret-formula a)
+            (interpret-derivation aa))
           (list uniteliml unitintrol)
           uniteliml)
-      #/mat derivation (list (? #/issym unitintrol-sym) a)
-        (dissect (monoidal-connective-assocl (interpret-formula a))
+      #/mat derivation (list (? #/issym unitintrol-sym) a aa)
+        (dissect
+          (monoidal-connective-uniteliml
+            (interpret-formula a)
+            (interpret-derivation aa))
           (list uniteliml unitintrol)
           unitintrol)
-      #/mat derivation (list (? #/issym unitelimr-sym) a)
-        (dissect (monoidal-connective-assocr (interpret-formula a))
+      #/mat derivation (list (? #/issym unitelimr-sym) a aa)
+        (dissect
+          (monoidal-connective-unitelimr
+            (interpret-formula a)
+            (interpret-derivation aa))
           (list unitelimr unitintror)
           unitelimr)
-      #/mat derivation (list (? #/issym unitintrol-sym) a)
-        (dissect (monoidal-connective-assocr (interpret-formula a))
+      #/mat derivation (list (? #/issym unitintror-sym) a aa)
+        (dissect
+          (monoidal-connective-unitelimr
+            (interpret-formula a)
+            (interpret-derivation aa))
           (list unitelimr unitintror)
           unitintror)
+      #/interpret-derivation-via-without-progress one-terp formula
+      #/fn delegate-after-progress
       #/interpret-derivation-via-without-progress times-terp formula
       #/fn delegate-after-progress
-      #/interpret-derivation-via-without-progress delegate self))
+      #/interpret-derivation-via-without-progress delegate formula
+        self))
     
     (list interpret-formula interpret-derivation)))
 
@@ -554,8 +877,12 @@
   ; (1) (A * B) monoidal
   [times symmetric-monoidal-connective-times monoidal-connective?]
   
-  ; given A B. |- A * B => B * A
-  [commute symmetric-monoidal-connective-commute [a any/c] [b any/c]
+  ; given A B. A => A, B => B |- A * B => B * A
+  [commute symmetric-monoidal-connective-commute
+    [a any/c]
+    [b any/c]
+    [aa any/c]
+    [bb any/c]
     any/c])
 
 (struct-with-contracts
@@ -580,8 +907,8 @@
     (fn
       (transparent-monoidal-connective
         formula-lang times-derivation-lang))
-    (fn a b
-      (list commute-sym a b))))
+    (fn a b aa bb
+      (list commute-sym a b aa bb))))
 
 (define/contract
   (symmetric-monoidal-connective-interpreter
@@ -605,16 +932,20 @@
     (define (interpret-formula formula)
       (interpret-formula-via-without-progress times-terp formula
       #/fn delegate-after-progress
-      #/interpret-formula-via-without-progress delegate self))
+      #/interpret-formula-via-without-progress delegate formula self))
     
     (define (interpret-derivation derivation)
-      (mat derivation (list (? #/issym commute-sym) a b)
+      (mat derivation (list (? #/issym commute-sym) a b aa bb)
         (symmetric-monoidal-connective-commute
           (interpret-formula a)
-          (interpret-formula b))
-      #/interpret-derivation-via-without-progress times-terp formula
+          (interpret-formula b)
+          (interpret-derivation aa)
+          (interpret-derivation bb))
+      #/interpret-derivation-via-without-progress
+        times-terp derivation
       #/fn delegate-after-progress
-      #/interpret-derivation-via-without-progress delegate self))
+      #/interpret-derivation-via-without-progress delegate derivation
+        self))
     
     (list interpret-formula interpret-derivation)))
 
@@ -633,59 +964,51 @@
 ; same.
 
 
-; NOTE:
+; A logic analogous to a linearly distributive semicategory.
+; Multiplicative linear logic (MLL) is analogous to this, except that
+; it has identity derivations, a negation connective, atoms, and
+; commutativity of `times` and `par`.
 ;
-; In the following logics, we start to combine rules from multiple
-; logics that came before, and this can cause some duplication. When a
-; logic contains two `monoidal-connective?` logics, they each have a
-; `deductive-system?`. When we have diamond dependencies like this, we
-; choose a design that reduces ambiguity by specifying a particular
-; unambiguous value for that dependency, and then expressing the other
-; two dependencies as functions of it.
-;
-; For instance, a `linearly-distributive-logic?` has a method that
-; returns a `deductive-system?`, and it has two methods that each
-; *takes* a `deductive-system?` and returns a `monoidal-connective?`.
-;
-; The functionality we define here will always pass in the same
-; `deductive-system?` we get from that disambiguating method, and it
-; will attempt to interpret language terms in terms of the
-; deductive system interpreter *before* delegating to the monoidal
-; connective interpreters.
-;
-; As long as all users use this kind of discipline to access these
-; dependencies, there shouldn't be any need for users to worry that
-; they're using a bizarre mix of deductive systems in their
-; computation.
-
-
-; A logic analogous to a linearly distributive category.
-; Multiplicative linear logic (MLL) is analogour to this, except that
-; it has negation, atoms, and commutativity of `times` and `par`.
-; We add commutativity to this later and call that variation
-; `intermediary-mll?`.
+; Once we add commutativity (but not the other things) to this, we
+; call that variation `semi-mll?`.
 ;
 (struct-of-procedures
   linearly-distributive-logic-rep
   linearly-distributive-logic?
   make-linearly-distributive-logic
   
-  [deductive-system deductive-system?]
+  [semi-deductive-system semi-deductive-system?]
   
   ; (one) (A times B) monoidal
   [times linearly-distributive-logic-times
-    [deductive-system deductive-system?]
+    [semi-deductive-system semi-deductive-system?]
     monoidal-connective?]
   ; (bot) (A par B) monoidal
   [par linearly-distributive-logic-par
-    [deductive-system deductive-system?]
+    [semi-deductive-system semi-deductive-system?]
     monoidal-connective?]
   
-  ; given A B C. |- A times (B par C) => (A times B) par C
-  [switchl linearly-distributive-logic-switch any/c]
+  ; given A B C.
+  ; A => A, B => B, C => C |- A times (B par C) => (A times B) par C
+  [switchl linearly-distributive-logic-switch
+    [a any/c]
+    [b any/c]
+    [c any/c]
+    [aa any/c]
+    [bb any/c]
+    [cc any/c]
+    any/c]
   
-  ; given A B C. |- (A par B) times C => A par (B times C)
-  [switchr linearly-distributive-logic-switch any/c]
+  ; given A B C.
+  ; A => A, B => B, C => C |- (A par B) times C => A par (B times C)
+  [switchr linearly-distributive-logic-switch
+    [a any/c]
+    [b any/c]
+    [c any/c]
+    [aa any/c]
+    [bb any/c]
+    [cc any/c]
+    any/c]
   
   ; The switch rules above work for binary `times` and binary `par`,
   ; but they just as easily apply to any instance of `times` or `par`
@@ -715,110 +1038,133 @@
 ; for the `linearly-distributive-logic?` interface.
 
 
-; Multiplicative Linear Logic (MLL) without atoms or a notation for
-; negation. Without guaranteed atoms or guaranteed negation, it's not
-; really MLL so much as it's the proof-theoretical analogue of a
-; symmetric linearly distributive category, but we're referring to it
-; as "intermediary MLL" to convey that it's MLL as long as the atoms
-; cooperate.
+; Multiplicative Linear Logic (MLL) without identity derivations,
+; atoms, or a negation connective. Without these things, it's not
+; quite MLL so much as it's the proof-theoretical analogue of a
+; symmetric linearly distributive semicategory, but we're referring to
+; it as "semi MLL" to convey that it's MLL as long as the formulas
+; cooperate (by having identity derivations and De Morgan duals) and
+; the atoms cooperate (by having introduction and cut rules). We pick
+; the term "semi" because it's analogous to how a semicategory is like
+; a category as long as every object cooperates by having a neutral
+; morphism.
 ;
 ; If any extensions provide new atoms or new connectives and want to
 ; continue to treat this as MLL, they should make sure to supply their
-; own De Morgan duals (keeping up the ability to treat negation
-; notation as a syntactic sugar rather than part of the system
+; own De Morgan duals (keeping up the ability to treat a negation
+; connective as a syntactic sugar rather than part of the system
 ; proper), and they sould make sure these other inference rules remain
 ; possible to compute with:
 ;
+;   ; identity derivation
+;   given A. | A => A
+;
 ;   ; introduction (aka axiom)
-;   given A. |- one => ~A par A
+;   given A. A => A |- one => ~A par A
 ;
 ;   ; cut
-;   given A. |- ~A times A => bot
+;   given A. A => A |- ~A times A => bot
 ;
-; As long as negation, axiom, and cut are available like this, we can
-; keep up the illusion that this is just an extensible version of MLL.
+; As long as identity derivations, negation, axiom, and cut are
+; available like this, we can keep up the illusion that this is just
+; an extensible version of MLL.
 ;
-; (If the cut rule is not available for immediate computation, a cut
-; elimination procedure for MLL should mean that it's still possible
+; (If the cut rule is not available for immediate computation, the cut
+; elimination metatheory for MLL should mean that it's still possible
 ; to add cut to any derivation as long as we're able to apply a
 ; transformation to that derivation's source code. That is, it won't
 ; always be possible to tack cut onto any given derivation, but if the
 ; derivation comes from one of our "transparent" instances of these
 ; interfaces, we should be able to use a transparent cut rule and then
 ; apply a cut-supporting interpreter to compile that derivation to a
-; non-cut-supporting deductive system.)
+; non-cut-supporting logic.)
+;
+; Once we add all those missing pieces, we call the variation `mll?`,
+; and it corresponds to star-autonomous categories. The missing
+; identity derivations make this a semicategory. (TODO: Is there some
+; variation of the term "star-autonomous" that would account for the
+; other missing things?)
 ;
 ; TODO:
 ;
-; Implement extensible interpreters that compute De Morgan duals of
-; formulas, that compute nonlocal introduction and cut rules when
-; given local ones, and that compute an asymmetrical derivation (one
-; that avoids the cut rule) from a symmetrical one. If we provide
-; these things, it will be easier for clients to extend these logics
-; while preserving the idea that they're MLL.
-;
-; On second thought, maybe we should actually provide an "MLL"
-; interface where the axiom and cut rules are explicit rules
-; rather than just derivable. If we write that interpreter that acts
-; on a proof-with-cut to make a proof-without-cut, that's the kind of
-; system it would have to be an interpreter *for* anyway.
+; Implement extensible interpreters that compute nonlocal identity
+; derivations when given local ones, that compute nonlocal De Morgan
+; duals of formulas when given local ones, and that compute nonlocal
+; introduction and cut rules when given local ones. Perhaps also
+; implement something that performs cut elimination on a derivation.
+; If we provide these things, it will be easier for clients to extend
+; the `semi-mll?` logic while preserving the idea that it's MLL.
 ;
 (struct-of-procedures
-  intermediary-mll-rep
-  intermediary-mll?
-  make-intermediary-mll
+  semi-mll-rep
+  semi-mll?
+  make-semi-mll
   
-  [deductive-system deductive-system?]
+  [semi-deductive-system semi-deductive-system?]
   
   ; (one) (A times B) symmetric-monoidal
-  [times intermediary-mll-times
-    [deductive-system deductive-system?]
+  [times semi-mll-times
+    [semi-deductive-system semi-deductive-system?]
     symmetric-monoidal-connective?]
   ; (bot) (A par B) symmetric-monoidal
-  [par intermediary-mll-par
-    [deductive-system deductive-system?]
+  [par semi-mll-par
+    [semi-deductive-system semi-deductive-system?]
     symmetric-monoidal-connective?]
   
   ; (one) (A times B) (bot) (A par B) linearly-distributive
   ; i.e.
-  ; given A B C. |- A and (B or C) => (A and B) or C
-  [switch intermediary-mll-switch
-    [deductive-system deductive-system?]
+  ; given A B C.
+  ; A => A, B => B, C => C |- A and (B or C) => (A and B) or C
+  [switch semi-mll-switch
+    [semi-deductive-system semi-deductive-system?]
     [and monoidal-connective?]
     [or monoidal-connective?]
     linearly-distributive-logic?])
 
 ; TODO: Implement languages, transparent instances, and interpreters
-; for the `intermediary-mll?` interface.
+; for the `semi-mll?` interface.
 
 
 ; What we're calling a "duoidal logic" is a logic that corresponds
-; with a duoidal category. The distinguishing feature of a duoidal
+; with a duoidal semicategory. The distinguishing feature of a duoidal
 ; category is that its two monoidal structures have an exchange law,
 ; and when logics are presented in the calculus of structures, the
 ; same kind of law is known as a medial law.
 ;
 ; A logic in the calculus of structures often has several medial laws.
 ; In that case, we'll say it has duoidal logic structure in multiple
-; ways, and the interface we model here will have multiple methods
-; returning `duoidal-logic?` values.
+; ways, represented by having multiple methods with `duoidal-logic?`
+; return values.
 ;
 (struct-of-procedures
   duoidal-logic-rep
   duoidal-logic?
   make-duoidal-logic
   
-  [deductive-system deductive-system?]
+  [semi-deductive-system semi-deductive-system?]
   
   ; (0) (A + B) monoidal
-  [times duoidal-logic-plus [deductive-system deductive-system?]
+  [times duoidal-logic-plus
+    [semi-deductive-system semi-deductive-system?]
     monoidal-connective?]
   ; (top) (A & B) monoidal
-  [par duoidal-logic-with [deductive-system deductive-system?]
+  [par duoidal-logic-with
+    [semi-deductive-system semi-deductive-system?]
     monoidal-connective?]
   
-  ; given A B C D. |- (A & B) + (C & D) => (A + C) & (B + D)
-  [medial duoidal-logic-medial any/c]
+  ; given A B C D.
+  ; A => A, B => B, C => C, D => D
+  ; |- (A & B) + (C & D) => (A + C) & (B + D)
+  [medial duoidal-logic-medial
+    [a any/c]
+    [b any/c]
+    [c any/c]
+    [d any/c]
+    [aa any/c]
+    [bb any/c]
+    [cc any/c]
+    [dd any/c]
+    any/c]
   
   ; The medial rule above works for binary `+` and binary `&`, but it
   ; can also apply to any other arities of those connectives. Let's
@@ -873,9 +1219,13 @@
   ;
   ; These rules also need only empty derivations:
   ;
-  ;   given A. |- A => A
-  ;   given A B. |- (A & B) => (A) & (B)
-  ;   given A B C. |- (A & B & C) => (A) & (B) & (C)
+  ;   given A. A => A |- A => A
+  ;
+  ;   given A B. A => A, B => B |- (A & B) => (A) & (B)
+  ;
+  ;   given A B C.
+  ;   A => A, B => B, C => C |- (A & B & C) => (A) & (B) & (C)
+  ;
   ;   ...
   ;
   ; M by N for (M <= 1):
@@ -892,6 +1242,7 @@
   ; What we need to show is:
   ;
   ;   given A00 A10 ... A01 A11 ... .
+  ;   A00 => A00, A10 => A10, ..., A01 => A01, A11 => A11, ...
   ;   |- (A00 & A01) + (A10 & A11) + ...
   ;   => (A00 + A10 + ...) & (A01 + A11 + ...)
   ;
@@ -919,6 +1270,7 @@
   ; need to show is:
   ;
   ;   given A00 A01 ... A10 A11 ... ... .
+  ;   A00 => A00, A10 => A10, ..., A01 => A01, A11 => A11, ..., ...
   ;   |- (A00 & A01 & ...) + (A10 & A11 & ...) + ...
   ;   => (A00 + A10 + ...) & (A01 + A11 + ...) & ...
   ;
@@ -964,52 +1316,55 @@
 
 ; This system nearly corresponds to KS, a presentation of classical
 ; logic ("K") in the calculus of structures ("S"). The difference is
-; that this system doesn't have atoms or negation. That makes it
-; related to classical logic the same way our "intermediary MLL" is
-; related to MLL, so we call this "intermediary classical logic."
+; that this system doesn't have identity derivations, atoms, or
+; negation. That makes it related to classical logic the same way our
+; "semi MLL" is related to MLL, so we call this
+; "semi classical logic."
 ;
-; Intermediary classical logic is just like intermediary MLL, but it
-; introduces one medial rule that lets `or` and `and` distribute in
-; the opposite way they distribute in MLL.
+; Semi classical logic is just like semi MLL, but it introduces one
+; medial rule that lets `par` and `times` (now called `or` and `and`)
+; distribute in the opposite way they distribute in MLL.
 ;
 ; Not all calculus of structures systems use this particular medial
 ; rule. For instance, system LLS (linear logic (LL) in the calculus
 ; of structures (S)) has medial rules acting on three different pairs
 ; of the four monoidal connectives in that logic, but since none of
-; those pairs is the two multiplicative connectives (much less those
-; connectives in the same direction this system uses), it doesn't
-; cause the multiplicative connectives to form a classical logic on
-; their own.
+; those pairs relates the two multiplicative connectives (much less
+; in the same direction this system does), it doesn't cause the
+; multiplicative sublanguage to form a classical logic.
 ;
-; System LLS (and the symmetric system SLLS which is no more potent)
-; is discussed here:
+; System LLS (and the symmetric system SLLS which reduces to it using
+; a cut elimination proof) is discussed here:
 ;
 ;   A Local System for Linear Logic
 ;   Lutz Straßburger 2002
 ;   https://www.lix.polytechnique.fr/~lutz/papers/lls.pdf
 ;
-; System KS (and the symmetric system SKS which is no more potent) is
-; discussed here:
+; System KS (and the symmetric system SKS which redues to it using a
+; cut elimination proof) is discussed here:
 ;
 ;   Deep Inference and Symmetry in Classical Proofs
 ;   Kai Brünnler 2004
 ;   http://cs.bath.ac.uk/ag/kai/phd.pdf
 ;
 (struct-of-procedures
-  intermediary-classical-logic-rep
-  intermediary-classical-logic?
-  make-intermediary-classical-logic
+  semi-classical-logic-rep
+  semi-classical-logic?
+  make-semi-classical-logic
   
-  ; (true) (A and B) (false) (A or B) intermediary-mll
+  ; (true) (A and B) (false) (A or B) semi-mll
   ; i.e.
-  ; given A B C. |- A and (B or C) => (A and B) or C
-  [mll intermediary-classical-logic-mll intermediary-mll?]
+  ; given A B C.
+  ; A => A, B => B, C => C |- A and (B or C) => (A and B) or C
+  [mll semi-classical-logic-mll semi-mll?]
   
   ; (false) (A or B) (true) (A and B) duoidal
   ; i.e.
-  ; given A B C D. |- (A and B) or (C and D) => (A or C) and (B or D)
-  [medial intermediary-classical-logic-medial
-    [deductive-system deductive-system?]
+  ; given A B C D.
+  ; A => A, B => B, C => C, D => D
+  ; |- (A and B) or (C and D) => (A or C) and (B or D)
+  [medial semi-classical-logic-medial
+    [semi-deductive-system semi-deductive-system?]
     [or monoidal-connective?]
     [and monoidal-connective?]
     duoidal-logic?]
@@ -1017,19 +1372,21 @@
   )
 
 ; TODO: Implement languages, transparent instances, and interpreters
-; for the `intermediary-classical-logic?` interface.
+; for the `semi-classical-logic?` interface.
 
 
 ; The full logic of MLL as presented in the calculus of structures,
-; including a notation for negation and rules for axioms.
+; including identity derivations, a negation connective, and rules for
+; atoms.
 ;
-; Note that this also requires a way to compute the dual of any
-; derivation so that the negation notation doesn't obstruct our access
-; to deep inference. Even in instances of `intermediary-mll?` where
-; duals of derivations are admissible (as they should be if every
-; extension obeys the conditions that preserve the illusion that it's
-; full MLL), the dual of a derivation might not be *computable*
-; starting from only the original derivation value.
+; Note that instances of this interface must allow deep inference over
+; the negation connective, which means some derivations will be
+; applied in reverse. This might be something that not every
+; `semi-mll?` instance can be extended to do. In fact, the `semi-mll?`
+; instance this interface exposes must be one that expresses `bot` and
+; `A par B` in terms of the negation connective as `~1` and
+; `~(~A * ~B)`. To convert another `semi-mll?` instance to this style,
+; it may be necessary to work with explicit De Morgan laws.
 ;
 ; The categories analogous to this logic are the star-autonomous
 ; categories.
@@ -1039,23 +1396,33 @@
   mll?
   make-mll
   
+  ; (A => B) deductive-system
+  ; i.e.
+  ; given A B C. A => B, B => C |- A => B
+  ; given A. |- A => A
+  [deductive-system deductive-system?]
+  
   ; (1) (A * B) symmetric-monoidal
-  [times mll-times symmetric-monoidal-connective?]
+  [times mll-times
+    [semi-deductive-system semi-deductive-system?]
+    symmetric-monoidal-connective?]
+  
+  ; (~A) contra-unary
+  [not mll-not
+    [semi-deductive-system semi-deductive-system?]
+    contra-unary-connective?]
   
   ; (1) (A * B) (~1) (~(~A * ~B)) intermediary-mll
   [intermediation mll-intermediation
-    [deductive-system deductive-system?]
+    [semi-deductive-system semi-deductive-system?]
     [times symmetric-monoidal-connective?]
     [par symmetric-monoidal-connective?]
     intermediary-mll?]
   
-  ; forall A. ~A formula
-  [wff-not classical-logic-not [a any/c] any/c]
-  
-  ; given A A'. A => A', |- ~A' => ~A
-  [not-bimap mll-not-bimap [a1 any/c] [a2 any/c] [a1a2 any/c] any/c]
-  
-  ; forall A. |- ~~A <=> A
+  ; TODO: See if this should be factored out into its own logic called
+  ; `involutive-unary-connective?`.
+  ;
+  ; given A. |- ~~A <=> A
   [double-negation-elimination mll-double-negation-elimination
     [a any/c]
     (list/c any/c any/c)]
@@ -1065,35 +1432,35 @@
   ; is `A -o B`, then the formula `~(A * ~B)` is equivalent to
   ; `A -o B`, and `A * ~B` is equivalent to `~(A -o B)`).
   ;
-  ; forall A. |- 1 => ~(A * ~A)
-  ; forall A. |- (A * ~A) => ~1
-  [intro mll-intro (list/c any/c any/c)])
+  ; given A. |- 1 => ~(A * ~A)
+  ; given A. |- (A * ~A) => ~1
+  [intro mll-intro [a any/c] (list/c any/c any/c)])
 
 
 ; This is an expression of full classical logic in the SKS style.
 ; (That's the symmetric version (S) of the presentation of classical
 ; logic (K) in the calculus of structures.) This version offers
 ; introduction, cut, (co-)contraction, and (co-)weakening rules on all
-; atoms, and it offers a negation notation.
+; atoms, and it offers a negation connective.
 ;
 ; NOTE:
 ;
 ; In a way, this "enforces" some proof-theoretic properties that the
-; `intermediary-classical-logic?` allows to be upheld in a good-faith
-; way. In particular, it enforces that intro, cut, (co-)contraction,
-; and (co-)weakening rules can be computed for any given formula, and
-; it enforces that a dual can be computed for any given derivation.
+; `semi-classical-logic?` interface allows to be upheld in a
+; good-faith way. In particular, it enforces that identity derivations
+; and intro, cut, (co-)contraction, and (co-)weakening rules can be
+; computed for any given formula.
 ;
-; An `intermediary-classical-logic?` value may have already offered
-; those features external to the `intermediary-classical-logic?`
-; interface, and we expect `intermediary-classical-logic?` to be a
-; sufficient amount of functionality for systems we build here in
-; Lathe Morphisms. We're building these proof-theoretic interfaces
-; just so we can use them to express the laws of our
-; category-theoretic interfaces, and when we do that, we can simply
-; have our categories provide their own bespoke intro, cut,
-; (co-)contraction, and (co-)weakening rules for their equality and
-; apartness relations.
+; A `semi-classical-logic?` value may have already offered those
+; features external to the `semi-classical-logic?` interface, and we
+; expect `semi-classical-logic?` to be a sufficient amount of
+; functionality for systems we build here in Lathe Morphisms (just as
+; `semi-deductive-system?` has been enough for most of these logics).
+; We're building these proof-theoretic interfaces just so we can use
+; them to express the laws of our category-theoretic interfaces, and
+; when we do that, we can simply have our categories provide their own
+; bespoke intro, cut, (co-)contraction, and (co-)weakening rules for
+; their equality and apartness relations.
 ;
 ; We've built this `classical-logic?` interface basically just to show
 ; we can. We could potentially go even further and make other other
@@ -1104,29 +1471,41 @@
 ; the possibility that one derivation value might be preferred over
 ; another.
 ;
-; If we ever model proof systems where we care about operations on
-; derivation values, we will probably find success in treting those
-; derivations as the morphisms of a category and taking advantage of
-; the category-theoretic infrastructure we already intend to develop.
+; If we ever model derivation systems where we care about operations
+; on derivation values, we will probably find success in treating
+; those derivations as the morphisms of a category and taking
+; advantage category-theoretic tools. Since we already intend to
+; develop category theory interfaces out of this, we'll be able to
+; build the new derivation systems on that foundation.
 ;
 (struct-of-procedures
   classical-logic-rep
   classical-logic?
   make-classical-logic
   
-  ; (true) (A and B) (false) (A or B) intermediary-classical-logic
-  [intermediation classical-logic-intermediation
-    intermediary-classical-logic?]
+  ; (true) (A and B) (false) (A or B) mll
+  ; i.e.
+  ; given A B C. |- A and (B or C) => (A and B) or C
+  ; given A. |- A => A
+  ; given A. |- 1 => ~(A * ~A)
+  ; given A. |- (A * ~A) => ~1
+  [mll classical-logic-mll mll?]
   
-  [mll classical-logic-mll [intermediation intermediary-mll?] mll?]
+  ; (true) (A and B) (false) (A or B) semi-classical-logic
+  ; i.e.
+  ; given A B C D. |- (A and B) or (C and D) => (A or C) and (B or D)
+  [semi classical-logic-semi [semi-mll semi-mll?]
+    semi-classical-logic?]
   
-  ; forall A. |- false => A
-  ; forall A. |- A => true
-  [weakening classical-logic-weakening (list/c any/c any/c)]
+  ; given A. |- false => A
+  ; given A. |- A => true
+  [weakening classical-logic-weakening [a any/c]
+    (list/c any/c any/c)]
   
-  ; forall A. |- (A and A) => A
-  ; forall A. |- A => (A or A)
-  [contraction classical-logic-contraction (list/c any/c any/c)])
+  ; given A. |- (A and A) => A
+  ; given A. |- A => (A or A)
+  [contraction classical-logic-contraction [a any/c]
+    (list/c any/c any/c)])
 
 
 
