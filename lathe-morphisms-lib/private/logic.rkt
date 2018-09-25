@@ -268,7 +268,7 @@
   unmatchable-make-mediary-deductive-system
   make-mediary-deductive-system
   
-  ; given A B C. A => B, B => C |- A => B
+  ; A, B, C formula; A => B, B => C |- A => B
   [chain mediary-deductive-system-chain
     [a any/c]
     [b any/c]
@@ -301,6 +301,21 @@
     #/delegate self expr)))
 
 
+; We use the term "deductive formula" to refer to a formula (`A`) that
+; comes bundled with a way to derive it from itself (`A => A`). If all
+; the formulas that are used with a mediary deductive system are
+; deductive formulas, then the derivations `A => A` act as the
+; identity element for the system's derivation composition operation.
+;
+(struct-with-contracts
+  deductive-formula-rep
+  deductive-formula?
+  unmatchable-deductive-formula
+  make-deductive-formula
+  [a any/c]
+  [aa any/c])
+
+
 ; Unlike a `mediary-deductive-system?`, a `deductive-system?` has an
 ; identity deduction for any given formula.
 ;
@@ -312,10 +327,10 @@
   
   ; (A => B) mediary-deductive-system
   ; i.e.
-  ; given A B C. A => B, B => C |- A => B
+  ; A, B, C formula; A => B, B => C |- A => B
   [mediary deductive-system-mediary mediary-deductive-system?]
   
-  ; given A. |- A => A
+  ; A formula; |- A => A
   [id deductive-system-id [a any/c] any/c])
 
 (struct-with-contracts
@@ -445,7 +460,7 @@
   ; (~A) formula
   [wff-connect contra-unary-connective-wff-connect [a any/c] any/c]
   
-  ; given A A'. A => A' |- A' => ~A
+  ; A, A' formula; A => A' |- A' => ~A
   [connect-map contra-unary-connective-connect-map
     [a1 any/c]
     [a2 any/c]
@@ -539,7 +554,7 @@
     [right any/c]
     any/c]
   
-  ; given A A' B B'. A => A', B => B' |- (A * B) => (A' * B')
+  ; A, A', B, B' formula; A => A', B => B' |- (A * B) => (A' * B')
   [connect-map binary-connective-connect-map
     [a1 any/c]
     [a2 any/c]
@@ -689,22 +704,19 @@
     [mediary-deductive-system mediary-deductive-system?]
     binary-connective?]
   
-  ; given A B C. A => A, B => B, C => C |- A * (B * C) <=> (A * B) * C
+  ; A, B, C deductive-formula; |- A * (B * C) <=> (A * B) * C
   [assocr monoidal-connective-assocl
-    [a any/c]
-    [b any/c]
-    [c any/c]
-    [aa any/c]
-    [bb any/c]
-    [cc any/c]
+    [a deductive-formula?]
+    [b deductive-formula?]
+    [c deductive-formula?]
     (list/c any/c any/c)]
   
-  ; given A. A => A |- 1 * A <=> A
-  [uniteliml monoidal-connective-uniteliml [a any/c] [aa any/c]
+  ; A deductive-formula; |- 1 * A <=> A
+  [uniteliml monoidal-connective-uniteliml [a deductive-formula?]
     (list/c any/c any/c)]
   
-  ; given A. A => A |- A * 1 <=> A
-  [unitelimr monoidal-connective-unitelimr [a any/c] [aa any/c]
+  ; A deductive-formula; |- A * 1 <=> A
+  [unitelimr monoidal-connective-unitelimr [a deductive-formula?]
     (list/c any/c any/c)])
 
 (struct-with-contracts
@@ -760,14 +772,12 @@
       (transparent-binary-connective
         times-formula-lang
         (times-derivation-lang mediary-deductive-system-lang)))
-    (fn a b c aa bb cc
-      (list
-        (list assocl-sym a b c aa bb cc)
-        (list assocr-sym a b c aa bb cc)))
-    (fn a aa
-      (list (list uniteliml-sym a aa) (list unitintrol-sym a aa)))
-    (fn a aa
-      (list (list unitelimr-sym a aa) (list unitintror-sym a aa)))))
+    (fn a b c
+      (list (list assocl-sym a b c) (list assocr-sym a b c)))
+    (fn a
+      (list (list uniteliml-sym a) (list unitintrol-sym a)))
+    (fn a
+      (list (list unitelimr-sym a) (list unitintror-sym a)))))
 
 (define/contract
   (monoidal-connective-interpreter
@@ -802,6 +812,14 @@
       (monoidal-connective-times system))
   #/loopfn self delegate
     
+    (define (interpret-deductive-formula a)
+      (expect a (deductive-formula a aa)
+        ; TODO: Improve this error reporting.
+        (error "Expected a deductive formula")
+      #/deductive-formula
+        (interpret-formula a)
+        (interpret-derivation aa)))
+    
     (define (interpret-formula formula)
       (interpret-formula-via-without-progress one-terp formula
       #/fn delegate-after-progress
@@ -810,54 +828,44 @@
       #/interpret-formula-via-without-progress delegate formula self))
     
     (define (interpret-derivation derivation)
-      (mat derivation (list (? #/issym assocl-sym) a b c aa bb cc)
+      (mat derivation (list (? #/issym assocl-sym) a b c)
         (dissect
           (monoidal-connective-assocl
-            (interpret-formula a)
-            (interpret-formula b)
-            (interpret-formula c)
-            (interpret-derivation aa)
-            (interpret-derivation bb)
-            (interpret-derivation cc))
+            (interpret-deductive-formula a)
+            (interpret-deductive-formula b)
+            (interpret-deductive-formula c))
           (list assocl assocr)
           assocl)
-      #/mat derivation (list (? #/issym assocr-sym) a b c aa bb cc)
+      #/mat derivation (list (? #/issym assocr-sym) a b c)
         (dissect
           (monoidal-connective-assocl
-            (interpret-formula a)
-            (interpret-formula b)
-            (interpret-formula c)
-            (interpret-derivation aa)
-            (interpret-derivation bb)
-            (interpret-derivation cc))
+            (interpret-deductive-formula a)
+            (interpret-deductive-formula b)
+            (interpret-deductive-formula c))
           (list assocl assocr)
           assocr)
-      #/mat derivation (list (? #/issym uniteliml-sym) a aa)
+      #/mat derivation (list (? #/issym uniteliml-sym) a)
         (dissect
           (monoidal-connective-uniteliml
-            (interpret-formula a)
-            (interpret-derivation aa))
+            (interpret-deductive-formula a))
           (list uniteliml unitintrol)
           uniteliml)
-      #/mat derivation (list (? #/issym unitintrol-sym) a aa)
+      #/mat derivation (list (? #/issym unitintrol-sym) a)
         (dissect
           (monoidal-connective-uniteliml
-            (interpret-formula a)
-            (interpret-derivation aa))
+            (interpret-deductive-formula a))
           (list uniteliml unitintrol)
           unitintrol)
-      #/mat derivation (list (? #/issym unitelimr-sym) a aa)
+      #/mat derivation (list (? #/issym unitelimr-sym) a)
         (dissect
           (monoidal-connective-unitelimr
-            (interpret-formula a)
-            (interpret-derivation aa))
+            (interpret-deductive-formula a))
           (list unitelimr unitintror)
           unitelimr)
-      #/mat derivation (list (? #/issym unitintror-sym) a aa)
+      #/mat derivation (list (? #/issym unitintror-sym) a)
         (dissect
           (monoidal-connective-unitelimr
-            (interpret-formula a)
-            (interpret-derivation aa))
+            (interpret-deductive-formula a))
           (list unitelimr unitintror)
           unitintror)
       #/interpret-derivation-via-without-progress one-terp formula
@@ -906,12 +914,10 @@
   ; (1) (A * B) monoidal
   [times symmetric-monoidal-connective-times monoidal-connective?]
   
-  ; given A B. A => A, B => B |- A * B => B * A
+  ; A, B deductive-formula; |- A * B => B * A
   [commute symmetric-monoidal-connective-commute
-    [a any/c]
-    [b any/c]
-    [aa any/c]
-    [bb any/c]
+    [a deductive-formula?]
+    [b deductive-formula?]
     any/c])
 
 (struct-with-contracts
@@ -936,8 +942,8 @@
     (fn
       (transparent-monoidal-connective
         formula-lang times-derivation-lang))
-    (fn a b aa bb
-      (list commute-sym a b aa bb))))
+    (fn a b
+      (list commute-sym a b))))
 
 (define/contract
   (symmetric-monoidal-connective-interpreter
@@ -958,18 +964,24 @@
       (symmetric-monoidal-connective-times system))
   #/loopfn self delegate
     
+    (define (interpret-deductive-formula a)
+      (expect a (deductive-formula a aa)
+        ; TODO: Improve this error reporting.
+        (error "Expected a deductive formula")
+      #/deductive-formula
+        (interpret-formula a)
+        (interpret-derivation aa)))
+    
     (define (interpret-formula formula)
       (interpret-formula-via-without-progress times-terp formula
       #/fn delegate-after-progress
       #/interpret-formula-via-without-progress delegate formula self))
     
     (define (interpret-derivation derivation)
-      (mat derivation (list (? #/issym commute-sym) a b aa bb)
+      (mat derivation (list (? #/issym commute-sym) a b)
         (symmetric-monoidal-connective-commute
-          (interpret-formula a)
-          (interpret-formula b)
-          (interpret-derivation aa)
-          (interpret-derivation bb))
+          (interpret-deductive-formula a)
+          (interpret-deductive-formula b))
       #/interpret-derivation-via-without-progress
         times-terp derivation
       #/fn delegate-after-progress
@@ -1017,26 +1029,20 @@
     [mediary-deductive-system mediary-deductive-system?]
     monoidal-connective?]
   
-  ; given A B C.
-  ; A => A, B => B, C => C |- A times (B par C) => (A times B) par C
+  ; A, B, C deductive-formula;
+  ; |- A times (B par C) => (A times B) par C
   [switchl linearly-distributive-logic-switch
-    [a any/c]
-    [b any/c]
-    [c any/c]
-    [aa any/c]
-    [bb any/c]
-    [cc any/c]
+    [a deductive-formula?]
+    [b deductive-formula?]
+    [c deductive-formula?]
     any/c]
   
-  ; given A B C.
-  ; A => A, B => B, C => C |- (A par B) times C => A par (B times C)
+  ; A, B, C deductive-formula;
+  ; |- (A par B) times C => A par (B times C)
   [switchr linearly-distributive-logic-switch
-    [a any/c]
-    [b any/c]
-    [c any/c]
-    [aa any/c]
-    [bb any/c]
-    [cc any/c]
+    [a deductive-formula?]
+    [b deductive-formula?]
+    [c deductive-formula?]
     any/c]
   
   ; The switch rules above work for binary `times` and binary `par`,
@@ -1085,13 +1091,13 @@
 ; possible to compute with:
 ;
 ;   ; identity derivation
-;   given A. | A => A
+;   A formula; | A => A
 ;
 ;   ; introduction (aka axiom)
-;   given A. A => A |- one => ~A par A
+;   A formula; |- one => ~A par A
 ;
 ;   ; cut
-;   given A. A => A |- ~A times A => bot
+;   A formula; |- ~A times A => bot
 ;
 ; As long as identity derivations, negation, axiom, and cut are
 ; available like this, we can keep up the illusion that this is just
@@ -1141,8 +1147,7 @@
   
   ; (one) (A times B) (bot) (A par B) linearly-distributive
   ; i.e.
-  ; given A B C.
-  ; A => A, B => B, C => C |- A and (B or C) => (A and B) or C
+  ; A, B, C deductive-formula; |- A and (B or C) => (A and B) or C
   [switch mediary-mll-switch
     [mediary-deductive-system mediary-deductive-system?]
     [and monoidal-connective?]
@@ -1151,6 +1156,26 @@
 
 ; TODO: Implement languages, transparent instances, and interpreters
 ; for the `mediary-mll?` interface.
+
+
+; We use the term "MLLish formula" to refer to a bundle of two
+; deductive formulas (`A` and its negation `~A`) that comes bundled
+; with derivations for introduction (aka axiom, `one => (~A par A)`)
+; and cut (`(A times ~A) => bot`).
+;
+; If all the formulas that are used with a `mediary-mll?` logic are
+; MLLish formulas, then these bundled features act as the missing
+; identity derivations, negation connective, and introduction and cut
+; rules to make it full MLL.
+;
+(struct-with-contracts
+  mllish-formula-rep
+  mllish-formula?
+  unmatchable-mllish-formula
+  make-mllish-formula
+  [a deductive-formula?]
+  [not-a deductive-formula?]
+  [intro (list/c any/c any/c)])
 
 
 ; What we're calling a "duoidal logic" is a logic that corresponds
@@ -1180,18 +1205,13 @@
     [mediary-deductive-system mediary-deductive-system?]
     monoidal-connective?]
   
-  ; given A B C D.
-  ; A => A, B => B, C => C, D => D
+  ; A, B, C, D deductive-formula;
   ; |- (A & B) + (C & D) => (A + C) & (B + D)
   [medial duoidal-logic-medial
-    [a any/c]
-    [b any/c]
-    [c any/c]
-    [d any/c]
-    [aa any/c]
-    [bb any/c]
-    [cc any/c]
-    [dd any/c]
+    [a deductive-formula?]
+    [b deductive-formula?]
+    [c deductive-formula?]
+    [d deductive-formula?]
     any/c]
   
   ; The medial rule above works for binary `+` and binary `&`, but it
@@ -1247,13 +1267,9 @@
   ;
   ; These rules also need only empty derivations:
   ;
-  ;   given A. A => A |- A => A
-  ;
-  ;   given A B. A => A, B => B |- (A & B) => (A) & (B)
-  ;
-  ;   given A B C.
-  ;   A => A, B => B, C => C |- (A & B & C) => (A) & (B) & (C)
-  ;
+  ;   A deductive-formula; |- A => A
+  ;   A, B deductive-formula; |- (A & B) => (A) & (B)
+  ;   A, B, C deductive-formula; |- (A & B & C) => (A) & (B) & (C)
   ;   ...
   ;
   ; M by N for (M <= 1):
@@ -1269,8 +1285,7 @@
   ;
   ; What we need to show is:
   ;
-  ;   given A00 A10 ... A01 A11 ... .
-  ;   A00 => A00, A10 => A10, ..., A01 => A01, A11 => A11, ...
+  ;   A00, A10, ..., A01, A11 ... deductive-formula;
   ;   |- (A00 & A01) + (A10 & A11) + ...
   ;   => (A00 + A10 + ...) & (A01 + A11 + ...)
   ;
@@ -1297,8 +1312,7 @@
   ; the M by 2 case is a special case of what we'll do here. What we
   ; need to show is:
   ;
-  ;   given A00 A01 ... A10 A11 ... ... .
-  ;   A00 => A00, A10 => A10, ..., A01 => A01, A11 => A11, ..., ...
+  ;   A00, A10, ..., A01, A11 ..., ... deductive-formula;
   ;   |- (A00 & A01 & ...) + (A10 & A11 & ...) + ...
   ;   => (A00 + A10 + ...) & (A01 + A11 + ...) & ...
   ;
@@ -1382,14 +1396,12 @@
   
   ; (true) (A and B) (false) (A or B) mediary-mll
   ; i.e.
-  ; given A B C.
-  ; A => A, B => B, C => C |- A and (B or C) => (A and B) or C
+  ; A, B, C deductive-formula; |- A and (B or C) => (A and B) or C
   [mll mediary-classical-logic-mll mediary-mll?]
   
   ; (false) (A or B) (true) (A and B) duoidal
   ; i.e.
-  ; given A B C D.
-  ; A => A, B => B, C => C, D => D
+  ; A, B, C, D deductive-formula;
   ; |- (A and B) or (C and D) => (A or C) and (B or D)
   [medial mediary-classical-logic-medial
     [mediary-deductive-system mediary-deductive-system?]
@@ -1401,6 +1413,42 @@
 
 ; TODO: Implement languages, transparent instances, and interpreters
 ; for the `mediary-classical-logic?` interface.
+
+
+; We use the term "classical formula" to refer to a bundle of an
+; MLLish formula (bundling `A` and its negation `~A`) that comes also
+; bundled with derivations for:
+;
+;   ; Weakening
+;   false => A
+;
+;   ; Co-weakening
+;   A => true
+;
+;   ; Contraction
+;   (A and A) => A
+;
+;   ; Co-contraction
+;   A => (A or A)
+;
+; And likewise for `~A`.
+;
+; If all the formulas that are used with a `mediary-classical-logic?`
+; are classical formulas, then these bundled features act as the
+; missing identity derivations, negation connective, and introduction,
+; cut, (co-)weakening, and (co-)contraction rules to make it full
+; classical logic.
+;
+(struct-with-contracts
+  classical-formula-rep
+  classical-formula?
+  unmatchable-classical-formula
+  make-classical-formula
+  [a classical-formula?]
+  [a-weakening (list/c any/c any/c)]
+  [a-contraction (list/c any/c any/c)]
+  [not-a-weakening (list/c any/c any/c)]
+  [not-a-contraction (list/c any/c any/c)])
 
 
 ; The full logic of MLL as presented in the calculus of structures,
@@ -1427,8 +1475,8 @@
   
   ; (A => B) deductive-system
   ; i.e.
-  ; given A B C. A => B, B => C |- A => B
-  ; given A. |- A => A
+  ; A, B, C formula; A => B, B => C |- A => B
+  ; A formula; |- A => A
   [deductive-system deductive-system?]
   
   ; (1) (A * B) symmetric-monoidal
@@ -1451,7 +1499,7 @@
   ; TODO: See if this should be factored out into its own logic called
   ; `involutive-unary-connective?`.
   ;
-  ; given A. |- ~~A <=> A
+  ; A formula; |- ~~A <=> A
   [double-negation-elimination mll-double-negation-elimination
     [a any/c]
     (list/c any/c any/c)]
@@ -1461,8 +1509,8 @@
   ; is `A -o B`, then the formula `~(A * ~B)` is equivalent to
   ; `A -o B`, and `A * ~B` is equivalent to `~(A -o B)`).
   ;
-  ; given A. |- 1 => ~(A * ~A)
-  ; given A. |- (A * ~A) => ~1
+  ; A formula; |- 1 => ~(A * ~A)
+  ; A formula; |- (A * ~A) => ~1
   [intro mll-intro [a any/c] (list/c any/c any/c)])
 
 
@@ -1514,25 +1562,26 @@
   
   ; (true) (A and B) (false) (A or B) mll
   ; i.e.
-  ; given A B C. |- A and (B or C) => (A and B) or C
-  ; given A. |- A => A
-  ; given A. |- 1 => ~(A * ~A)
-  ; given A. |- (A * ~A) => ~1
+  ; A, B, C formula; |- A and (B or C) => (A and B) or C
+  ; A formula; |- A => A
+  ; A formula; |- 1 => ~(A * ~A)
+  ; A formula; |- (A * ~A) => ~1
   [mll classical-logic-mll mll?]
   
   ; (true) (A and B) (false) (A or B) mediary-classical-logic
   ; i.e.
-  ; given A B C D. |- (A and B) or (C and D) => (A or C) and (B or D)
+  ; A, B, C, D formula;
+  ; |- (A and B) or (C and D) => (A or C) and (B or D)
   [mediary classical-logic-mediary [mediary-mll mediary-mll?]
     mediary-classical-logic?]
   
-  ; given A. |- false => A
-  ; given A. |- A => true
+  ; A formula; |- false => A
+  ; A formula; |- A => true
   [weakening classical-logic-weakening [a any/c]
     (list/c any/c any/c)]
   
-  ; given A. |- (A and A) => A
-  ; given A. |- A => (A or A)
+  ; A formula; |- (A and A) => A
+  ; A formula; |- A => (A or A)
   [contraction classical-logic-contraction [a any/c]
     (list/c any/c any/c)])
 
