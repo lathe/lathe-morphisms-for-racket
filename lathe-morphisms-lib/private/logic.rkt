@@ -206,7 +206,7 @@
       faux-predicate?
       faux-unmatchable-constructor
       faux-constructor
-      [field result/c]
+      [field (-> arg/c ... result/c)]
       ...)
     
     (define/contract (field-method self arg ...)
