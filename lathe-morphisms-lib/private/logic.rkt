@@ -145,6 +145,58 @@
 
 ; ===== Miscellaneous definitions that haven't been sorted yet =======
 
+; We define a rather gradual series of logics. The ones at nonzero
+; indentation levels depend on at least one logic from the previous
+; level. The `classical-logic?` interface depends on everything else.
+; The `mediary-classical-logic?` interface (which we plan to make the
+; most use of) depends on everything except `deductive-system?`,
+; `contra-unary-connective?`, `mll?`, and `classical-logic?`.
+;
+; The way we use the term "mediary" is discussed at the definition of
+; `mediary-deductive-system?`.
+;
+;   mediary-deductive-system?
+;     deductive-system?
+;     nullary-connective?
+;     contra-unary-connective?
+;     binary-connective?
+;       monoidal-connective? (depends on binary and nullary)
+;         symmetric-monoidal-connective?
+;         linearly-distributive-logic?
+;           mediary-mll? (depends on symmetric and linearly distributive)
+;         duoidal-logic?
+;             mediary-classical-logic? (depends on mediary mll)
+;             mll? (depends on mediary mll)
+;               classical-logic? (depends on mediary classical and mll)
+
+; TODO: Implement category theory interfaces. Perhaps we should
+; approach them like this:
+;
+;     mediary-equational-theory?
+;       equational-theory?
+;       binary-function?
+;         semicategory? (or mediary-category?)
+;           category?
+;
+; The `semicategory?` interface will revolve around an equation (the
+; associativity of morphism composition), but it'll also have to
+; express that equation with at least one function (morphism
+; composition itself). We might have to decide whether to represent
+; source and target maps as functions, just to allow compositions that
+; don't make sense (since they won't be equal to anything that does
+; make sense), or to have some kind of "X is in the set A" or
+; "X is of type A" relation. If we have source and target maps, we may
+; need to go back and change this when weak categories are involved.
+;
+; There are alternatives. We could do something like the first-order
+; logic of dependent sorts (FOLDS) where there is no equality
+; relation, just relations that say things like whether something is
+; isomorphic to the composite of two other things. That kind of
+; multiary relation is also what we'd get if we took an opetopic
+; approach to weak higher categories, and that is something I have in
+; mind, so maybe we should cut to the chase.
+
+
 (define/contract (issym sym)
   (-> symbol? #/-> any/c boolean?)
   (fn v #/eq? sym v))
