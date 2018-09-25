@@ -220,15 +220,15 @@
   (interpret-formula-via-without-progress
     delegate formula delegate-delegate)
   (dissect (delegate delegate-delegate)
-    (list interpret-formula interpret-deduction)
+    (list interpret-formula interpret-derivation)
   #/interpret-formula formula))
 
 (define
-  (interpret-deduction-via-without-progress
-    delegate deduction delegate-delegate)
+  (interpret-derivation-via-without-progress
+    delegate derivation delegate-delegate)
   (dissect (delegate delegate-delegate)
-    (list interpret-formula interpret-deduction)
-  #/interpret-deduction deduction))
+    (list interpret-formula interpret-derivation)
+  #/interpret-derivation derivation))
 
 
 (struct-of-procedures
@@ -309,23 +309,23 @@
   [connect-sym symbol?])
 
 (struct-with-contracts
-  binary-connective-deduction-language-rep
-  binary-connective-deduction-language?
-  unmatchable-make-binary-connective-deduction-language
-  make-binary-connective-deduction-language
+  binary-connective-derivation-language-rep
+  binary-connective-derivation-language?
+  unmatchable-make-binary-connective-derivation-language
+  make-binary-connective-derivation-language
   [deductive-system-lang deductive-system-language?]
   [connect-bimap-sym symbol?])
 
 (define/contract
-  (transparent-binary-connective formula-lang deduction-lang)
+  (transparent-binary-connective formula-lang derivation-lang)
   (->
     binary-connective-formula-language?
-    binary-connective-deduction-language?
+    binary-connective-derivation-language?
     binary-connective?)
   (dissect formula-lang
     (make-binary-connective-formula-language connect-sym)
-  #/dissect deduction-lang
-    (make-binary-connective-deduction-language
+  #/dissect derivation-lang
+    (make-binary-connective-derivation-language
       deductive-system-lang connect-bimap-sym)
   #/make-binary-connective
     (fn #/transparent-deductive-system deductive-system-lang)
@@ -335,18 +335,18 @@
       (list connect-bimap-sym a1 a2 b1 b2 a1a2 b1b2))))
 
 (define/contract
-  (binary-connective-interpreter formula-lang deduction-lang system)
+  (binary-connective-interpreter formula-lang derivation-lang system)
   (->
     binary-connective-formula-language?
-    binary-connective-deduction-language?
+    binary-connective-derivation-language?
     binary-connective?
     (fix/c interpreter #/-> interpreter #/list/c
       (-> any/c any/c)
       (-> any/c any/c)))
   (dissect formula-lang
     (make-binary-connective-formula-language connect-sym)
-  #/dissect deduction-lang
-    (make-binary-connective-deduction-language
+  #/dissect derivation-lang
+    (make-binary-connective-derivation-language
       deductive-system-lang connect-bimap-sym)
   #/w- ds-terp
     (deductive-system-interpreter deductive-system-lang
@@ -359,25 +359,25 @@
           (interpret-formula a)
           (interpret-formula b))
       #/dissect (delegate self)
-        (list interpret-formula interpret-deduction)
+        (list interpret-formula interpret-derivation)
       #/interpret-formula formula))
     
-    (define (interpret-deduction deduction)
-      (mat deduction
+    (define (interpret-derivation derivation)
+      (mat derivation
         (list (? #/issym connect-bimap-sym) a1 a2 b1 b2 a1a2 b1b2)
         (binary-connective-connect-bimap
           (interpret-formula a1)
           (interpret-formula a2)
           (interpret-formula b1)
           (interpret-formula b2)
-          (interpret-deduction a1a2)
-          (interpret-deduction b1b2))
-      #/ds-terp deduction #/fn after-progress-delegate
+          (interpret-derivation a1a2)
+          (interpret-derivation b1b2))
+      #/ds-terp derivation #/fn after-progress-delegate
       #/dissect (delegate self)
-        (list interpret-formula interpret-deduction)
-      #/interpret-deduction deduction))
+        (list interpret-formula interpret-derivation)
+      #/interpret-derivation derivation))
     
-    (list interpret-formula interpret-deduction)))
+    (list interpret-formula interpret-derivation)))
 
 (struct-of-procedures
   monoidal-connective-rep
@@ -411,34 +411,34 @@
   [times-lang binary-connective-language?])
 
 (struct-with-contracts
-  monoidal-connective-deduction-language-rep
-  monoidal-connective-deduction-language?
-  unmatchable-make-monoidal-connective-deduction-language
-  make-monoidal-connective-deduction-language
-  [times-lang binary-connective-deduction-language?]
+  monoidal-connective-derivation-language-rep
+  monoidal-connective-derivation-language?
+  unmatchable-make-monoidal-connective-derivation-language
+  make-monoidal-connective-derivation-language
+  [times-lang binary-connective-derivation-language?]
   [assocl-syms (list/c symbol? symbol?)]
   [uniteliml-syms (list/c symbol? symbol?)]
   [unitelimr-syms (list/c symbol? symbol?)])
 
 (define/contract
-  (transparent-monoidal-connective formula-lang deduction-lang)
+  (transparent-monoidal-connective formula-lang derivation-lang)
   (->
     monoidal-connective-formula-language?
-    monoidal-connective-deduction-language?
+    monoidal-connective-derivation-language?
     monoidal-connective?)
   (dissect formula-lang
     (make-monoidal-connective-formula-language
       one-sym times-formula-lang)
-  #/dissect deduction-lang
-    (make-monoidal-connective-deduction-language
-      times-deduction-lang
+  #/dissect derivation-lang
+    (make-monoidal-connective-derivation-language
+      times-derivation-lang
       (list assocl-sym assocr-sym)
       (list uniteliml-sym unitintrol-sym)
       (list unitelimr-sym unitintror-sym))
   #/make-monoidal-connective
     (fn
       (transparent-binary-connective
-        times-formula-lang times-deduction-lang))
+        times-formula-lang times-derivation-lang))
     (fn a b c
       (list (list assocl-sym a b c) (list assocr-sym a b c)))
     (fn a
@@ -447,10 +447,11 @@
       (list (list unitelimr-sym a) (list unitintror-sym a)))))
 
 (define/contract
-  (monoidal-connective-interpreter formula-lang deduction-lang system)
+  (monoidal-connective-interpreter
+    formula-lang derivation-lang system)
   (->
     monoidal-connective-formula-language?
-    monoidal-connective-deduction-language?
+    monoidal-connective-derivation-language?
     monoidal-connective?
     (fix/c interpreter #/-> interpreter #/list/c
       (-> any/c any/c)
@@ -458,15 +459,15 @@
   (dissect formula-lang
     (make-monoidal-connective-formula-language
       one-sym times-formula-lang)
-  #/dissect deduction-lang
-    (make-monoidal-connective-deduction-language
-      times-deduction-lang
+  #/dissect derivation-lang
+    (make-monoidal-connective-derivation-language
+      times-derivation-lang
       (list assocl-sym assocr-sym)
       (list uniteliml-sym unitintrol-sym)
       (list unitelimr-sym unitintror-sym))
   #/w- times-terp
     (binary-connective-interpreter
-      times-formula-lang times-deduction-lang
+      times-formula-lang times-derivation-lang
       (monoidal-connective-times system))
   #/loopfn self delegate
     
@@ -477,8 +478,8 @@
       #/fn delegate-after-progress
       #/interpret-formula-via-without-progress delegate self))
     
-    (define (interpret-deduction deduction)
-      (mat deduction (list (? #/issym assocl-sym) a b c)
+    (define (interpret-derivation derivation)
+      (mat derivation (list (? #/issym assocl-sym) a b c)
         (dissect
           (monoidal-connective-assocl
             (interpret-formula a)
@@ -486,7 +487,7 @@
             (interpret-formula c))
           (list assocl assocr)
           assocl)
-      #/mat deduction (list (? #/issym assocr-sym) a b c)
+      #/mat derivation (list (? #/issym assocr-sym) a b c)
         (dissect
           (monoidal-connective-assocl
             (interpret-formula a)
@@ -494,27 +495,27 @@
             (interpret-formula c))
           (list assocl assocr)
           assocr)
-      #/mat deduction (list (? #/issym uniteliml-sym) a)
+      #/mat derivation (list (? #/issym uniteliml-sym) a)
         (dissect (monoidal-connective-assocl (interpret-formula a))
           (list uniteliml unitintrol)
           uniteliml)
-      #/mat deduction (list (? #/issym unitintrol-sym) a)
+      #/mat derivation (list (? #/issym unitintrol-sym) a)
         (dissect (monoidal-connective-assocl (interpret-formula a))
           (list uniteliml unitintrol)
           unitintrol)
-      #/mat deduction (list (? #/issym unitelimr-sym) a)
+      #/mat derivation (list (? #/issym unitelimr-sym) a)
         (dissect (monoidal-connective-assocr (interpret-formula a))
           (list unitelimr unitintror)
           unitelimr)
-      #/mat deduction (list (? #/issym unitintrol-sym) a)
+      #/mat derivation (list (? #/issym unitintrol-sym) a)
         (dissect (monoidal-connective-assocr (interpret-formula a))
           (list unitelimr unitintror)
           unitintror)
-      #/interpret-deduction-via-without-progress times-terp formula
+      #/interpret-derivation-via-without-progress times-terp formula
       #/fn delegate-after-progress
-      #/interpret-deduction-via-without-progress delegate self))
+      #/interpret-derivation-via-without-progress delegate self))
     
-    (list interpret-formula interpret-deduction)))
+    (list interpret-formula interpret-derivation)))
 
 ; TODO: Use the above interpreter infrastructure to make a
 ; "formula interpreter" that takes a formula like
@@ -530,15 +531,15 @@
 ;   (* (_ A) (* (_ B) (* (_ C) (one))))
 ;
 ; The values A, B, and C should be allowed to be any formulas for the
-; monoidal connective for which we're building this deduction.
+; monoidal connective for which we're building this derivation.
 ;
 ; Of course, we'll probably want another interpreter that constructs
-; the inverses of these deductions, and then we can put them together
-; to make a single interpreter that composes two of these deductions.
+; the inverses of these derivations, and then we can put them together
+; to make a single interpreter that composes two of these derivations.
 ;
-; What if they don't match? Well, then we might want a deduction
-; interpreter that detects errors occurring inside the deduction...
-; and we might want a deduction format that contains source locations
+; What if they don't match? Well, then we might want a derivation
+; interpreter that detects errors occurring inside the derivation...
+; and we might want a derivation format that contains source locations
 ; so that we can offer helpful error messages. With the open recursion
 ; approach we're taking, it seems like it should be straightforward
 ; to build these extensions on top of what we've built here, rather
@@ -558,46 +559,46 @@
     any/c])
 
 (struct-with-contracts
-  symmetric-monoidal-connective-deduction-language-rep
-  symmetric-monoidal-connective-deduction-language?
-  unmatchable-make-symmetric-monoidal-connective-deduction-language
-  make-symmetric-monoidal-connective-deduction-language
-  [times-lang monoidal-connective-deduction-language?]
+  symmetric-monoidal-connective-derivation-language-rep
+  symmetric-monoidal-connective-derivation-language?
+  unmatchable-make-symmetric-monoidal-connective-derivation-language
+  make-symmetric-monoidal-connective-derivation-language
+  [times-lang monoidal-connective-derivation-language?]
   [commute-sym symbol?])
 
 (define/contract
   (transparent-symmetric-monoidal-connective
-    formula-lang deduction-lang)
+    formula-lang derivation-lang)
   (->
     monoidal-connective-formula-language?
-    symmetric-monoidal-connective-deduction-language?
+    symmetric-monoidal-connective-derivation-language?
     symmetric-monoidal-connective?)
-  (dissect deduction-lang
-    (make-symmetric-monoidal-connective-deduction-language
-      times-deduction-lang commute-sym)
+  (dissect derivation-lang
+    (make-symmetric-monoidal-connective-derivation-language
+      times-derivation-lang commute-sym)
   #/make-symmetric-monoidal-connective
     (fn
       (transparent-monoidal-connective
-        formula-lang times-deduction-lang))
+        formula-lang times-derivation-lang))
     (fn a b
       (list commute-sym a b))))
 
 (define/contract
   (symmetric-monoidal-connective-interpreter
-    formula-lang deduction-lang system)
+    formula-lang derivation-lang system)
   (->
     monoidal-connective-formula-language?
-    symmetric-monoidal-connective-deduction-language?
+    symmetric-monoidal-connective-derivation-language?
     symmetric-monoidal-connective?
     (fix/c interpreter #/-> interpreter #/list/c
       (-> any/c any/c)
       (-> any/c any/c)))
-  (dissect deduction-lang
-    (make-symmetric-monoidal-connective-deduction-language
-      times-deduction-lang commute-sym)
+  (dissect derivation-lang
+    (make-symmetric-monoidal-connective-derivation-language
+      times-derivation-lang commute-sym)
   #/w- times-terp
     (monoidal-connective-interpreter
-      formula-lang times-deduction-lang
+      formula-lang times-derivation-lang
       (symmetric-monoidal-connective-times system))
   #/loopfn self delegate
     
@@ -606,16 +607,16 @@
       #/fn delegate-after-progress
       #/interpret-formula-via-without-progress delegate self))
     
-    (define (interpret-deduction deduction)
-      (mat deduction (list (? #/issym commute-sym) a b)
+    (define (interpret-derivation derivation)
+      (mat derivation (list (? #/issym commute-sym) a b)
         (symmetric-monoidal-connective-commute
           (interpret-formula a)
           (interpret-formula b))
-      #/interpret-deduction-via-without-progress times-terp formula
+      #/interpret-derivation-via-without-progress times-terp formula
       #/fn delegate-after-progress
-      #/interpret-deduction-via-without-progress delegate self))
+      #/interpret-derivation-via-without-progress delegate self))
     
-    (list interpret-formula interpret-deduction)))
+    (list interpret-formula interpret-derivation)))
 
 ; TODO: Once we have a convenient interpreter-based system for
 ; deducing complex associations of monoidal connectives, develop a
@@ -725,8 +726,8 @@
 ; continue to treat this as MLL, they should make sure to supply their
 ; own De Morgan duals (keeping up the ability to treat negation
 ; notation as a syntactic sugar rather than part of the system
-; proper), and they sould make sure these other deduction rules
-; remain possible to compute with:
+; proper), and they sould make sure these other inference rules remain
+; possible to compute with:
 ;
 ;   ; introduction (aka axiom)
 ;   given A. |- one => ~A par A
@@ -739,13 +740,13 @@
 ;
 ; (If the cut rule is not available for immediate computation, a cut
 ; elimination procedure for MLL should mean that it's still possible
-; to add cut to any deduction as long as we're able to apply a
-; transformation to that deduction's source code. That is, it won't
-; always be possible to tack cut onto any given deduction, but if the
-; deduction comes from one of our "transparent" instances of these
+; to add cut to any derivation as long as we're able to apply a
+; transformation to that derivation's source code. That is, it won't
+; always be possible to tack cut onto any given derivation, but if the
+; derivation comes from one of our "transparent" instances of these
 ; interfaces, we should be able to use a transparent cut rule and then
-; apply a cut-supporting interpreter to compile that deduction to a
-; non-cut-supporting deduction system.)
+; apply a cut-supporting interpreter to compile that derivation to a
+; non-cut-supporting deductive system.)
 ;
 ; TODO:
 ;
@@ -838,7 +839,7 @@
   ;
   ; 0 by 1:
   ;
-  ; The rule `|- 0 => 0` needs only an empty deduction.
+  ; The rule `|- 0 => 0` needs only an empty derivation.
   ;
   ; 0 by 2:
   ;
@@ -863,14 +864,14 @@
   ;
   ; 1 by 0:
   ;
-  ; This is the dual of the 0 by 1 case. All our deduction rules are
+  ; This is the dual of the 0 by 1 case. All our inference rules are
   ; dualizable if we also dualize the formulas so that `0`, `+`,
   ; `bot`, and `&` are respectively replaced with `bot`, `&`, `0`, and
   ; `+`, so that's all we need to do here.
   ;
   ; 1 by N for (1 <= N):
   ;
-  ; These rules also need only empty deductions:
+  ; These rules also need only empty derivations:
   ;
   ;   given A. |- A => A
   ;   given A B. |- (A & B) => (A) & (B)
@@ -1023,12 +1024,12 @@
 ; including a notation for negation and rules for axioms.
 ;
 ; Note that this also requires a way to compute the dual of any
-; deduction so that the negation notation doesn't obstruct our access
+; derivation so that the negation notation doesn't obstruct our access
 ; to deep inference. Even in instances of `intermediary-mll?` where
-; duals of deductions are admissible (as they should be if every
+; duals of derivations are admissible (as they should be if every
 ; extension obeys the conditions that preserve the illusion that it's
-; full MLL), the dual of a deduction might not be *computable*
-; starting from only the original deduction value.
+; full MLL), the dual of a derivation might not be *computable*
+; starting from only the original derivation value.
 ;
 ; The categories analogous to this logic are the star-autonomous
 ; categories.
@@ -1081,7 +1082,7 @@
 ; `intermediary-classical-logic?` allows to be upheld in a good-faith
 ; way. In particular, it enforces that intro, cut, (co-)contraction,
 ; and (co-)weakening rules can be computed for any given formula, and
-; it enforces that a dual can be computed for any given deduction.
+; it enforces that a dual can be computed for any given derivation.
 ;
 ; An `intermediary-classical-logic?` value may have already offered
 ; those features external to the `intermediary-classical-logic?`
@@ -1090,22 +1091,22 @@
 ; Lathe Morphisms. We're building these proof-theoretic interfaces
 ; just so we can use them to express the laws of our
 ; category-theoretic interfaces, and when we do that, we can simply
-; have our categories provide their own bespoe intro, cut,
+; have our categories provide their own bespoke intro, cut,
 ; (co-)contraction, and (co-)weakening rules for their equality and
 ; apartness relations.
 ;
 ; We've built this `classical-logic?` interface basically just to show
 ; we can. We could potentially go even further and make other other
 ; proof-theoretic properties available in a constructive way, like
-; providing the ability to compute from any deduction to a cut-free
-; deduction. We don't do this; the sweet spot we've chosen is to offer
-; a full set of inference rules on atoms while mostly ignoring the
-; possibility that one deduction value might be preferred over
+; providing the ability to compute from any derivation to a cut-free
+; derivation. We don't do this; the sweet spot we've chosen is to
+; offer a full set of inference rules on atoms while mostly ignoring
+; the possibility that one derivation value might be preferred over
 ; another.
 ;
 ; If we ever model proof systems where we care about operations on
-; deduction values, we will probably find success in treting those
-; deductions as the morphisms of a category and taking advantage of
+; derivation values, we will probably find success in treting those
+; derivations as the morphisms of a category and taking advantage of
 ; the category-theoretic infrastructure we already intend to develop.
 ;
 (struct-of-procedures
