@@ -34,21 +34,21 @@ I'm thinking it would treat rule 6 as something not all atoms have. In the case 
 
 Hmm, we might also be able to localize rule 7. How about this breakdown:
 
-Mediary (a system consisting of one rule): Given all the source cells, get at least one collection of a filler cell, a proof that it's universal and well-behaved, and a proof that the target cell is well-behaved if the source cells are well-behaved.
+**Mediary** (a system consisting of one rule): Given all the source cells, get at least one collection of a filler cell, a proof that it's universal and well-behaved, and a proof that the target cell is well-behaved if the source cells are well-behaved.
 
-Atomic (a definition): A cell A is well-behaved if, given A as a target cell, given all but one source cell, and given proofs that the given source cells are universal, we get at least one collection of a filler cell, a proof that it's universal, and a proof that its inferred source cell is universal if and only if A is universal. (Do we also need a proof that the inferred source cell is well-behaved?)
+**Atomic** (a definition): A cell A is well-behaved if, given A as a target cell, given all but one source cell, and given proofs that the given source cells are universal, we get at least one collection of a filler cell, a proof that it's universal, and a proof that its inferred source cell is universal if and only if A is universal. (Do we also need a proof that the inferred source cell is well-behaved?)
 
 Hmm, suppose in these rules, "cell" really means "maximal set of mutually isomorphic cells." Then compositions are unique (which might be a way to approach Simpson's conjecture?) and we can define that a cell is "universal" if it's "equal to the composition of its source cells." Then we have:
 
-Mediary (a system consisting of one rule): Given all the source cells, get a filler cell (called their composition witness), a proof that it's well-behaved, and a proof that its target cell (called their composition) is well-behaved if the source cells are well-behaved.
+**Mediary** (a system consisting of one rule): Given all the source cells, get a filler cell (called their composition witness), a proof that it's well-behaved, and a proof that its target cell (called their composition) is well-behaved if the source cells are well-behaved.
 
-Atomic (a definition): A cell A is well-behaved if, given A as a target cell and given a composition witnesses in all but one source cell, we get a composition witness as a filler and a proof that its inferred source cell is a composition witness if and only if A is a composition witness. (Do we also need a proof that the inferred source cell is well-behaved?)
+**Atomic** (a definition): A cell A is well-behaved if, given A as a target cell and given a composition witnesses in all but one source cell, we get a composition witness as a filler and a proof that its inferred source cell is a composition witness if and only if A is a composition witness. (Do we also need a proof that the inferred source cell is well-behaved?)
 
 Hmm, we can settle the question "Do we also need a proof that the inferred source cell is well-behaved?" pretty decisively if we make another change to how we interpret these rules: Instead of a cell just being a maximal set of isomorphic cells *of a single opetopic shape*, it's a maximal set of isomorphic cells *of various opetopic shapes*. Then we have:
 
-Mediary (a system of rules): The identity is a well-behaved cell. Given a region with a complete set of source cell fillers, there's a target cell filler (called their composition) such that the identity fills the region. A composition is well-behaved if the source cells are well-behaved (TODO: Is this a theorem?). (NOTE: Any composition of zero source cells is the identity, so we could define the identity that way rather than introducing it explicitly.)
+**Mediary** (a system of rules): The identity is a well-behaved cell. Given a region with a complete set of source cell fillers, there's a target cell filler (called their composition) such that the identity fills the region. A composition is well-behaved if the source cells are well-behaved (TODO: Is this a theorem?). (NOTE: Any composition of zero source cells is the identity, so we could define the identity that way rather than introducing it explicitly.)
 
-Atomic (a definition): A cell A is well-behaved if, given a region with A filling a target cell and the identity filling all but one source cell, A fills the remaining source cell, and the identity fills the overall region.
+**Atomic** (a definition): A cell A is well-behaved if, given a region with A filling a target cell and the identity filling all but one source cell, A fills the remaining source cell, and the identity fills the overall region.
 
 And we have that if the identity fills a region where at least all but one of the source cells are filled by the identity, then whatever fills the target cell is equal to whatever fills the remaining source cell. (TODO: Is this enough to define equality on cells?)
 
@@ -82,9 +82,9 @@ Ooh, we can take advantage of the interpretation of "A equals B" as "the identit
 
 [BEGIN final system considered in this file]
 
-Mediary (a system of rules): The identity is a well-behaved cell. Given a composition-shaped region with a complete set of source cell fillers, there's a target cell filler (called the source cells' composition) such that the identity fills the region. A composition is well-behaved if the source cells are well-behaved (TODO: Is this a theorem?). A cell fills a region of boundary cells if and only if the identity fills a filling-shaped region made up of that instance cell and boundary cells. (NOTE: Any composition of zero source cells is the identity, so we could define the identity that way rather than introducing it explicitly.)
+**Mediary** (a system of rules): The identity is a well-behaved cell. Given a composition-shaped region with a complete set of source cell fillers, there's a target cell filler (called the source cells' composition) such that the identity fills the region. A composition is well-behaved if the source cells are well-behaved (TODO: Is this a theorem?). A cell fills a region of boundary cells if and only if the identity fills a filling-shaped region made up of that instance cell and boundary cells. (NOTE: Any composition of zero source cells is the identity, so we could define the identity that way rather than introducing it explicitly.)
 
-Atomic (a definition): A cell A is well-behaved if, given a composition-shaped region with A filling a target cell and the identity filling all but one source cell, A fills the remaining source cell, and the identity fills the overall region.
+**Atomic** (a definition): A cell A is well-behaved if, given a composition-shaped region with A filling a target cell and the identity filling all but one source cell, A fills the remaining source cell, and the identity fills the overall region.
 
 [END final system considered in this file]
 
