@@ -4,27 +4,53 @@
 
 Lathe Morphisms for Racket isn't much yet, but it's going to be a library centering around category theory and foundational mathematics.
 
-Many functional languages use abstractions named after category theory concepts. Unfortunately, since the instances of those concepts are internal to a specific kind of category, the other features of that category give them a slightly different feel than they have in the rest of category theory. This leads to some surprises when moving between learning materials, which tests programmers' patience as they try to make their way through a pile of unfamiliar terminology.
+Many functional languages use abstractions named after category theory concepts. Unfortunately, since the instances of those concepts are internal to a specific kind of category, the other features of that category give them a slightly different feel than they have in the rest of category theory. This leads to some surprises when moving between learning materials, which can test programmers' patience as they try to make their way through a pile of unfamiliar terminology.
 
-Lathe Morphisms aims to model these concepts in their full generality, so that they line up nicely with the more mathematically oriented learning resources and thereby become (even a little bit) more accessible. We recognize that not all programmers are going to *want* to wade through specialized mathematical terminology, so we're tailoring Lathe Morphisms specifically for the programmers who find they have no choice.
+There are many category theory libraries in the world, and Lathe Morphisms aims to be yet another one. One of our priorities will be to model these concepts in a way that more explicitly describes how slippery the definitions are, both by making our abstractions general enough that the user can configure them to their preferred context and by writing our documentation in a way that clarifies the sometimes unintuitive relationships between the functional programming and classical mathematics ideas.
 
-One of the biggest mismatches between general category theory and the kind of category theory used in functional programming is the difference between classical and constructive mathematics. Category theory literature typically takes for granted the law of excluded middle and the axiom of choice, which don't exist in the usual functional programming setting.
+We recognize that not all programmers are going to *want* to wade through specialized mathematical terminology, so Lathe Morphisms isn't for everyone. However, category theory is rather unreasonably effective, and sometimes it'll be the easiest option available. We hope that for the programmers who do need category theory, Lathe Morphisms can help make the concepts easier to grasp.
 
-Another difference is that functional programming's use of category theory tends to be internal to a Cartesian closed category, and this means functors have tensorial strengths autmatically. In practical terms, this means functional programmers may be accustomed to smuggling arbitrary first-class values into a `map` operation's body by using a function closure, but that technique won't work in just any category, and they won't always realize that at first.
 
-In Lathe Morphisms, we intend to ameliorate these differences by being specific about which categories and which classical logic derivation systems we're using. The usual analogues of Haskell's `Functor` or `Monad` utilities will (just as in Haskell) be specific to
+## An untyped category theory library
 
-* the trivial classical logic derivation system where validity is not enforced at all and the derivations have no information content either
+Something that might make Lathe Morphisms for Racket stand out a little is that it's not a library for a typed language, but a library for Racket, which conventionally enforces its interfaces using contracts. There are situations in a typed language like Haskell where we might use a type or constraint which contains a duplicated variable like `(HasProducts cat, HasPullbacks cat)` to enforce that our `HasProducts` and `HasPullbacks` constructions are based on the same category `cat`. In Lathe Morphisms, we'll have to explicitly verify at run time that the two occurrences of `cat` are compatible. For performance, some users might decide to skip checks like these.
 
-* a particular category of function composition, where the category laws are expressed using that trivial derivation system
+Nevertheless, it may turn out that Lathe Morphisms is handy for implementing things like typechecked DLSs. So it's not merely that Lathe Morphisms is less verified than other libraries; it just takes a different attitude to approach the topic of verification.
 
-but we also intend to support functors and monads which encode other choices than these.
 
-We don't think of this as anything new. Languages and libraries for developing mathematical theorems have often started with constructive mathematics and studied classical mathematics on top of that. We will likely be visiting several well-trodden techniques in service of that goal, such as apartness relations and anafunctors.
+## A constructive approach to classical reasoning
 
-What might make Lathe Morphisms for Racket stand out a little is that it's not a library for a typed language, but a library for Racket, which conventionally enforces its interfaces using contracts. In a typed language like Haskell, we might use a type or constraint which contains a duplicated variable like `(HasProducts cat, HasPullbacks cat)` to enforce that our `HasProducts` and `HasPullbacks` constructions are based on the same category `cat`. In Lathe Morphisms, we're going to try to enforce that kind of thing at run time in cooperation with Racket's contract system. In some cases, we might decide not to bother enforcing it at all.
+One of the most subtle mismatches between general category theory and the kind of category theory used in functional programming is the difference between classical and constructive mathematics. There's a constructive flavor to most of category theory,[1] particularly when the category axioms are interpeted "internally" as properties of the objects and morphisms of another category (often a topos). As long as this constructive flavor holds up, the correspondence between category theory and functional programming can go very far. Nevertheless, mathematicians tends to expect things to be defined in terms of a classical set theory with the axiom of choice, and category theory is often described primarily in terms of that foundation. In general there are a few nonconstructive definitions and proofs of category theory that are only revisited to make them constructive whenever the need arises, but are usually discussed in classical terms.
 
-In a way, Lathe Morphisms is a catch-all utility library specialized to utilities that may be easiest to understand in the context of the literature of category theory or foundational mathematics. By expressing each concept with the same amount of generality it has in that literature, rather than specializing it to a particular programming task, we hope to make it easier to transfer knowledge back and forth.
+One common way of revisiting the definitions is to use anafunctors in place of functors. This way, a fully faithful and essentially surjective functor can have its inverse taken (thereby making it a useful representation of an *equivalence of categories*) without resorting to the axiom of choice. This works because an anafunctor makes a little bit more of its representation explicit, and it makes a little bit less of its behavior constructive, so the process of constructing the inverse can make use of more materials to do less work.
+
+In Lathe Morphisms, we're going to do something similar but with a bigger bundle of extra materials: We'll represent a category in a way that is explicitly associated with a classical set theory derivation system. This derivation system will let us use a constructive functional programming style to build proofs that are nonconstructive. And since we have nonconstructive proofs (at some level), the way we think of categories can be largely accurate to the way they're thought of in classical mathematics.
+
+This wouldn't be nearly the first time a language or library for developing mathematical theorems had used constructive mathematics as a basis for studying classical mathematics. We will likely be visiting several well-trodden techniques in service of that goal, such as apartness relations and the aforementioned anafunctors.
+
+[1]: There's an analysis of several possible reasons why category theory is so constructive in "[https://pdfs.semanticscholar.org/501f/93c37f777f0171e541912c960022cad07624.pdf](Two Constructivist Aspects of Category Theory)," Colin McLarty 2006.
+
+
+## Specialized sublibraries
+
+Despite the overall mission of Lathe Morphisms to act as a clarifying middle ground between the functional programming and classical mathematics worlds of category theory, not everything people build is going to need to generalize to both worlds.
+
+For contexts where informal category theory reasoning is helpful but formally explicit reasoning is too much work for too little benefit (e.g. because Racket isn't typechecked anyway), the classical derivation system can be one that's trivial and inconsistent, where the so-called proofs are written without any information content at all.
+
+In many contexts, the specific category of Racket function composition is the only category we need. When we specialize our definitions to that category, we will tend to end up with definitions that line up with Haskell terminology like `Functor` and `Monad`.
+
+For convenience, we might provide these specialized operations with names that conflate them with the more general terminology. Unfortunately, this poses the same potential for confusion that we're making Lathe Morphism to avoid.
+
+In a way, the closer we get to calling Lathe Morphisms a library for *foundational* mathematics, the less we can do about this. All mathematical argumentation happens relative to some unspecified foundational metatheory, and audiences have to instantiate that with whatever metatheory helps them make sense of the argument.
+
+Our approach will be to embrace these multiple meanings of category theory concepts but at the same time try to situate them relative to each other in formally precise ways that help people navigate between the perspectives. For instance, we will strive to ensure the design of the sublibraries continues to have analogues in the more generalized approach, and we'll arrange that the module names and documentation clearly state the way that these sublibraries are specialized.
+
+
+## Generalized sublibraries
+
+It may be interesting to explore various ways of generalizing category theory itself, especially higher-dimensional category theory. However, there are at least a few different ways of approaching higher-dimensional category theory, not to mention other possible foundational approaches like type theory, set theory, topology, etc.
+
+We will likely consider the ground level to be 0-, 1-, 2-, and maybe 3-dimensional category theory. When we want to regard these as specializations, we'll make a sublibrary that becomes the home base of that foundational approach. As far as that sublibrary is concerned, the ground-level library is its specialized sublibrary.
 
 
 ## Installation and use
