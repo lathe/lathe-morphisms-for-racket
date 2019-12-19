@@ -337,7 +337,9 @@
   ;         (w- mds
   ;           (atomic-category-object-sys-coherence-constraints
   ;             object)
-  ;         #/mediary-digraph-sys-edge/c mds object object)])]
+  ;         #/list/c
+  ;           (mediary-digraph-sys-edge/c mds object object)
+  ;           category-morphism-atomicity?)])]
   ;
   ; The purpose of `atomic-category-object-sys-coherence` is mainly to
   ; let the object supply its own identity morphism. A
