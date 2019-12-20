@@ -23,11 +23,12 @@
 
 (require #/only-in racket/contract struct-type-property/c)
 (require #/only-in racket/contract/base
-  -> ->i and/c any/c contract? contract-out)
+  -> ->i and/c any/c contract? contract-out list/c)
 (require #/only-in racket/contract/combinator
   contract-first-order-passes?)
 
 (require #/only-in lathe-comforts w-)
+(require #/only-in lathe-comforts/contract by-own-method/c)
 (require #/only-in lathe-comforts/match
   define-match-expander-attenuated
   define-match-expander-from-match-and-make)
@@ -121,7 +122,543 @@
         [_ (fs) (set-sys-element/c #/function-sys-target fs)])
       function-sys-impl?)])
 
-; TODO: Export more things.
+(provide #/contract-out
+  [mediary-digraph-sys? (-> any/c boolean?)]
+  [mediary-digraph-sys-impl? (-> any/c boolean?)]
+  [mediary-digraph-sys-node-mediary-set-sys
+    (-> mediary-digraph-sys? mediary-set-sys?)]
+  [mediary-digraph-sys-replace-node-mediary-set-sys
+    (-> mediary-digraph-sys? mediary-set-sys? mediary-digraph-sys?)]
+  [mediary-digraph-sys-node/c (-> mediary-digraph-sys? contract?)]
+  [mediary-digraph-sys-edge-mediary-set-sys-family
+    (->i ([mds mediary-digraph-sys?])
+      [_ (mds)
+        (->
+          (mediary-digraph-sys-node/c mds)
+          (mediary-digraph-sys-node/c mds)
+          mediary-set-sys?)])]
+  [mediary-digraph-sys-replace-edge-mediary-set-sys-family
+    (->i
+      (
+        [mds mediary-digraph-sys?]
+        [edge-mediary-set-sys-family (mds)
+          (->
+            (mediary-digraph-sys-node/c mds)
+            (mediary-digraph-sys-node/c mds)
+            mediary-set-sys?)])
+      [_ mediary-digraph-sys?])]
+  [mediary-digraph-sys-edge/c
+    (->i
+      (
+        [mds mediary-digraph-sys?]
+        [s (mds) (mediary-digraph-sys-node/c mds)]
+        [t (mds) (mediary-digraph-sys-node/c mds)])
+      [_ contract?])]
+  [prop:mediary-digraph-sys
+    (struct-type-property/c mediary-digraph-sys-impl?)]
+  [make-mediary-digraph-sys-impl-from-mediary-set-systems
+    (->
+      (-> mediary-digraph-sys? mediary-set-sys?)
+      (-> mediary-digraph-sys? mediary-set-sys? mediary-digraph-sys?)
+      (->i ([mds mediary-digraph-sys?])
+        [_ (mds)
+          (->
+            (mediary-digraph-sys-node/c mds)
+            (mediary-digraph-sys-node/c mds)
+            mediary-set-sys?)])
+      (->i
+        (
+          [mds mediary-digraph-sys?]
+          [edge-mediary-set-sys-family (mds)
+            (->
+              (mediary-digraph-sys-node/c mds)
+              (mediary-digraph-sys-node/c mds)
+              mediary-set-sys?)])
+        [_ mediary-digraph-sys?])
+      mediary-digraph-sys-impl?)])
+
+(provide #/contract-out
+  [atomic-category-object-sys? (-> any/c boolean?)]
+  [atomic-category-object-sys-impl? (-> any/c boolean?)]
+  [atomic-category-object-sys-accepts/c
+    (-> atomic-category-object-sys? contract?)]
+  [atomic-category-object-sys-replace-category-sys
+    (-> atomic-category-object-sys? category-sys?
+      atomic-category-object-sys?)]
+  [atomic-category-object-sys-coherence-constraints
+    (->i ([object atomic-category-object-sys?])
+      [_ (object)
+        (and/c mediary-digraph-sys?
+          (by-own-method/c mds
+            (contract-first-order-passes?
+              (mediary-digraph-sys-node/c mds)
+              object)))])]
+  [atomic-category-object-sys-constrain-coherence
+    (->i
+      (
+        [mds mediary-digraph-sys?]
+        [object (mds)
+          (and/c atomic-category-object-sys?
+            (mediary-digraph-sys-node/c mds))])
+      [_ atomic-category-object-sys?])]
+  [atomic-category-object-sys-coherence
+    (->i
+      (
+        [ss set-sys?]
+        [object (ss)
+          (and/c atomic-category-object-sys?
+            (set-sys-element/c ss))])
+      [_ (object)
+        (w- mds
+          (atomic-category-object-sys-coherence-constraints object)
+        #/list/c
+          (mediary-digraph-sys-edge/c mds object object)
+          category-morphism-atomicity?)])]
+  [prop:atomic-category-object-sys
+    (struct-type-property/c atomic-category-object-sys-impl?)]
+  [make-atomic-category-object-sys-impl-from-coherence
+    (->
+      (-> atomic-category-object-sys? contract?)
+      (-> atomic-category-object-sys? category-sys?
+        atomic-category-object-sys?)
+      (->i ([object atomic-category-object-sys?])
+        [_ (object)
+          (and/c mediary-digraph-sys?
+            (by-own-method/c mds
+              (contract-first-order-passes?
+                (mediary-digraph-sys-node/c mds)
+                object)))])
+      (->i
+        (
+          [mds mediary-digraph-sys?]
+          [object (mds)
+            (and/c atomic-category-object-sys?
+              (mediary-digraph-sys-node/c mds))])
+        [_ atomic-category-object-sys?])
+      (->i
+        (
+          [ss set-sys?]
+          [object (ss)
+            (and/c atomic-category-object-sys?
+              (set-sys-element/c ss))])
+        [_ (object)
+          (w- mds
+            (atomic-category-object-sys-coherence-constraints object)
+          #/list/c
+            (mediary-digraph-sys-edge/c mds object object)
+            category-morphism-atomicity?)])
+      atomic-category-object-sys-impl?)])
+
+(provide
+  category-morphism-atomicity)
+(provide #/contract-out
+  [category-morphism-atomicity? (-> any/c boolean?)]
+  [category-morphism-atomicity-accepts/c
+    (-> category-morphism-atomicity? (-> any/c contract?))]
+  [category-morphism-atomicity-replace-category-sys
+    (-> category-morphism-atomicity? (-> any/c category-sys? any/c))]
+  [category-morphism-atomicity-replace-source
+    (-> category-morphism-atomicity? (-> any/c any/c any/c))]
+  [category-morphism-atomicity-replace-target
+    (-> category-morphism-atomicity? (-> any/c any/c any/c))])
+
+(provide #/contract-out
+  [atomic-category-morphism-sys? (-> any/c boolean?)]
+  [atomic-category-morphism-sys-impl? (-> any/c boolean?)]
+  [atomic-category-morphism-sys-source
+    (-> atomic-category-morphism-sys? any/c)]
+  [atomic-category-morphism-sys-target
+    (-> atomic-category-morphism-sys? any/c)]
+  [atomic-category-morphism-sys-atomicity
+    (-> atomic-category-morphism-sys? category-morphism-atomicity?)]
+  [prop:atomic-category-morphism-sys
+    (struct-type-property/c atomic-category-morphism-sys-impl?)]
+  [make-atomic-category-morphism-sys-impl-from-atomicity
+    (->
+      (-> atomic-category-morphism-sys? any/c)
+      (-> atomic-category-morphism-sys? any/c)
+      (-> atomic-category-morphism-sys? category-morphism-atomicity?)
+      atomic-category-morphism-sys-impl?)])
+
+(provide #/contract-out
+  [mediary-category-sys? (-> any/c boolean?)]
+  [mediary-category-sys-impl? (-> any/c boolean?)]
+  [mediary-category-sys-object-mediary-set-sys
+    (-> mediary-category-sys? mediary-set-sys?)]
+  [mediary-category-sys-replace-object-mediary-set-sys
+    (-> mediary-category-sys? mediary-set-sys? mediary-category-sys?)]
+  [mediary-category-sys-object/c (-> mediary-category-sys? contract?)]
+  [mediary-category-sys-morphism-mediary-set-sys-family
+    (->i ([mcs mediary-category-sys?])
+      [_ (mcs)
+        (->
+          (mediary-category-sys-object/c mcs)
+          (mediary-category-sys-object/c mcs)
+          mediary-set-sys?)])]
+  [mediary-category-sys-replace-morphism-mediary-set-sys-family
+    (->i
+      (
+        [mcs mediary-category-sys?]
+        [morphism-mediary-set-sys-family (mcs)
+          (->
+            (mediary-category-sys-object/c mcs)
+            (mediary-category-sys-object/c mcs)
+            mediary-set-sys?)])
+      [_ mediary-category-sys?])]
+  [mediary-category-sys-morphism/c
+    (->i
+      (
+        [mcs mediary-category-sys?]
+        [s (mcs) (mediary-category-sys-object/c mcs)]
+        [t (mcs) (mediary-category-sys-object/c mcs)])
+      [_ contract?])]
+  [mediary-category-sys-morphism-chain-two
+    (->i
+      (
+        [mcs mediary-category-sys?]
+        [a (mcs) (mediary-category-sys-object/c mcs)]
+        [b (mcs) (mediary-category-sys-object/c mcs)]
+        [c (mcs) (mediary-category-sys-object/c mcs)]
+        [ab (mcs a b) (mediary-category-sys-morphism/c mcs a b)]
+        [bc (mcs b c) (mediary-category-sys-morphism/c mcs b c)])
+      [_ (mcs a c) (mediary-category-sys-morphism/c mcs a c)])]
+  [mediary-category-sys-morphism-atomicity-chain-two
+    (->i
+      (
+        [mcs mediary-category-sys?]
+        [a (mcs) (mediary-category-sys-object/c mcs)]
+        [b (mcs) (mediary-category-sys-object/c mcs)]
+        [c (mcs) (mediary-category-sys-object/c mcs)]
+        [ab (mcs a b) (mediary-category-sys-morphism/c mcs a b)]
+        [ab-atomicity category-morphism-atomicity?]
+        [bc (mcs b c) (mediary-category-sys-morphism/c mcs b c)]
+        [bc-atomicity category-morphism-atomicity?])
+      [_ category-morphism-atomicity?])]
+  [prop:mediary-category-sys
+    (struct-type-property/c mediary-category-sys-impl?)]
+  [make-mediary-category-sys-impl-from-chain-two
+    (->
+      (-> mediary-category-sys? mediary-set-sys?)
+      (-> mediary-category-sys? mediary-set-sys?
+        mediary-category-sys?)
+      (->i ([mcs mediary-category-sys?])
+        [_ (mcs)
+          (->
+            (mediary-category-sys-object/c mcs)
+            (mediary-category-sys-object/c mcs)
+            mediary-set-sys?)])
+      (->i
+        (
+          [mcs mediary-category-sys?]
+          [morphism-mediary-set-sys-family (mcs)
+            (->
+              (mediary-category-sys-object/c mcs)
+              (mediary-category-sys-object/c mcs)
+              mediary-set-sys?)])
+        [_ mediary-category-sys?])
+      (->i
+        (
+          [mcs mediary-category-sys?]
+          [a (mcs) (mediary-category-sys-object/c mcs)]
+          [b (mcs) (mediary-category-sys-object/c mcs)]
+          [c (mcs) (mediary-category-sys-object/c mcs)]
+          [ab (mcs a b) (mediary-category-sys-morphism/c mcs a b)]
+          [bc (mcs b c) (mediary-category-sys-morphism/c mcs b c)])
+        [_ (mcs a c) (mediary-category-sys-morphism/c mcs a c)])
+      (->i
+        (
+          [mcs mediary-category-sys?]
+          [a (mcs) (mediary-category-sys-object/c mcs)]
+          [b (mcs) (mediary-category-sys-object/c mcs)]
+          [c (mcs) (mediary-category-sys-object/c mcs)]
+          [ab (mcs a b) (mediary-category-sys-morphism/c mcs a b)]
+          [ab-atomicity category-morphism-atomicity?]
+          [bc (mcs b c) (mediary-category-sys-morphism/c mcs b c)]
+          [bc-atomicity category-morphism-atomicity?])
+        [_ category-morphism-atomicity?])
+      mediary-category-sys-impl?)])
+
+(provide #/contract-out
+  [category-sys? (-> any/c boolean?)]
+  [category-sys-impl? (-> any/c boolean?)]
+  [category-sys-object-mediary-set-sys
+    (-> category-sys? mediary-set-sys?)]
+  [category-sys-replace-object-mediary-set-sys
+    (-> category-sys? mediary-set-sys? category-sys?)]
+  [category-sys-object/c (-> category-sys? contract?)]
+  [category-sys-morphism-mediary-set-sys-family
+    (->i ([cs category-sys?])
+      [_ (cs)
+        (-> (category-sys-object/c cs) (category-sys-object/c cs)
+          mediary-set-sys?)])]
+  [category-sys-replace-morphism-mediary-set-sys-family
+    (->i
+      (
+        [cs category-sys?]
+        [morphism-mediary-set-sys-family (cs)
+          (-> (category-sys-object/c cs) (category-sys-object/c cs)
+            mediary-set-sys?)])
+      [_ category-sys?])]
+  [category-sys-morphism/c
+    (->i
+      (
+        [cs category-sys?]
+        [s (cs) (category-sys-object/c cs)]
+        [t (cs) (category-sys-object/c cs)])
+      [_ contract?])]
+  [category-sys-mediary-category-sys
+    (-> category-sys? mediary-category-sys?)]
+  [category-sys-replace-mediary-category-sys
+    (-> category-sys? mediary-category-sys? category-sys?)]
+  [category-sys-object-set-sys (-> category-sys? set-sys?)]
+  [category-sys-replace-object-set-sys
+    (-> category-sys? set-sys? category-sys?)]
+  ; TODO: Figure out if this "replace" operation's contract is too
+  ; strict.
+  [category-sys-object-replace-category-sys
+    (->i
+      (
+        [cs category-sys?]
+        [object (cs) (category-sys-object/c cs)]
+        [new-cs category-sys?])
+      [_ (cs) (category-sys-object/c cs)])]
+  [category-sys-object-identity-morphism
+    (->i ([cs category-sys?] [object (cs) (category-sys-object/c cs)])
+      [_ (cs object) (category-sys-morphism/c cs object object)])]
+  [category-sys-morphism-set-sys-family
+    (->i ([cs category-sys?])
+      [_ (cs)
+        (-> (category-sys-object/c cs) (category-sys-object/c cs)
+          set-sys?)])]
+  [category-sys-replace-morphism-set-sys-family
+    (->i
+      (
+        [cs category-sys?]
+        [morphism-set-sys-family (cs)
+          (-> (category-sys-object/c cs) (category-sys-object/c cs)
+            set-sys?)])
+      [_ category-sys?])]
+  ; TODO: Figure out if these "replace" operations' contracts are too
+  ; strict.
+  [category-sys-morphism-replace-category-sys
+    (->i
+      (
+        [cs category-sys?]
+        [s (cs) (category-sys-object/c cs)]
+        [t (cs) (category-sys-object/c cs)]
+        [morphism (cs s t) (category-sys-morphism/c cs s t)]
+        [new-cs category-sys?])
+      [_ (new-cs s t) (category-sys-morphism/c new-cs s t)])]
+  [category-sys-morphism-replace-source
+    (->i
+      (
+        [cs category-sys?]
+        [s (cs) (category-sys-object/c cs)]
+        [t (cs) (category-sys-object/c cs)]
+        [morphism (cs s t) (category-sys-morphism/c cs s t)]
+        [new-s (cs) (category-sys-object/c cs)])
+      [_ (cs new-s t) (category-sys-morphism/c cs new-s t)])]
+  [category-sys-morphism-replace-target
+    (->i
+      (
+        [cs category-sys?]
+        [s (cs) (category-sys-object/c cs)]
+        [t (cs) (category-sys-object/c cs)]
+        [morphism (cs s t) (category-sys-morphism/c cs s t)]
+        [new-t (cs) (category-sys-object/c cs)])
+      [_ (cs s new-t) (category-sys-morphism/c cs s new-t)])]
+  [prop:category-sys (struct-type-property/c category-sys-impl?)]
+  [make-category-sys-impl-from-mediary
+    (->
+      (-> category-sys? mediary-set-sys?)
+      (-> category-sys? mediary-set-sys? category-sys?)
+      (->i ([cs category-sys?])
+        [_ (cs)
+          (-> (category-sys-object/c cs) (category-sys-object/c cs)
+            mediary-set-sys?)])
+      (->i
+        (
+          [cs category-sys?]
+          [morphism-mediary-set-sys-family (cs)
+            (-> (category-sys-object/c cs) (category-sys-object/c cs)
+              mediary-set-sys?)])
+        [_ category-sys?])
+      (-> category-sys? mediary-category-sys?)
+      (-> category-sys? mediary-category-sys? category-sys?)
+      (-> category-sys? set-sys?)
+      (-> category-sys? set-sys? category-sys?)
+      (->i
+        (
+          [cs category-sys?]
+          [object (cs) (category-sys-object/c cs)]
+          [new-cs category-sys?])
+        [_ (cs) (category-sys-object/c cs)])
+      (->i
+        ([cs category-sys?] [object (cs) (category-sys-object/c cs)])
+        [_ (cs object) (category-sys-morphism/c cs object object)])
+      (->i ([cs category-sys?])
+        [_ (cs)
+          (-> (category-sys-object/c cs) (category-sys-object/c cs)
+            set-sys?)])
+      (->i
+        (
+          [cs category-sys?]
+          [morphism-set-sys-family (cs)
+            (-> (category-sys-object/c cs) (category-sys-object/c cs)
+              set-sys?)])
+        [_ category-sys?])
+      (->i
+        (
+          [cs category-sys?]
+          [s (cs) (category-sys-object/c cs)]
+          [t (cs) (category-sys-object/c cs)]
+          [morphism (cs s t) (category-sys-morphism/c cs s t)]
+          [new-cs category-sys?])
+        [_ (new-cs s t) (category-sys-morphism/c new-cs s t)])
+      (->i
+        (
+          [cs category-sys?]
+          [s (cs) (category-sys-object/c cs)]
+          [t (cs) (category-sys-object/c cs)]
+          [morphism (cs s t) (category-sys-morphism/c cs s t)]
+          [new-s (cs) (category-sys-object/c cs)])
+        [_ (cs new-s t) (category-sys-morphism/c cs new-s t)])
+      (->i
+        (
+          [cs category-sys?]
+          [s (cs) (category-sys-object/c cs)]
+          [t (cs) (category-sys-object/c cs)]
+          [morphism (cs s t) (category-sys-morphism/c cs s t)]
+          [new-t (cs) (category-sys-object/c cs)])
+        [_ (cs s new-t) (category-sys-morphism/c cs s new-t)])
+      category-sys-impl?)])
+
+(provide #/contract-out
+  [functor-sys? (-> any/c boolean?)]
+  [functor-sys-impl? (-> any/c boolean?)]
+  [functor-sys-source (-> functor-sys? category-sys?)]
+  [functor-sys-replace-source
+    (-> functor-sys? category-sys? functor-sys?)]
+  [functor-sys-target (-> functor-sys? category-sys?)]
+  [functor-sys-replace-target
+    (-> functor-sys? category-sys? functor-sys?)]
+  [functor-sys-apply-to-object
+    (->i
+      (
+        [fs functor-sys?]
+        [object (fs) (category-sys-object/c #/functor-sys-source fs)])
+      [_ (fs) (category-sys-object/c #/functor-sys-target fs)])]
+  [functor-sys-apply-to-morphism
+    (->i
+      (
+        [fs functor-sys?]
+        [s (fs) (category-sys-object/c #/functor-sys-source fs)]
+        [t (fs) (category-sys-object/c #/functor-sys-source fs)]
+        [morphism (fs s t)
+          (category-sys-morphism/c (functor-sys-source fs) s t)])
+      [_ (fs s t)
+        (category-sys-object/c (functor-sys-target fs)
+          (functor-sys-apply-to-object fs s)
+          (functor-sys-apply-to-object fs t))])]
+  [prop:functor-sys (struct-type-property/c functor-sys-impl?)]
+  [make-functor-sys-impl-from-apply
+    (->
+      (-> functor-sys? category-sys?)
+      (-> functor-sys? category-sys? functor-sys?)
+      (-> functor-sys? category-sys?)
+      (-> functor-sys? category-sys? functor-sys?)
+      (->i
+        (
+          [fs functor-sys?]
+          [object (fs)
+            (category-sys-object/c #/functor-sys-source fs)])
+        [_ (fs) (category-sys-object/c #/functor-sys-target fs)])
+      (->i
+        (
+          [fs functor-sys?]
+          [s (fs) (category-sys-object/c #/functor-sys-source fs)]
+          [t (fs) (category-sys-object/c #/functor-sys-source fs)]
+          [morphism (fs s t)
+            (category-sys-morphism/c (functor-sys-source fs) s t)])
+        [_ (fs s t)
+          (category-sys-object/c (functor-sys-target fs)
+            (functor-sys-apply-to-object fs s)
+            (functor-sys-apply-to-object fs t))])
+      functor-sys-impl?)])
+
+(provide #/contract-out
+  [natural-transformation-sys? (-> any/c boolean?)]
+  [natural-transformation-sys-impl? (-> any/c boolean?)]
+  [natural-transformation-sys-endpoint-source
+    (-> natural-transformation-sys? category-sys?)]
+  [natural-transformation-sys-replace-endpoint-source
+    (-> natural-transformation-sys? category-sys?
+      natural-transformation-sys?)]
+  [natural-transformation-sys-endpoint-target
+    (-> natural-transformation-sys? category-sys?)]
+  [natural-transformation-sys-replace-endpoint-target
+    (-> natural-transformation-sys? category-sys?
+      natural-transformation-sys?)]
+  ; TODO: See if these contracts that use `functor-sys?` should verify
+  ; that the functor has the appropriate endpoints.
+  [natural-transformation-sys-source
+    (-> natural-transformation-sys? functor-sys?)]
+  [natural-transformation-sys-replace-source
+    (-> natural-transformation-sys? functor-sys?
+      natural-transformation-sys?)]
+  [natural-transformation-sys-target
+    (-> natural-transformation-sys? functor-sys?)]
+  [natural-transformation-sys-replace-target
+    (-> natural-transformation-sys? functor-sys?
+      natural-transformation-sys?)]
+  [natural-transformation-sys-apply-to-object
+    (->i
+      (
+        [nts natural-transformation-sys?]
+        [object (nts)
+          (category-sys-object/c
+            (natural-transformation-sys-endpoint-source nts))])
+      [_ (nts object)
+        (category-sys-morphism/c
+          (natural-transformation-sys-endpoint-target nts)
+          (functor-sys-apply-to-object
+            (natural-transformation-sys-source nts)
+            object)
+          (functor-sys-apply-to-object
+            (natural-transformation-sys-target nts)
+            object))])]
+  [prop:natural-transformation-sys
+    (struct-type-property/c natural-transformation-sys-impl?)]
+  [make-natural-transformation-sys-impl-from-apply
+    (->
+      (-> natural-transformation-sys? category-sys?)
+      (-> natural-transformation-sys? category-sys?
+        natural-transformation-sys?)
+      (-> natural-transformation-sys? category-sys?)
+      (-> natural-transformation-sys? category-sys?
+        natural-transformation-sys?)
+      (-> natural-transformation-sys? functor-sys?)
+      (-> natural-transformation-sys? functor-sys?
+        natural-transformation-sys?)
+      (-> natural-transformation-sys? functor-sys?)
+      (-> natural-transformation-sys? functor-sys?
+        natural-transformation-sys?)
+      (->i
+        (
+          [nts natural-transformation-sys?]
+          [object (nts)
+            (category-sys-object/c
+              (natural-transformation-sys-endpoint-source nts))])
+        [_ (nts object)
+          (category-sys-morphism/c
+            (natural-transformation-sys-endpoint-target nts)
+            (functor-sys-apply-to-object
+              (natural-transformation-sys-source nts)
+              object)
+            (functor-sys-apply-to-object
+              (natural-transformation-sys-target nts)
+              object))])
+      natural-transformation-sys-impl?)])
 
 
 ; In this file we explore a "mediary" approach. This is a term we've
@@ -284,14 +821,14 @@
     (#:this)
     ())
   prop:mediary-digraph-sys
-  make-mediary-digraph-sys-impl-from-chain-two
+  make-mediary-digraph-sys-impl-from-mediary-set-systems
   'mediary-digraph-sys 'mediary-digraph-sys-impl (list))
 
-(define (mediary-digraph-sys-object/c mcs)
+(define (mediary-digraph-sys-node/c mcs)
   (mediary-set-sys-element/c
     (mediary-digraph-sys-node-mediary-set-sys mcs)))
 
-(define (mediary-digraph-sys-morphism/c mcs s t)
+(define (mediary-digraph-sys-edge/c mcs s t)
   (mediary-set-sys-element/c
     ( (mediary-digraph-sys-edge-mediary-set-sys-family mcs) s t)))
 
@@ -460,7 +997,7 @@
   (#:method atomic-category-morphism-sys-target (#:this))
   (#:method atomic-category-morphism-sys-atomicity (#:this))
   prop:atomic-category-morphism-sys
-  make-atomic-category-morphism-sys-impl-from-accepts-and-replace
+  make-atomic-category-morphism-sys-impl-from-atomicity
   'atomic-category-morphism-sys 'atomic-category-morphism-sys-impl
   (list))
 
