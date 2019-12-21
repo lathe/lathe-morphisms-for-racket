@@ -28,7 +28,7 @@
   contract-first-order-passes?)
 
 (require #/only-in lathe-comforts w-)
-(require #/only-in lathe-comforts/contract by-own-method/c)
+(require #/only-in lathe-comforts/contract by-own-method/c swap/c)
 (require #/only-in lathe-comforts/match
   define-match-expander-attenuated
   define-match-expander-from-match-and-make)
@@ -77,7 +77,7 @@
         [ss set-sys?]
         [element (ss) (set-sys-element/c ss)]
         [new-ss set-sys?])
-      [_ any/c])]
+      [_ (new-ss) (swap/c #/set-sys-element/c new-ss)])]
   [prop:set-sys (struct-type-property/c set-sys-impl?)]
   [make-set-sys-impl-from-mediary
     (->
@@ -90,7 +90,7 @@
           [ss set-sys?]
           [element (ss) (set-sys-element/c ss)]
           [new-ss set-sys?])
-        [_ any/c])
+        [_ (new-ss) (swap/c #/set-sys-element/c new-ss)])
       set-sys-impl?)])
 
 (provide #/contract-out
@@ -413,15 +413,13 @@
   [category-sys-object-set-sys (-> category-sys? set-sys?)]
   [category-sys-replace-object-set-sys
     (-> category-sys? set-sys? category-sys?)]
-  ; TODO: Figure out if this "replace" operation's contract is too
-  ; strict.
   [category-sys-object-replace-category-sys
     (->i
       (
         [cs category-sys?]
         [object (cs) (category-sys-object/c cs)]
         [new-cs category-sys?])
-      [_ (cs) (category-sys-object/c cs)])]
+      [_ (new-cs) (swap/c #/category-sys-object/c new-cs)])]
   [category-sys-object-identity-morphism
     (->i ([cs category-sys?] [object (cs) (category-sys-object/c cs)])
       [_ (cs object) (category-sys-morphism/c cs object object)])]
@@ -438,8 +436,6 @@
           (-> (category-sys-object/c cs) (category-sys-object/c cs)
             set-sys?)])
       [_ category-sys?])]
-  ; TODO: Figure out if these "replace" operations' contracts are too
-  ; strict.
   [category-sys-morphism-replace-category-sys
     (->i
       (
@@ -448,7 +444,12 @@
         [t (cs) (category-sys-object/c cs)]
         [morphism (cs s t) (category-sys-morphism/c cs s t)]
         [new-cs category-sys?])
-      [_ (new-cs s t) (category-sys-morphism/c new-cs s t)])]
+      [_ (cs new-cs s t)
+        (swap/c
+          (category-sys-morphism/c new-cs
+            (category-sys-object-replace-category-sys cs s new-cs)
+            (category-sys-object-replace-category-sys
+              cs t new-cs)))])]
   [category-sys-morphism-replace-source
     (->i
       (
@@ -457,7 +458,7 @@
         [t (cs) (category-sys-object/c cs)]
         [morphism (cs s t) (category-sys-morphism/c cs s t)]
         [new-s (cs) (category-sys-object/c cs)])
-      [_ (cs new-s t) (category-sys-morphism/c cs new-s t)])]
+      [_ (cs new-s t) (swap/c #/category-sys-morphism/c cs new-s t)])]
   [category-sys-morphism-replace-target
     (->i
       (
@@ -466,7 +467,7 @@
         [t (cs) (category-sys-object/c cs)]
         [morphism (cs s t) (category-sys-morphism/c cs s t)]
         [new-t (cs) (category-sys-object/c cs)])
-      [_ (cs s new-t) (category-sys-morphism/c cs s new-t)])]
+      [_ (cs s new-t) (swap/c #/category-sys-morphism/c cs s new-t)])]
   [prop:category-sys (struct-type-property/c category-sys-impl?)]
   [make-category-sys-impl-from-mediary
     (->
@@ -492,7 +493,7 @@
           [cs category-sys?]
           [object (cs) (category-sys-object/c cs)]
           [new-cs category-sys?])
-        [_ (cs) (category-sys-object/c cs)])
+        [_ (new-cs) (swap/c #/category-sys-object/c new-cs)])
       (->i
         ([cs category-sys?] [object (cs) (category-sys-object/c cs)])
         [_ (cs object) (category-sys-morphism/c cs object object)])
@@ -514,7 +515,12 @@
           [t (cs) (category-sys-object/c cs)]
           [morphism (cs s t) (category-sys-morphism/c cs s t)]
           [new-cs category-sys?])
-        [_ (new-cs s t) (category-sys-morphism/c new-cs s t)])
+        [_ (cs new-cs s t)
+          (swap/c
+            (category-sys-morphism/c new-cs
+              (category-sys-object-replace-category-sys cs s new-cs)
+              (category-sys-object-replace-category-sys
+                cs t new-cs)))])
       (->i
         (
           [cs category-sys?]
@@ -522,7 +528,8 @@
           [t (cs) (category-sys-object/c cs)]
           [morphism (cs s t) (category-sys-morphism/c cs s t)]
           [new-s (cs) (category-sys-object/c cs)])
-        [_ (cs new-s t) (category-sys-morphism/c cs new-s t)])
+        [_ (cs new-s t)
+          (swap/c #/category-sys-morphism/c cs new-s t)])
       (->i
         (
           [cs category-sys?]
@@ -530,7 +537,8 @@
           [t (cs) (category-sys-object/c cs)]
           [morphism (cs s t) (category-sys-morphism/c cs s t)]
           [new-t (cs) (category-sys-object/c cs)])
-        [_ (cs s new-t) (category-sys-morphism/c cs s new-t)])
+        [_ (cs s new-t)
+          (swap/c #/category-sys-morphism/c cs s new-t)])
       category-sys-impl?)])
 
 (provide #/contract-out
