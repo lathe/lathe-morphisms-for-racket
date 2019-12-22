@@ -607,8 +607,9 @@
   [natural-transformation-sys-replace-endpoint-target
     (-> natural-transformation-sys? category-sys?
       natural-transformation-sys?)]
-  ; TODO: See if these contracts that use `functor-sys?` should verify
-  ; that the functor has the appropriate endpoints.
+  ; TODO: Implement `functor/c`, and have these contracts that use
+  ; `functor-sys?` use `functor/c` instead to verify that the functor
+  ; has the appropriate endpoints.
   [natural-transformation-sys-source
     (-> natural-transformation-sys? functor-sys?)]
   [natural-transformation-sys-replace-source
@@ -720,56 +721,86 @@
 ; medial system, and in this case that medial system is
 ; `medial-set-sys?`.
 
-; TODO: See if we should rename some of these things to remove "sys":
+; NOTE:
 ;
-; The names `atomic-set-element-sys?`, `atomic-category-object-sys?`,
-; and `atomic-category-morphism-sys?` in particular seem like they
-; should lose the "sys" since we'll often use them on values that
-; really represent some other system and only implement these
-; interfaces for self-identification.
+; The main point of the "sys" suffix is to distinguish, for instance,
+; a system (or theory or dictionary or algebra) of monad operations
+; from a value that is a single monadic container, or a system of
+; number operations from a value that is a single number.
 ;
-; The names `function-sys?`, `functor-sys?`, and
-; `natural-transformation-sys?` might make sense to prune as well. The
-; original point of the "sys" suffix (coined in Punctaffy) was to
-; distinguish, for instance, a dictionary of monad operations from a
-; value that was a monadic container, or a dictionary of number
-; operations from a value that was a number. With things like
-; `function-sys?`, the system itself is the function, albiet perhaps
-; with some extra pizzazz to let contracts apply to it and to let it
-; implement `...-accepts/c` functionality on the side. Most
-; importantly, these don't even carry data types of their own (except
-; those carried by their source and target), so there's no data value
-; that can be confused for a "function" the way that a monadic
-; container value might be confused for a "monad."
+; From that beginning point, we've applied the "sys" suffix to quite a
+; few more things. While this could be unnecessary noise, it does
+; serve some purposes.
+;
+; The name `atomic-set-element-sys?` (along with its peers
+; `atomic-category-object-sys?` and `atomic-category-morphism-sys?`)
+; in particular seems like a poor fit for the "sys" suffix since we'll
+; often implement this interface on values that really represent some
+; other "sys" and only implement the `atomic-set-element-sys?`
+; interface on the side for the sake of error detection. However, we
+; keep the "sys" suffix in this case because it serves as a way to
+; distinguish `atomic-set-element-sys-accepts/c` (a method on
+; `atomic-set-element-sys?` values) from `set-sys-element-accepts/c`
+; (a method on `set-sys?` values). When we're modeling data structures
+; like "category" that contain associated types like "object" and
+; "morphism," there's a risk that our very explicit method names would
+; have too many nouns in a row, and "sys" can fill the role of a
+; punctuation or stress mark.
+;
+; With a few systems like `function-sys?` (and its peers
+; `functor-sys?` and `natural-transformation-sys?`), the system itself
+; *is* the function (albeit perhaps with some extra pizzazz like
+; `...-replace-source` for error-detection and debugging purposes). In
+; particular, there's no other type involved whose values could be
+; confused for "functions" the way that a monadic container value
+; might be confused for a "monad." Nevertheless, the name `function?`
+; would be somewhat confusing name for a new type in in the context of
+; Racket, where functions are an established built-in type. The name
+; `function-sys?` seems sufficiently distinct while at the same time
+; aligning better with the naming conventions going on around it. In
+; particular, `function-sys?` is a homomorphism between two `set-sys?`
+; theories, and in general, a homomorphism will "has-a" an associated
+; homomorphism in the same place where the endpoint theory "has-a" an
+; associated theory. By using "sys" in the names of the homomorphisms
+; just like we use it on the names of the theories they go between, we
+; allow the operations that look up those associated parts to have
+; names that are analogous with each other.
 
 ; TODO: Split this file into a few different files:
 ;
-; We should probably have:
+; We should probably have these separate modules, at least in public,
+; perhaps with corresponding private modules for implementation:
 ;
-;   set.rkt (since it's a common base case)
-;   digraph.rkt
-;   category.rkt
+;   lathe-morphisms/lawless/set (since it's a common base case)
+;   lathe-morphisms/lawless/digraph
+;   lathe-morphisms/lawless/category
+;   lathe-morphisms/lawless/mediary/set
+;   lathe-morphisms/lawless/mediary/digraph
+;   lathe-morphisms/lawless/mediary/category
 ;
-; Arguably we should split off mediary sets as a "generalized
-; sublibrary" (as discussed in README.md), since they're a pretty
-; unusual experiment:
+; Here, the "mediary" directory is like a "generalized sublibrary" or
+; "specialized sublibrary" (as discussed in README.md), since they're
+; a pretty unusual experiment that involves defining variants of most
+; of the other abstractions. Nevertheless, we should keep the
+; `mediary-...` prefix on the names of those systems, since it signals
+; the fact that an important part of the system resides in the
+; corresponding `atomic-...` and `...-atomicity` types.
 ;
-;   mediary/set.rkt
-;   mediary/digraph.rkt
-;   mediary/category.rkt
-;   set.rkt
-;   category.rkt
+; Note that at the moment, the `mediary-category-sys?` and
+; `category-sys?` code have an interdependency. Mediary categories are
+; awfully complicated (and could easily be a broken or unstable
+; design), and this complexity is not likely to help illuminate
+; category theory ideas (nor functional programming ideas), so
+; `category-sys?` should probably be redesigned to avoid requiring
+; people to think about `mediary-category-sys?`.
 ;
-; Even if we split off "mediary" into its own library, we should keep
-; the "mediary" qualifier on the names so that it's clear that they
-; correspond with "atomic" and "atomicity" counterpart definitions.
+; As useful as `mediary-set-sys?` is, if only for giving a home to
+; `atomic-set-object-accepts/c`, we can pretty easily redesign
+; `set-sys?` to avoid such explicit association with it as well.
 ;
 ; If we decide to extrapolate these things to arbitrarily higher
 ; dimensions, we should probably start an "n-dimensional" or
 ; "globular" generalized sublibrary for that.
-;
-; Oh, and we should export these things from public modules and
-; document them.
 
 
 (define-imitation-simple-generics
@@ -799,8 +830,7 @@
   (mediary-set-sys-element/c #/set-sys-mediary-set-sys ss))
 
 ; TODO: See if we should have functions between mediary sets too, i.e.
-; `mediary-function-sys?`. If we do that, see if we should define
-; `function-sys?` in terms of `mediary-function-sys?`.
+; `mediary-function-sys?`.
 (define-imitation-simple-generics
   function-sys? function-sys-impl?
   (#:method function-sys-source (#:this))
