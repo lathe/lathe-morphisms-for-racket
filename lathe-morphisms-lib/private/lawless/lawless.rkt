@@ -802,6 +802,31 @@
 ; dimensions, we should probably start an "n-dimensional" or
 ; "globular" generalized sublibrary for that.
 
+; TODO: Implement the following contract combinators:
+;
+;   (function-sys/c source/c target/c)
+;   (mediary-digraph-sys/c
+;     node-mediary-set-sys/c edge-mediary-set-sys-family/c)
+;   (atomic-category-morphism/c source/c target/c)
+;   (mediary-category-sys/c
+;     object-mediary-set-sys/c morphism-mediary-set-sys-family/c)
+;   (category-sys/c object-set-sys/c morphism-set-sys-family/c)
+;   (functor/c source/c target/c)
+;   (natural-transformation/c
+;     endpoint-source/c endpoint-target/c source/c target/c)
+;
+; Note that as it is now, the `category-sys/c` one could take
+; contracts to apply separately to its object mediary set, its
+; morphism mediary set family, and its mediary category, but soon we
+; should have it refactored to avoid making references to mediary
+; categories.
+;
+; Several of these contract combinators (`function-sys/c`,
+; `atomic-category-morphism/c`, `functor/c`, and maybe even
+; `natural-transformation/c`) fit a pattern that could be abstracted.
+; So do the others with another pattern (`mediary-digraph-sys/c`,
+; `mediary-category-sys/c`, and `category-sys/c`).
+
 
 (define-imitation-simple-generics
   atomic-set-element-sys? atomic-set-element-sys-impl?
