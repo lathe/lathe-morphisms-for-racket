@@ -690,22 +690,30 @@
         [nts natural-transformation-sys?]
         [s (nts) (natural-transformation-sys-endpoint/c nts)])
       [_ natural-transformation-sys?])]
-  [natural-transformation-sys-apply-to-object
+  [natural-transformation-sys-apply-to-morphism
     (->i
       (
         [nts natural-transformation-sys?]
-        [object (nts)
+        [a (nts)
           (category-sys-object/c
-            (natural-transformation-sys-endpoint-source nts))])
-      [_ (nts object)
+            (natural-transformation-sys-endpoint-source nts))]
+        [b (nts)
+          (category-sys-object/c
+            (natural-transformation-sys-endpoint-source nts))]
+        [ab (nts a b)
+          (category-sys-morphism/c
+            (natural-transformation-sys-endpoint-source nts)
+            a
+            b)])
+      [_ (nts a b ab)
         (category-sys-morphism/c
           (natural-transformation-sys-endpoint-target nts)
           (functor-sys-apply-to-object
             (natural-transformation-sys-source nts)
-            object)
+            a)
           (functor-sys-apply-to-object
             (natural-transformation-sys-target nts)
-            object))])]
+            b))])]
   [prop:natural-transformation-sys
     (struct-type-property/c natural-transformation-sys-impl?)]
   [make-natural-transformation-sys-impl-from-apply
@@ -725,18 +733,26 @@
       (->i
         (
           [nts natural-transformation-sys?]
-          [object (nts)
+          [a (nts)
             (category-sys-object/c
-              (natural-transformation-sys-endpoint-source nts))])
-        [_ (nts object)
+              (natural-transformation-sys-endpoint-source nts))]
+          [b (nts)
+            (category-sys-object/c
+              (natural-transformation-sys-endpoint-source nts))]
+          [ab (nts a b)
+            (category-sys-morphism/c
+              (natural-transformation-sys-endpoint-source nts)
+              a
+              b)])
+        [_ (nts a b ab)
           (category-sys-morphism/c
             (natural-transformation-sys-endpoint-target nts)
             (functor-sys-apply-to-object
               (natural-transformation-sys-source nts)
-              object)
+              a)
             (functor-sys-apply-to-object
               (natural-transformation-sys-target nts)
-              object))])
+              b))])
       natural-transformation-sys-impl?)]
   [natural-transformation-sys/c
     (-> contract? contract? contract? contract? contract?)]
@@ -767,10 +783,6 @@
           (accepts/c #/functor-sys-target endpoint)
           (accepts/c endpoint)
           (accepts/c endpoint))])]
-  ; TODO: Implement a `natural-transformation-sys-chain-two-along-end`
-  ; operation for horizontal composition. See if we can implement it
-  ; in a generic enough way that it's part of
-  ; `define-makeshift-2-cell`.
   [natural-transformation-sys-chain-two
     (->i
       (
@@ -788,7 +800,28 @@
           (accepts/c #/natural-transformation-sys-endpoint-source ab)
           (accepts/c #/natural-transformation-sys-endpoint-target ab)
           (accepts/c #/natural-transformation-sys-source ab)
-          (accepts/c #/natural-transformation-sys-target bc))])])
+          (accepts/c #/natural-transformation-sys-target bc))])]
+  [natural-transformation-sys-chain-two-along-end
+    (->i
+      (
+        [ab natural-transformation-sys?]
+        [bc (ab)
+          (natural-transformation-sys/c
+            (accepts/c
+              (natural-transformation-sys-endpoint-target ab))
+            any/c
+            any/c
+            any/c)])
+      [_ (ab bc)
+        (natural-transformation-sys/c
+          (accepts/c #/natural-transformation-sys-endpoint-source ab)
+          (accepts/c #/natural-transformation-sys-endpoint-target bc)
+          (accepts/c #/functor-sys-chain-two
+            (natural-transformation-sys-source ab)
+            (natural-transformation-sys-source bc))
+          (accepts/c #/functor-sys-chain-two
+            (natural-transformation-sys-target ab)
+            (natural-transformation-sys-target bc)))])])
 
 
 ; In this file we explore a "mediary" approach. This is a term we've
@@ -1072,7 +1105,7 @@
     make-morphism-sys-impl-from-apply
     morphism-sys-source
     morphism-sys-target
-    morphism-sys-apply-to-cell
+    morphism-sys-apply-to-guest
     ...)
   
   #:declare makeshift-morphism-sys-name
@@ -1097,7 +1130,7 @@
                 [a
                   (in-list
                     (syntax->list
-                      #'(morphism-sys-apply-to-cell ...)))])
+                      #'(morphism-sys-apply-to-guest ...)))])
               #'(-> any/c any/c any/c))
         any/c)
     #:name "structure type property implementation constructor")
@@ -1108,25 +1141,25 @@
   #:declare morphism-sys-target
   (expr/c #'(-> any/c any/c) #:name "target accessor")
   
-  #:declare morphism-sys-apply-to-cell
+  #:declare morphism-sys-apply-to-guest
   (expr/c #'(unconstrained-domain-> any/c)
     #:name "an application behavior function")
   
-  #:with (a ...)
-  (generate-temporaries #'(morphism-sys-apply-to-cell ...))
+  #:with (ap ...)
+  (generate-temporaries #'(morphism-sys-apply-to-guest ...))
   
-  #:with (contracted-morphism-sys-apply-to-cell ...)
-  (generate-temporaries #'(a ...))
+  #:with (contracted-morphism-sys-apply-to-guest ...)
+  (generate-temporaries #'(ap ...))
   
-  #:with (makeshift-morphism-sys-apply-to-cell ...)
-  (generate-temporaries #'(a ...))
+  #:with (makeshift-morphism-sys-apply-to-guest ...)
+  (generate-temporaries #'(ap ...))
   
   #:with (identity ...)
-  (for/list ([arg/c (in-list (syntax->list #'(a ...)))])
-    #'(lambda endpoints-and-cell
-        (dissect (reverse endpoints-and-cell)
-          (cons cell rev-endpoints)
-          cell)))
+  (for/list ([arg/c (in-list (syntax->list #'(ap ...)))])
+    #'(lambda endpoints-and-guest
+        (dissect (reverse endpoints-and-guest)
+          (cons guest rev-endpoints)
+          guest)))
   
   (begin
     (define contracted-makeshift-morphism-sys-name
@@ -1136,51 +1169,51 @@
       make-morphism-sys-impl-from-apply.c)
     (define contracted-morphism-sys-source morphism-sys-source.c)
     (define contracted-morphism-sys-target morphism-sys-target.c)
-    (define contracted-morphism-sys-apply-to-cell
-      morphism-sys-apply-to-cell.c)
+    (define contracted-morphism-sys-apply-to-guest
+      morphism-sys-apply-to-guest.c)
     ...
     (define-imitation-simple-struct
       (makeshift-morphism-sys?
         makeshift-morphism-sys-source
         makeshift-morphism-sys-target
-        makeshift-morphism-sys-apply-to-cell
+        makeshift-morphism-sys-apply-to-guest
         ...)
       unguarded-makeshift-morphism-sys
       contracted-makeshift-morphism-sys-name (current-inspector)
       (#:prop contracted-prop-morphism-sys
         (contracted-make-morphism-sys-impl-from-apply
           ; morphism-sys-source
-          (dissectfn (unguarded-makeshift-morphism-sys s t a ...) s)
+          (dissectfn (unguarded-makeshift-morphism-sys s t ap ...) s)
           ; morphism-sys-replace-source
           (fn ms new-s
-            (dissect ms (unguarded-makeshift-morphism-sys s t a ...)
-            #/unguarded-makeshift-morphism-sys new-s t a ...))
+            (dissect ms (unguarded-makeshift-morphism-sys s t ap ...)
+            #/unguarded-makeshift-morphism-sys new-s t ap ...))
           ; morphism-sys-target
-          (dissectfn (unguarded-makeshift-morphism-sys s t a ...) t)
+          (dissectfn (unguarded-makeshift-morphism-sys s t ap ...) t)
           ; morphism-sys-replace-target
           (fn ms new-t
-            (dissect ms (unguarded-makeshift-morphism-sys s t a ...)
-            #/unguarded-makeshift-morphism-sys s new-t a ...))
-          ; morphism-sys-apply-to-cell
-          (fn ms cell
-            ( (makeshift-morphism-sys-apply-to-cell ms) cell))
+            (dissect ms (unguarded-makeshift-morphism-sys s t ap ...)
+            #/unguarded-makeshift-morphism-sys s new-t ap ...))
+          ; morphism-sys-apply-to-guest
+          (fn ms guest
+            ( (makeshift-morphism-sys-apply-to-guest ms) guest))
           ...)))
-    (define (makeshift-morphism-sys s t a ...)
-      (unguarded-makeshift-morphism-sys s t a ...))
+    (define (makeshift-morphism-sys s t ap ...)
+      (unguarded-makeshift-morphism-sys s t ap ...))
     (define (morphism-sys-identity endpoint)
       (makeshift-morphism-sys endpoint endpoint identity ...))
     (define (morphism-sys-chain-two ab bc)
       (makeshift-morphism-sys
         (contracted-morphism-sys-source ab)
         (contracted-morphism-sys-target bc)
-        (lambda endpoints-and-cell
-          (dissect (reverse endpoints-and-cell)
-            (cons cell rev-endpoints)
+        (lambda endpoints-and-guest
+          (dissect (reverse endpoints-and-guest)
+            (cons guest rev-endpoints)
           #/w- endpoints (reverse rev-endpoints)
-          #/apply contracted-morphism-sys-apply-to-cell bc
+          #/apply contracted-morphism-sys-apply-to-guest bc
             (append endpoints
-              (apply contracted-morphism-sys-apply-to-cell ab
-                endpoints-and-cell))))
+              (apply contracted-morphism-sys-apply-to-guest ab
+                endpoints-and-guest))))
         ...))))
 
 (define-simple-macro
@@ -1188,16 +1221,23 @@
     makeshift-cell-sys:id
     cell-sys-identity:id
     cell-sys-chain-two:id
+    cell-sys-chain-two-along-end:id
     makeshift-cell-sys-name
     prop-cell-sys
     make-cell-sys-impl-from-apply
     endpoint-replace-source
     endpoint-replace-target
+    endpoint-chain-two
     cell-sys-endpoint-source
     cell-sys-endpoint-target
     cell-sys-source
     cell-sys-target
-    cell-sys-apply-to-face
+    (#:guest
+      endpoint-endpoint-guest-identity
+      endpoint-endpoint-guest-chain-two
+      endpoint-apply-to-guest-endpoint
+      endpoint-apply-to-guest
+      cell-sys-apply-to-guest)
     ...)
   
   #:declare makeshift-cell-sys-name
@@ -1221,7 +1261,7 @@
               (
                 [a
                   (in-list
-                    (syntax->list #'(cell-sys-apply-to-face ...)))])
+                    (syntax->list #'(cell-sys-apply-to-guest ...)))])
               #'(-> any/c any/c any/c))
         any/c)
     #:name "structure type property implementation constructor")
@@ -1233,6 +1273,10 @@
   #:declare endpoint-replace-target
   (expr/c #'(-> any/c any/c any/c)
     #:name "endpoint system's target replacer")
+  
+  #:declare endpoint-chain-two
+  (expr/c #'(-> any/c any/c any/c)
+    #:name "composition function for endpoint systems")
   
   #:declare cell-sys-endpoint-source
   (expr/c #'(-> any/c any/c) #:name "endpoint source accessor")
@@ -1246,24 +1290,46 @@
   #:declare cell-sys-target
   (expr/c #'(-> any/c any/c) #:name "target accessor")
   
-  #:declare cell-sys-apply-to-face
+  #:declare endpoint-endpoint-guest-identity
+  (expr/c #'(unconstrained-domain-> any/c)
+    #:name "one of the identity functions of an endpoint system's endpoint system")
+  
+  #:declare endpoint-endpoint-guest-chain-two
+  (expr/c #'(unconstrained-domain-> any/c)
+    #:name "one of the sequencing functions of an endpoint system's endpoint system")
+  
+  #:declare endpoint-apply-to-guest-endpoint
+  (expr/c #'(unconstrained-domain-> any/c)
+    #:name "one of the application behavior functions of an endpoint system taking an endpoint")
+  
+  #:declare endpoint-apply-to-guest
+  (expr/c #'(unconstrained-domain-> any/c)
+    #:name "one of the application behavior functions of an endpoint system")
+  
+  #:declare cell-sys-apply-to-guest
   (expr/c #'(unconstrained-domain-> any/c)
     #:name "an application behavior function")
   
-  #:with (a ...) (generate-temporaries #'(cell-sys-apply-to-face ...))
+  #:with (ap ...)
+  (generate-temporaries #'(endpoint-endpoint-guest-identity ...))
   
-  #:with (contracted-cell-sys-apply-to-face ...)
-  (generate-temporaries #'(a ...))
+  #:with (contracted-endpoint-endpoint-guest-identity ...)
+  (generate-temporaries #'(ap ...))
   
-  #:with (makeshift-cell-sys-apply-to-face ...)
-  (generate-temporaries #'(a ...))
+  #:with (contracted-endpoint-endpoint-guest-chain-two ...)
+  (generate-temporaries #'(ap ...))
   
-  #:with (identity ...)
-  (for/list ([arg/c (in-list (syntax->list #'(a ...)))])
-    #'(lambda endpoints-and-cell
-        (dissect (reverse endpoints-and-cell)
-          (cons cell rev-endpoints)
-          cell)))
+  #:with (contracted-endpoint-apply-to-guest-endpoint ...)
+  (generate-temporaries #'(ap ...))
+  
+  #:with (contracted-endpoint-apply-to-guest ...)
+  (generate-temporaries #'(ap ...))
+  
+  #:with (contracted-cell-sys-apply-to-guest ...)
+  (generate-temporaries #'(ap ...))
+  
+  #:with (makeshift-cell-sys-apply-to-guest ...)
+  (generate-temporaries #'(ap ...))
   
   (begin
     (define contracted-makeshift-cell-sys-name
@@ -1275,14 +1341,27 @@
       endpoint-replace-source.c)
     (define contracted-endpoint-replace-target
       endpoint-replace-target.c)
+    (define contracted-endpoint-chain-two endpoint-chain-two.c)
     (define contracted-cell-sys-endpoint-source
       cell-sys-endpoint-source.c)
     (define contracted-cell-sys-endpoint-target
       cell-sys-endpoint-target.c)
     (define contracted-cell-sys-source cell-sys-source.c)
     (define contracted-cell-sys-target cell-sys-target.c)
-    (define contracted-cell-sys-apply-to-face
-      cell-sys-apply-to-face.c)
+    (define contracted-endpoint-endpoint-guest-identity
+      endpoint-endpoint-guest-identity.c)
+    ...
+    (define contracted-endpoint-endpoint-guest-chain-two
+      endpoint-endpoint-guest-chain-two.c)
+    ...
+    (define contracted-endpoint-apply-to-guest-endpoint
+      endpoint-apply-to-guest-endpoint.c)
+    ...
+    (define contracted-endpoint-apply-to-guest
+      endpoint-apply-to-guest.c)
+    ...
+    (define contracted-cell-sys-apply-to-guest
+      cell-sys-apply-to-guest.c)
     ...
     (define-imitation-simple-struct
       (makeshift-cell-sys?
@@ -1290,68 +1369,117 @@
         makeshift-cell-sys-endpoint-target
         makeshift-cell-sys-source
         makeshift-cell-sys-target
-        makeshift-cell-sys-apply-to-face
+        makeshift-cell-sys-apply-to-guest
         ...)
       unguarded-makeshift-cell-sys
       contracted-makeshift-cell-sys-name (current-inspector)
       (#:prop contracted-prop-cell-sys
         (contracted-make-cell-sys-impl-from-apply
           ; cell-sys-endpoint-source
-          (dissectfn (unguarded-makeshift-cell-sys es et s t a ...)
+          (dissectfn (unguarded-makeshift-cell-sys es et s t ap ...)
             es)
           ; cell-sys-replace-endpoint-source
           (fn ms new-es
-            (dissect ms (unguarded-makeshift-cell-sys es et s t a ...)
+            (dissect ms
+              (unguarded-makeshift-cell-sys es et s t ap ...)
             #/unguarded-makeshift-cell-sys new-es et
               (contracted-endpoint-replace-source s new-es)
               (contracted-endpoint-replace-source t new-es)
-              a
+              ap
               ...))
           ; cell-sys-endpoint-target
-          (dissectfn (unguarded-makeshift-cell-sys es et s t a ...)
+          (dissectfn (unguarded-makeshift-cell-sys es et s t ap ...)
             et)
           ; cell-sys-replace-endpoint-target
           (fn ms new-et
-            (dissect ms (unguarded-makeshift-cell-sys es et s t a ...)
+            (dissect ms
+              (unguarded-makeshift-cell-sys es et s t ap ...)
             #/unguarded-makeshift-cell-sys es new-et
               (contracted-endpoint-replace-target s new-et)
               (contracted-endpoint-replace-target t new-et)
-              a
+              ap
               ...))
           ; cell-sys-source
-          (dissectfn (unguarded-makeshift-cell-sys es et s t a ...) s)
+          (dissectfn (unguarded-makeshift-cell-sys es et s t ap ...)
+            s)
           ; cell-sys-replace-source
           (fn ms new-s
-            (dissect ms (unguarded-makeshift-cell-sys es et s t a ...)
-            #/unguarded-makeshift-cell-sys es et new-s t a ...))
+            (dissect ms
+              (unguarded-makeshift-cell-sys es et s t ap ...)
+            #/unguarded-makeshift-cell-sys es et new-s t ap ...))
           ; cell-sys-target
-          (dissectfn (unguarded-makeshift-cell-sys es et s t a ...) t)
+          (dissectfn (unguarded-makeshift-cell-sys es et s t ap ...)
+            t)
           ; cell-sys-replace-target
           (fn ms new-t
-            (dissect ms (unguarded-makeshift-cell-sys es et s t a ...)
-            #/unguarded-makeshift-cell-sys es et s new-t a ...))
-          ; cell-sys-apply-to-face
+            (dissect ms
+              (unguarded-makeshift-cell-sys es et s t ap ...)
+            #/unguarded-makeshift-cell-sys es et s new-t ap ...))
+          ; cell-sys-apply-to-guest
           (fn ms cell
-            ( (makeshift-cell-sys-apply-to-face ms) cell))
+            ( (makeshift-cell-sys-apply-to-guest ms) cell))
           ...)))
-    (define (makeshift-cell-sys es et s t a ...)
-      (unguarded-makeshift-cell-sys es et s t a ...))
+    (define (makeshift-cell-sys es et s t ap ...)
+      (unguarded-makeshift-cell-sys es et s t ap ...))
     (define (cell-sys-identity endpoint)
-      (makeshift-cell-sys endpoint endpoint identity ...))
+      (makeshift-cell-sys
+        (contracted-cell-sys-endpoint-source endpoint)
+        (contracted-cell-sys-endpoint-target endpoint)
+        endpoint
+        endpoint
+        (lambda endpoints-and-cell
+          (apply contracted-endpoint-apply-to-guest endpoint
+            endpoints-and-cell))
+        ...))
     (define (cell-sys-chain-two ab bc)
+      (w- es (contracted-cell-sys-endpoint-source ab)
+      #/w- et (contracted-cell-sys-endpoint-target ab)
+      #/w- a (contracted-cell-sys-source ab)
+      #/w- b (contracted-cell-sys-target ab)
+      #/w- c (contracted-cell-sys-target bc)
+      #/makeshift-cell-sys es et a c
+        (lambda endpoints-and-guest
+          (dissect (reverse endpoints-and-guest)
+            (list* guest guest-t guest-s rev-endpoints)
+          #/w- endpoints (reverse rev-endpoints)
+          #/apply contracted-endpoint-endpoint-guest-chain-two
+            et
+            (append endpoints
+              (list
+                (apply contracted-endpoint-apply-to-guest-endpoint a
+                  (append endpoints (list guest-s)))
+                (apply contracted-endpoint-apply-to-guest-endpoint b
+                  (append endpoints (list guest-s)))
+                (apply contracted-endpoint-apply-to-guest-endpoint c
+                  (append endpoints (list guest-t)))
+                (apply contracted-endpoint-apply-to-guest ab
+                  (append endpoints
+                    (list guest-s guest-t
+                      (apply
+                        contracted-endpoint-endpoint-guest-identity
+                        es
+                        (append endpoints (list guest-s))))))
+                (apply contracted-endpoint-apply-to-guest bc
+                  endpoints-and-guest)))))
+        ...))
+    (define (cell-sys-chain-two-along-end ab bc)
       (makeshift-cell-sys
         (contracted-cell-sys-endpoint-source ab)
-        (contracted-cell-sys-endpoint-target ab)
-        (contracted-cell-sys-source ab)
-        (contracted-cell-sys-target bc)
-        (lambda endpoints-and-cell
-          (dissect (reverse endpoints-and-cell)
-            (cons cell rev-endpoints)
+        (contracted-cell-sys-endpoint-target bc)
+        (contracted-endpoint-chain-two
+          (contracted-cell-sys-source ab)
+          (contracted-cell-sys-source bc))
+        (contracted-endpoint-chain-two
+          (contracted-cell-sys-target ab)
+          (contracted-cell-sys-target bc))
+        (lambda endpoints-and-guest
+          (dissect (reverse endpoints-and-guest)
+            (cons guest rev-endpoints)
           #/w- endpoints (reverse rev-endpoints)
-          #/apply contracted-cell-sys-apply-to-face bc
+          #/apply contracted-cell-sys-apply-to-guest bc
             (append endpoints
-              (apply contracted-cell-sys-apply-to-face ab
-                endpoints-and-cell))))
+              (apply contracted-cell-sys-apply-to-guest ab
+                endpoints-and-guest))))
         ...))))
 
 
@@ -1841,7 +1969,11 @@
   (#:method natural-transformation-sys-replace-source (#:this) ())
   (#:method natural-transformation-sys-target (#:this))
   (#:method natural-transformation-sys-replace-target (#:this) ())
-  (#:method natural-transformation-sys-apply-to-object (#:this) ())
+  (#:method natural-transformation-sys-apply-to-morphism
+    (#:this)
+    ()
+    ()
+    ())
   prop:natural-transformation-sys
   make-natural-transformation-sys-impl-from-apply
   'natural-transformation-sys 'natural-transformation-sys-impl (list))
@@ -1870,13 +2002,20 @@
   makeshift-natural-transformation-sys
   natural-transformation-sys-identity
   natural-transformation-sys-chain-two
+  natural-transformation-sys-chain-two-along-end
   'makeshift-natural-transformation-sys
   prop:natural-transformation-sys
   make-natural-transformation-sys-impl-from-apply
   functor-sys-replace-source
   functor-sys-replace-target
+  functor-sys-chain-two
   natural-transformation-sys-endpoint-source
   natural-transformation-sys-endpoint-target
   natural-transformation-sys-source
   natural-transformation-sys-target
-  natural-transformation-sys-apply-to-object)
+  (#:guest
+    category-sys-object-identity-morphism
+    category-sys-morphism-chain-two
+    functor-sys-apply-to-object
+    functor-sys-apply-to-morphism
+    natural-transformation-sys-apply-to-morphism))
