@@ -21,13 +21,27 @@
 ;   language governing permissions and limitations under the License.
 
 
-(require #/only-in racket/contract struct-type-property/c)
-(require #/only-in racket/contract/base
-  -> ->i and/c any/c contract? contract-out list/c)
-(require #/only-in racket/contract/combinator
-  contract-first-order-passes?)
+(require #/for-syntax racket/base)
 
-(require #/only-in lathe-comforts w-)
+(require #/for-syntax #/only-in syntax/parse
+  expr/c id)
+
+; NOTE: The Racket documentation says `get/build-late-neg-projection`
+; is in `racket/contract/combinator`, but it isn't. It's in
+; `racket/contract/base`. Since it's also in `racket/contract` and the
+; documentation correctly says it is, we require it from there.
+(require #/only-in racket/contract
+  get/build-late-neg-projection struct-type-property/c)
+(require #/only-in racket/contract/base
+  -> ->i and/c any/c contract? contract-name contract-out list/c
+  rename-contract unconstrained-domain->)
+(require #/only-in racket/contract/combinator
+  blame-add-context coerce-contract contract-first-order-passes?
+  make-contract)
+(require #/only-in syntax/parse/define
+  define-simple-macro)
+
+(require #/only-in lathe-comforts dissect dissectfn fn w-)
 (require #/only-in lathe-comforts/contract by-own-method/c swap/c)
 (require #/only-in lathe-comforts/match
   define-match-expander-attenuated
@@ -60,6 +74,9 @@
     (struct-type-property/c mediary-set-sys-impl?)]
   [make-mediary-set-sys-impl-from-contract
     (-> (-> mediary-set-sys? contract?) mediary-set-sys-impl?)])
+
+(provide #/contract-out
+  [accepts/c (-> any/c contract?)])
 
 (provide #/contract-out
   [set-sys? (-> any/c boolean?)]
@@ -120,7 +137,32 @@
           [fs function-sys?]
           [element (fs) (set-sys-element/c #/function-sys-source fs)])
         [_ (fs) (set-sys-element/c #/function-sys-target fs)])
-      function-sys-impl?)])
+      function-sys-impl?)]
+  [function-sys/c (-> contract? contract? contract?)]
+  [makeshift-function-sys
+    (->i
+      (
+        [s set-sys?]
+        [t set-sys?]
+        [apply-to-element (s t)
+          (-> (set-sys-element/c s) (set-sys-element/c t))])
+      [_ (s t) (function-sys/c (accepts/c s) (accepts/c t))])]
+  [function-sys-identity
+    (->i ([endpoint set-sys?])
+      [_ (endpoint)
+        (function-sys/c (accepts/c endpoint) (accepts/c endpoint))])]
+  [function-sys-chain-two
+    (->i
+      (
+        [ab function-sys?]
+        [bc (ab)
+          (function-sys/c
+            (accepts/c #/function-sys-target ab)
+            any/c)])
+      [_ (ab bc)
+        (function-sys/c
+          (accepts/c #/function-sys-source ab)
+          (accepts/c #/function-sys-target bc))])])
 
 (provide #/contract-out
   [mediary-digraph-sys? (-> any/c boolean?)]
@@ -265,10 +307,18 @@
 (provide #/contract-out
   [atomic-category-morphism-sys? (-> any/c boolean?)]
   [atomic-category-morphism-sys-impl? (-> any/c boolean?)]
+  [atomic-category-morphism-sys-accepts/c
+    (-> atomic-category-morphism-sys? contract?)]
+  [atomic-category-morphism-sys-replace-category-sys
+    (-> atomic-category-morphism-sys? category-sys? any/c)]
   [atomic-category-morphism-sys-source
     (-> atomic-category-morphism-sys? any/c)]
+  [atomic-category-morphism-sys-replace-source
+    (-> atomic-category-morphism-sys? any/c any/c)]
   [atomic-category-morphism-sys-target
     (-> atomic-category-morphism-sys? any/c)]
+  [atomic-category-morphism-sys-replace-target
+    (-> atomic-category-morphism-sys? any/c any/c)]
   [atomic-category-morphism-sys-atomicity
     (-> atomic-category-morphism-sys? category-morphism-atomicity?)]
   [prop:atomic-category-morphism-sys
@@ -278,7 +328,8 @@
       (-> atomic-category-morphism-sys? any/c)
       (-> atomic-category-morphism-sys? any/c)
       (-> atomic-category-morphism-sys? category-morphism-atomicity?)
-      atomic-category-morphism-sys-impl?)])
+      atomic-category-morphism-sys-impl?)]
+  [atomic-category-morphism-sys/c (-> contract? contract? contract?)])
 
 (provide #/contract-out
   [mediary-category-sys? (-> any/c boolean?)]
@@ -589,10 +640,43 @@
           [morphism (fs s t)
             (category-sys-morphism/c (functor-sys-source fs) s t)])
         [_ (fs s t)
-          (category-sys-object/c (functor-sys-target fs)
+          (category-sys-morphism/c (functor-sys-target fs)
             (functor-sys-apply-to-object fs s)
             (functor-sys-apply-to-object fs t))])
-      functor-sys-impl?)])
+      functor-sys-impl?)]
+  [functor-sys/c (-> contract? contract? contract?)]
+  [makeshift-functor-sys
+    (->i
+      (
+        [s category-sys?]
+        [t category-sys?]
+        [apply-to-object (s t)
+          (-> (category-sys-object/c s) (category-sys-object/c t))]
+        [apply-to-morphism (s t apply-to-object)
+          (->i
+            (
+              [a (category-sys-object/c s)]
+              [b (category-sys-object/c s)]
+              [ab (a b) (category-sys-morphism/c s a b)])
+            [_ (a b)
+              (category-sys-morphism/c t
+                (apply-to-object a)
+                (apply-to-object b))])])
+      [_ (s t) (functor-sys/c (accepts/c s) (accepts/c t))])]
+  [functor-sys-identity
+    (->i ([endpoint category-sys?])
+      [_ (endpoint)
+        (functor-sys/c (accepts/c endpoint) (accepts/c endpoint))])]
+  [functor-sys-chain-two
+    (->i
+      (
+        [ab functor-sys?]
+        [bc (ab)
+          (functor-sys/c (accepts/c #/functor-sys-target ab) any/c)])
+      [_ (ab bc)
+        (functor-sys/c
+          (accepts/c #/functor-sys-source ab)
+          (accepts/c #/functor-sys-target bc))])])
 
 (provide #/contract-out
   [natural-transformation-sys? (-> any/c boolean?)]
@@ -607,19 +691,26 @@
   [natural-transformation-sys-replace-endpoint-target
     (-> natural-transformation-sys? category-sys?
       natural-transformation-sys?)]
-  ; TODO: Implement `functor/c`, and have these contracts that use
-  ; `functor-sys?` use `functor/c` instead to verify that the functor
-  ; has the appropriate endpoints.
+  [natural-transformation-sys-endpoint/c
+    (-> natural-transformation-sys? contract?)]
   [natural-transformation-sys-source
-    (-> natural-transformation-sys? functor-sys?)]
+    (->i ([nts natural-transformation-sys?])
+      [_ (nts) (natural-transformation-sys-endpoint/c nts)])]
   [natural-transformation-sys-replace-source
-    (-> natural-transformation-sys? functor-sys?
-      natural-transformation-sys?)]
+    (->i
+      (
+        [nts natural-transformation-sys?]
+        [s (nts) (natural-transformation-sys-endpoint/c nts)])
+      [_ natural-transformation-sys?])]
   [natural-transformation-sys-target
-    (-> natural-transformation-sys? functor-sys?)]
+    (->i ([nts natural-transformation-sys?])
+      [_ (nts) (natural-transformation-sys-endpoint/c nts)])]
   [natural-transformation-sys-replace-target
-    (-> natural-transformation-sys? functor-sys?
-      natural-transformation-sys?)]
+    (->i
+      (
+        [nts natural-transformation-sys?]
+        [s (nts) (natural-transformation-sys-endpoint/c nts)])
+      [_ natural-transformation-sys?])]
   [natural-transformation-sys-apply-to-object
     (->i
       (
@@ -667,7 +758,58 @@
             (functor-sys-apply-to-object
               (natural-transformation-sys-target nts)
               object))])
-      natural-transformation-sys-impl?)])
+      natural-transformation-sys-impl?)]
+  [natural-transformation-sys/c
+    (-> contract? contract? contract? contract? contract?)]
+  [makeshift-natural-transformation-sys
+    (->i
+      (
+        [es category-sys?]
+        [et category-sys?]
+        [s (es et) (functor-sys/c (accepts/c es) (accepts/c et))]
+        [t (es et) (functor-sys/c (accepts/c es) (accepts/c et))]
+        [apply-to-object (es et s t)
+          (->i ([object (category-sys-object/c es)])
+            [_ (object)
+              (category-sys-morphism/c et
+                (functor-sys-apply-to-object s object)
+                (functor-sys-apply-to-object t object))])])
+      [_ (es et s t)
+        (natural-transformation-sys/c
+          (accepts/c es)
+          (accepts/c et)
+          (accepts/c s)
+          (accepts/c t))])]
+  [natural-transformation-sys-identity
+    (->i ([endpoint functor-sys?])
+      [_ (endpoint)
+        (natural-transformation-sys/c
+          (accepts/c #/functor-sys-source endpoint)
+          (accepts/c #/functor-sys-target endpoint)
+          (accepts/c endpoint)
+          (accepts/c endpoint))])]
+  ; TODO: Implement a `natural-transformation-sys-chain-two-along-end`
+  ; operation for horizontal composition. See if we can implement it
+  ; in a generic enough way that it's part of
+  ; `define-makeshift-2-cell`.
+  [natural-transformation-sys-chain-two
+    (->i
+      (
+        [ab natural-transformation-sys?]
+        [bc (ab)
+          (natural-transformation-sys/c
+            (accepts/c
+              (natural-transformation-sys-endpoint-source ab))
+            (accepts/c
+              (natural-transformation-sys-endpoint-target ab))
+            (accepts/c #/natural-transformation-sys-target ab)
+            any/c)])
+      [_ (ab bc)
+        (natural-transformation-sys/c
+          (accepts/c #/natural-transformation-sys-endpoint-source ab)
+          (accepts/c #/natural-transformation-sys-endpoint-target ab)
+          (accepts/c #/natural-transformation-sys-source ab)
+          (accepts/c #/natural-transformation-sys-target bc))])])
 
 
 ; In this file we explore a "mediary" approach. This is a term we've
@@ -804,16 +946,11 @@
 
 ; TODO: Implement the following contract combinators:
 ;
-;   (function-sys/c source/c target/c)
 ;   (mediary-digraph-sys/c
 ;     node-mediary-set-sys/c edge-mediary-set-sys-family/c)
-;   (atomic-category-morphism/c source/c target/c)
 ;   (mediary-category-sys/c
 ;     object-mediary-set-sys/c morphism-mediary-set-sys-family/c)
 ;   (category-sys/c object-set-sys/c morphism-set-sys-family/c)
-;   (functor/c source/c target/c)
-;   (natural-transformation/c
-;     endpoint-source/c endpoint-target/c source/c target/c)
 ;
 ; Note that as it is now, the `category-sys/c` one could take
 ; contracts to apply separately to its object mediary set, its
@@ -821,11 +958,433 @@
 ; should have it refactored to avoid making references to mediary
 ; categories.
 ;
-; Several of these contract combinators (`function-sys/c`,
-; `atomic-category-morphism/c`, `functor/c`, and maybe even
-; `natural-transformation/c`) fit a pattern that could be abstracted.
-; So do the others with another pattern (`mediary-digraph-sys/c`,
-; `mediary-category-sys/c`, and `category-sys/c`).
+; These contract combinators fit a pattern that could be abstracted.
+
+
+(define
+  (make-morphism/c
+    morphism-sys/c-name
+    morphism-sys?
+    morphism-sys-source
+    morphism-sys-replace-source
+    morphism-sys-target
+    morphism-sys-replace-target)
+  (fn source/c target/c
+    (w- source/c (coerce-contract morphism-sys/c-name source/c)
+    #/w- target/c (coerce-contract morphism-sys/c-name target/c)
+    #/w- name
+      `(morphism-sys/c-name
+        ,(contract-name source/c)
+        ,(contract-name target/c))
+    #/w- source/c-late-neg-projection
+      (get/build-late-neg-projection source/c)
+    #/w- target/c-late-neg-projection
+      (get/build-late-neg-projection target/c)
+    #/make-contract #:name name
+      
+      #:first-order
+      (fn v
+        (and
+          (morphism-sys? v)
+          (contract-first-order-passes? source/c
+            (morphism-sys-source v))
+          (contract-first-order-passes? target/c
+            (morphism-sys-target v))))
+      
+      #:late-neg-projection
+      (fn blame
+        (w- source/c-projection
+          (source/c-late-neg-projection
+            (blame-add-context blame "source of"))
+        #/w- target/c-projection
+          (target/c-late-neg-projection
+            (blame-add-context blame "target of"))
+        #/fn v missing-party
+          (w- v
+            (morphism-sys-replace-source v
+              (source/c-projection (morphism-sys-source v)
+                missing-party))
+          #/w- v
+            (morphism-sys-replace-target v
+              (target/c-projection (morphism-sys-target v)
+                missing-party))
+            v))))))
+
+(define
+  (make-2-cell/c
+    cell-sys/c-name
+    cell-sys?
+    cell-sys-endpoint-source
+    cell-sys-replace-endpoint-source
+    cell-sys-endpoint-target
+    cell-sys-replace-endpoint-target
+    cell-sys-source
+    cell-sys-replace-source
+    cell-sys-target
+    cell-sys-replace-target)
+  (fn endpoint-source/c endpoint-target/c source/c target/c
+    (w- endpoint-source/c
+      (coerce-contract cell-sys/c-name endpoint-source/c)
+    #/w- endpoint-target/c
+      (coerce-contract cell-sys/c-name endpoint-target/c)
+    #/w- source/c (coerce-contract cell-sys/c-name source/c)
+    #/w- target/c (coerce-contract cell-sys/c-name target/c)
+    #/w- name
+      `(cell-sys/c-name
+        ,(contract-name endpoint-source/c)
+        ,(contract-name endpoint-target/c)
+        ,(contract-name source/c)
+        ,(contract-name target/c))
+    #/w- endpoint-source/c-late-neg-projection
+      (get/build-late-neg-projection endpoint-source/c)
+    #/w- endpoint-target/c-late-neg-projection
+      (get/build-late-neg-projection endpoint-target/c)
+    #/w- source/c-late-neg-projection
+      (get/build-late-neg-projection source/c)
+    #/w- target/c-late-neg-projection
+      (get/build-late-neg-projection target/c)
+    #/make-contract #:name name
+      
+      #:first-order
+      (fn v
+        (and
+          (cell-sys? v)
+          (contract-first-order-passes? endpoint-source/c
+            (cell-sys-endpoint-source v))
+          (contract-first-order-passes? endpoint-target/c
+            (cell-sys-endpoint-target v))
+          (contract-first-order-passes? source/c
+            (cell-sys-source v))
+          (contract-first-order-passes? target/c
+            (cell-sys-target v))))
+      
+      #:late-neg-projection
+      (fn blame
+        (w- endpoint-source/c-projection
+          (endpoint-source/c-late-neg-projection
+            (blame-add-context blame "endpoint source of"))
+        #/w- endpoint-target/c-projection
+          (endpoint-target/c-late-neg-projection
+            (blame-add-context blame "endpoint target of"))
+        #/w- source/c-projection
+          (source/c-late-neg-projection
+            (blame-add-context blame "source of"))
+        #/w- target/c-projection
+          (target/c-late-neg-projection
+            (blame-add-context blame "target of"))
+        #/fn v missing-party
+          (w- v
+            (cell-sys-replace-endpoint-source v
+              (endpoint-source/c-projection
+                (cell-sys-endpoint-source v)
+                missing-party))
+          #/w- v
+            (cell-sys-replace-endpoint-target v
+              (endpoint-target/c-projection
+                (cell-sys-endpoint-target v)
+                missing-party))
+          #/w- v
+            (cell-sys-replace-source v
+              (source/c-projection (cell-sys-source v)
+                missing-party))
+          #/w- v
+            (cell-sys-replace-target v
+              (target/c-projection (cell-sys-target v)
+                missing-party))
+            v))))))
+
+
+(define-simple-macro
+  (define-makeshift-morphism
+    makeshift-morphism-sys:id
+    morphism-sys-identity:id
+    morphism-sys-chain-two:id
+    makeshift-morphism-sys-name
+    prop-morphism-sys
+    make-morphism-sys-impl-from-apply
+    morphism-sys-source
+    morphism-sys-target
+    morphism-sys-apply-to-cell
+    ...)
+  
+  #:declare makeshift-morphism-sys-name
+  (expr/c #'symbol? #:name "struct name")
+  
+  #:declare prop-morphism-sys
+  (expr/c #'struct-type-property? #:name "structure type property")
+  
+  #:declare make-morphism-sys-impl-from-apply
+  (expr/c
+    ; TODO: See if we can use the more accurate contract somehow. For
+    ; now, it's commented out.
+    #'procedure?
+    #;
+    #`(->
+        (-> any/c any/c)
+        (-> any/c any/c any/c)
+        (-> any/c any/c)
+        (-> any/c any/c any/c)
+        #,@(for/list
+              (
+                [a
+                  (in-list
+                    (syntax->list
+                      #'(morphism-sys-apply-to-cell ...)))])
+              #'(-> any/c any/c any/c))
+        any/c)
+    #:name "structure type property implementation constructor")
+  
+  #:declare morphism-sys-source
+  (expr/c #'(-> any/c any/c) #:name "source accessor")
+  
+  #:declare morphism-sys-target
+  (expr/c #'(-> any/c any/c) #:name "target accessor")
+  
+  #:declare morphism-sys-apply-to-cell
+  (expr/c #'(unconstrained-domain-> any/c)
+    #:name "an application behavior function")
+  
+  #:with (a ...)
+  (generate-temporaries #'(morphism-sys-apply-to-cell ...))
+  
+  #:with (contracted-morphism-sys-apply-to-cell ...)
+  (generate-temporaries #'(a ...))
+  
+  #:with (makeshift-morphism-sys-apply-to-cell ...)
+  (generate-temporaries #'(a ...))
+  
+  #:with (identity ...)
+  (for/list ([arg/c (in-list (syntax->list #'(a ...)))])
+    #'(lambda endpoints-and-cell
+        (dissect (reverse endpoints-and-cell)
+          (cons cell rev-endpoints)
+          cell)))
+  
+  (begin
+    (define contracted-makeshift-morphism-sys-name
+      makeshift-morphism-sys-name.c)
+    (define contracted-prop-morphism-sys prop-morphism-sys.c)
+    (define contracted-make-morphism-sys-impl-from-apply
+      make-morphism-sys-impl-from-apply.c)
+    (define contracted-morphism-sys-source morphism-sys-source.c)
+    (define contracted-morphism-sys-target morphism-sys-target.c)
+    (define contracted-morphism-sys-apply-to-cell
+      morphism-sys-apply-to-cell.c)
+    ...
+    (define-imitation-simple-struct
+      (makeshift-morphism-sys?
+        makeshift-morphism-sys-source
+        makeshift-morphism-sys-target
+        makeshift-morphism-sys-apply-to-cell
+        ...)
+      unguarded-makeshift-morphism-sys
+      contracted-makeshift-morphism-sys-name (current-inspector)
+      (#:prop contracted-prop-morphism-sys
+        (contracted-make-morphism-sys-impl-from-apply
+          ; morphism-sys-source
+          (dissectfn (unguarded-makeshift-morphism-sys s t a ...) s)
+          ; morphism-sys-replace-source
+          (fn ms new-s
+            (dissect ms (unguarded-makeshift-morphism-sys s t a ...)
+            #/unguarded-makeshift-morphism-sys new-s t a ...))
+          ; morphism-sys-target
+          (dissectfn (unguarded-makeshift-morphism-sys s t a ...) t)
+          ; morphism-sys-replace-target
+          (fn ms new-t
+            (dissect ms (unguarded-makeshift-morphism-sys s t a ...)
+            #/unguarded-makeshift-morphism-sys s new-t a ...))
+          ; morphism-sys-apply-to-cell
+          (fn ms cell
+            ( (makeshift-morphism-sys-apply-to-cell ms) cell))
+          ...)))
+    (define (makeshift-morphism-sys s t a ...)
+      (unguarded-makeshift-morphism-sys s t a ...))
+    (define (morphism-sys-identity endpoint)
+      (makeshift-morphism-sys endpoint endpoint identity ...))
+    (define (morphism-sys-chain-two ab bc)
+      (makeshift-morphism-sys
+        (contracted-morphism-sys-source ab)
+        (contracted-morphism-sys-target bc)
+        (lambda endpoints-and-cell
+          (dissect (reverse endpoints-and-cell)
+            (cons cell rev-endpoints)
+          #/w- endpoints (reverse rev-endpoints)
+          #/apply contracted-morphism-sys-apply-to-cell bc
+            (append endpoints
+              (apply contracted-morphism-sys-apply-to-cell ab
+                endpoints-and-cell))))
+        ...))))
+
+(define-simple-macro
+  (define-makeshift-2-cell
+    makeshift-cell-sys:id
+    cell-sys-identity:id
+    cell-sys-chain-two:id
+    makeshift-cell-sys-name
+    prop-cell-sys
+    make-cell-sys-impl-from-apply
+    endpoint-replace-source
+    endpoint-replace-target
+    cell-sys-endpoint-source
+    cell-sys-endpoint-target
+    cell-sys-source
+    cell-sys-target
+    cell-sys-apply-to-face
+    ...)
+  
+  #:declare makeshift-cell-sys-name
+  (expr/c #'symbol? #:name "struct name")
+  
+  #:declare prop-cell-sys
+  (expr/c #'struct-type-property? #:name "structure type property")
+  
+  #:declare make-cell-sys-impl-from-apply
+  (expr/c
+    ; TODO: See if we can use the more accurate contract somehow. For
+    ; now, it's commented out.
+    #'procedure?
+    #;
+    #`(->
+        (-> any/c any/c)
+        (-> any/c any/c any/c)
+        (-> any/c any/c)
+        (-> any/c any/c any/c)
+        #,@(for/list
+              (
+                [a
+                  (in-list
+                    (syntax->list #'(cell-sys-apply-to-face ...)))])
+              #'(-> any/c any/c any/c))
+        any/c)
+    #:name "structure type property implementation constructor")
+  
+  #:declare endpoint-replace-source
+  (expr/c #'(-> any/c any/c any/c)
+    #:name "endpoint system's source replacer")
+  
+  #:declare endpoint-replace-target
+  (expr/c #'(-> any/c any/c any/c)
+    #:name "endpoint system's target replacer")
+  
+  #:declare cell-sys-endpoint-source
+  (expr/c #'(-> any/c any/c) #:name "endpoint source accessor")
+  
+  #:declare cell-sys-endpoint-target
+  (expr/c #'(-> any/c any/c) #:name "endpoint target accessor")
+  
+  #:declare cell-sys-source
+  (expr/c #'(-> any/c any/c) #:name "source accessor")
+  
+  #:declare cell-sys-target
+  (expr/c #'(-> any/c any/c) #:name "target accessor")
+  
+  #:declare cell-sys-apply-to-face
+  (expr/c #'(unconstrained-domain-> any/c)
+    #:name "an application behavior function")
+  
+  #:with (a ...) (generate-temporaries #'(cell-sys-apply-to-face ...))
+  
+  #:with (contracted-cell-sys-apply-to-face ...)
+  (generate-temporaries #'(a ...))
+  
+  #:with (makeshift-cell-sys-apply-to-face ...)
+  (generate-temporaries #'(a ...))
+  
+  #:with (identity ...)
+  (for/list ([arg/c (in-list (syntax->list #'(a ...)))])
+    #'(lambda endpoints-and-cell
+        (dissect (reverse endpoints-and-cell)
+          (cons cell rev-endpoints)
+          cell)))
+  
+  (begin
+    (define contracted-makeshift-cell-sys-name
+      makeshift-cell-sys-name.c)
+    (define contracted-prop-cell-sys prop-cell-sys.c)
+    (define contracted-make-cell-sys-impl-from-apply
+      make-cell-sys-impl-from-apply.c)
+    (define contracted-endpoint-replace-source
+      endpoint-replace-source.c)
+    (define contracted-endpoint-replace-target
+      endpoint-replace-target.c)
+    (define contracted-cell-sys-endpoint-source
+      cell-sys-endpoint-source.c)
+    (define contracted-cell-sys-endpoint-target
+      cell-sys-endpoint-target.c)
+    (define contracted-cell-sys-source cell-sys-source.c)
+    (define contracted-cell-sys-target cell-sys-target.c)
+    (define contracted-cell-sys-apply-to-face
+      cell-sys-apply-to-face.c)
+    ...
+    (define-imitation-simple-struct
+      (makeshift-cell-sys?
+        makeshift-cell-sys-endpoint-source
+        makeshift-cell-sys-endpoint-target
+        makeshift-cell-sys-source
+        makeshift-cell-sys-target
+        makeshift-cell-sys-apply-to-face
+        ...)
+      unguarded-makeshift-cell-sys
+      contracted-makeshift-cell-sys-name (current-inspector)
+      (#:prop contracted-prop-cell-sys
+        (contracted-make-cell-sys-impl-from-apply
+          ; cell-sys-endpoint-source
+          (dissectfn (unguarded-makeshift-cell-sys es et s t a ...)
+            es)
+          ; cell-sys-replace-endpoint-source
+          (fn ms new-es
+            (dissect ms (unguarded-makeshift-cell-sys es et s t a ...)
+            #/unguarded-makeshift-cell-sys new-es et
+              (contracted-endpoint-replace-source s new-es)
+              (contracted-endpoint-replace-source t new-es)
+              a
+              ...))
+          ; cell-sys-endpoint-target
+          (dissectfn (unguarded-makeshift-cell-sys es et s t a ...)
+            et)
+          ; cell-sys-replace-endpoint-target
+          (fn ms new-et
+            (dissect ms (unguarded-makeshift-cell-sys es et s t a ...)
+            #/unguarded-makeshift-cell-sys es new-et
+              (contracted-endpoint-replace-target s new-et)
+              (contracted-endpoint-replace-target t new-et)
+              a
+              ...))
+          ; cell-sys-source
+          (dissectfn (unguarded-makeshift-cell-sys es et s t a ...) s)
+          ; cell-sys-replace-source
+          (fn ms new-s
+            (dissect ms (unguarded-makeshift-cell-sys es et s t a ...)
+            #/unguarded-makeshift-cell-sys es et new-s t a ...))
+          ; cell-sys-target
+          (dissectfn (unguarded-makeshift-cell-sys es et s t a ...) t)
+          ; cell-sys-replace-target
+          (fn ms new-t
+            (dissect ms (unguarded-makeshift-cell-sys es et s t a ...)
+            #/unguarded-makeshift-cell-sys es et s new-t a ...))
+          ; cell-sys-apply-to-face
+          (fn ms cell
+            ( (makeshift-cell-sys-apply-to-face ms) cell))
+          ...)))
+    (define (makeshift-cell-sys es et s t a ...)
+      (unguarded-makeshift-cell-sys es et s t a ...))
+    (define (cell-sys-identity endpoint)
+      (makeshift-cell-sys endpoint endpoint identity ...))
+    (define (cell-sys-chain-two ab bc)
+      (makeshift-cell-sys
+        (contracted-cell-sys-endpoint-source ab)
+        (contracted-cell-sys-endpoint-target ab)
+        (contracted-cell-sys-source ab)
+        (contracted-cell-sys-target bc)
+        (lambda endpoints-and-cell
+          (dissect (reverse endpoints-and-cell)
+            (cons cell rev-endpoints)
+          #/w- endpoints (reverse rev-endpoints)
+          #/apply contracted-cell-sys-apply-to-face bc
+            (append endpoints
+              (apply contracted-cell-sys-apply-to-face ab
+                endpoints-and-cell))))
+        ...))))
 
 
 (define-imitation-simple-generics
@@ -841,6 +1400,11 @@
   (#:method mediary-set-sys-element/c (#:this))
   prop:mediary-set-sys make-mediary-set-sys-impl-from-contract
   'mediary-set-sys 'mediary-set-sys-impl (list))
+
+(define (accepts/c v)
+  (if (atomic-set-element-sys? v)
+    (atomic-set-element-sys-accepts/c v)
+    any/c))
 
 (define-imitation-simple-generics
   set-sys? set-sys-impl?
@@ -865,6 +1429,26 @@
   (#:method function-sys-apply-to-element (#:this) ())
   prop:function-sys make-function-sys-impl-from-apply
   'function-sys 'function-sys-impl (list))
+
+(define function-sys/c
+  (make-morphism/c
+    'function-sys/c
+    function-sys?
+    function-sys-source
+    function-sys-replace-source
+    function-sys-target
+    function-sys-replace-target))
+
+(define-makeshift-morphism
+  makeshift-function-sys
+  function-sys-identity
+  function-sys-chain-two
+  'makeshift-function-sys
+  prop:function-sys
+  make-function-sys-impl-from-apply
+  function-sys-source
+  function-sys-target
+  function-sys-apply-to-element)
 
 ; NOTE: Even though we define `mediary-digraph-sys?`, we don't define
 ; `atomic-digraph-node-sys?`, `atomic-digraph-edge-sys?`, or
@@ -1064,6 +1648,63 @@
   'atomic-category-morphism-sys 'atomic-category-morphism-sys-impl
   (list))
 
+(define (atomic-category-morphism-sys-accepts/c ms)
+  (
+    (category-morphism-atomicity-accepts/c
+      (atomic-category-morphism-sys-atomicity ms))
+    ms))
+
+(define (atomic-category-morphism-sys-replace-category-sys ms cs)
+  (
+    (category-morphism-atomicity-replace-category-sys
+      (atomic-category-morphism-sys-atomicity ms))
+    ms
+    cs))
+
+(define (atomic-category-morphism-sys-replace-source ms s)
+  (
+    (category-morphism-atomicity-replace-source
+      (atomic-category-morphism-sys-atomicity ms))
+    ms
+    s))
+
+(define (atomic-category-morphism-sys-replace-target ms t)
+  (
+    (category-morphism-atomicity-replace-target
+      (atomic-category-morphism-sys-atomicity ms))
+    ms
+    t))
+
+(define atomic-category-morphism-sys/c
+  (make-morphism/c
+    'atomic-category-morphism-sys/c
+    atomic-category-morphism-sys?
+    atomic-category-morphism-sys-source
+    atomic-category-morphism-sys-replace-source
+    atomic-category-morphism-sys-target
+    atomic-category-morphism-sys-replace-target))
+
+; NOTE:
+;
+; We don't use `define-makeshift-morphism` to make any
+; `atomic-category-morphism-sys?` operations. Atomic category
+; morphisms don't have innate composition operations, just the ones
+; provided by their category, and there isn't a particular reason to
+; create anonymous atomic category morphisms either.
+;
+; Anonymous atomic category morphisms could make a little bit of
+; sense, being simply a pair of a source and a target with no other
+; meaningful operations. However, even if we wanted to define an
+; operation to make those pairs, `define-makeshift-morphism` wouldn't
+; help; it's specialized to a particular property implementation
+; constructor signature format where source and target accessors and
+; replacers come first, and
+; `make-atomic-category-morphism-sys-impl-from-atomicity` isn't a
+; property implementation constructor with that signature format. We
+; would simply have to define it without the help of the
+; `define-makeshift-morphism` abstraction.
+
+
 (define-imitation-simple-generics
   mediary-category-sys? mediary-category-sys-impl?
   (#:method mediary-category-sys-object-mediary-set-sys (#:this))
@@ -1209,6 +1850,27 @@
   prop:functor-sys make-functor-sys-impl-from-apply
   'functor-sys 'functor-sys-impl (list))
 
+(define functor-sys/c
+  (make-morphism/c
+    'functor-sys/c
+    functor-sys?
+    functor-sys-source
+    functor-sys-replace-source
+    functor-sys-target
+    functor-sys-replace-target))
+
+(define-makeshift-morphism
+  makeshift-functor-sys
+  functor-sys-identity
+  functor-sys-chain-two
+  'makeshift-functor-sys
+  prop:functor-sys
+  make-functor-sys-impl-from-apply
+  functor-sys-source
+  functor-sys-target
+  functor-sys-apply-to-object
+  functor-sys-apply-to-morphism)
+
 (define-imitation-simple-generics
   natural-transformation-sys? natural-transformation-sys-impl?
   (#:method natural-transformation-sys-endpoint-source (#:this))
@@ -1227,3 +1889,38 @@
   prop:natural-transformation-sys
   make-natural-transformation-sys-impl-from-apply
   'natural-transformation-sys 'natural-transformation-sys-impl (list))
+
+(define (natural-transformation-sys-endpoint/c nts)
+  (rename-contract
+    (functor-sys/c
+      (accepts/c #/natural-transformation-sys-endpoint-source nts)
+      (accepts/c #/natural-transformation-sys-endpoint-source nts))
+    `(natural-transformation-sys-endpoint/c ,nts)))
+
+(define natural-transformation-sys/c
+  (make-2-cell/c
+    'natural-transformation-sys/c
+    natural-transformation-sys?
+    natural-transformation-sys-endpoint-source
+    natural-transformation-sys-replace-endpoint-source
+    natural-transformation-sys-endpoint-target
+    natural-transformation-sys-replace-endpoint-target
+    natural-transformation-sys-source
+    natural-transformation-sys-replace-source
+    natural-transformation-sys-target
+    natural-transformation-sys-replace-target))
+
+(define-makeshift-2-cell
+  makeshift-natural-transformation-sys
+  natural-transformation-sys-identity
+  natural-transformation-sys-chain-two
+  'makeshift-natural-transformation-sys
+  prop:natural-transformation-sys
+  make-natural-transformation-sys-impl-from-apply
+  functor-sys-replace-source
+  functor-sys-replace-target
+  natural-transformation-sys-endpoint-source
+  natural-transformation-sys-endpoint-target
+  natural-transformation-sys-source
+  natural-transformation-sys-target
+  natural-transformation-sys-apply-to-object)
