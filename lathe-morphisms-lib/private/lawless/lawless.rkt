@@ -81,9 +81,6 @@
 (provide #/contract-out
   [set-sys? (-> any/c boolean?)]
   [set-sys-impl? (-> any/c boolean?)]
-  [set-sys-mediary-set-sys (-> set-sys? mediary-set-sys?)]
-  [set-sys-replace-mediary-set-sys
-    (-> set-sys? mediary-set-sys? set-sys?)]
   [set-sys-element/c (-> set-sys? contract?)]
   [set-sys-element-accepts/c
     (->i ([ss set-sys?] [element (ss) (set-sys-element/c ss)])
@@ -96,10 +93,9 @@
         [new-ss set-sys?])
       [_ (new-ss) (swap/c #/set-sys-element/c new-ss)])]
   [prop:set-sys (struct-type-property/c set-sys-impl?)]
-  [make-set-sys-impl-from-mediary
+  [make-set-sys-impl-from-contract
     (->
-      (-> set-sys? mediary-set-sys?)
-      (-> set-sys? mediary-set-sys? set-sys?)
+      (-> set-sys? contract?)
       (->i ([ss set-sys?] [element (ss) (set-sys-element/c ss)])
         [_ contract?])
       (->i
@@ -432,38 +428,10 @@
 (provide #/contract-out
   [category-sys? (-> any/c boolean?)]
   [category-sys-impl? (-> any/c boolean?)]
-  [category-sys-object-mediary-set-sys
-    (-> category-sys? mediary-set-sys?)]
-  [category-sys-replace-object-mediary-set-sys
-    (-> category-sys? mediary-set-sys? category-sys?)]
-  [category-sys-object/c (-> category-sys? contract?)]
-  [category-sys-morphism-mediary-set-sys-family
-    (->i ([cs category-sys?])
-      [_ (cs)
-        (-> (category-sys-object/c cs) (category-sys-object/c cs)
-          mediary-set-sys?)])]
-  [category-sys-replace-morphism-mediary-set-sys-family
-    (->i
-      (
-        [cs category-sys?]
-        [morphism-mediary-set-sys-family (cs)
-          (-> (category-sys-object/c cs) (category-sys-object/c cs)
-            mediary-set-sys?)])
-      [_ category-sys?])]
-  [category-sys-morphism/c
-    (->i
-      (
-        [cs category-sys?]
-        [s (cs) (category-sys-object/c cs)]
-        [t (cs) (category-sys-object/c cs)])
-      [_ contract?])]
-  [category-sys-mediary-category-sys
-    (-> category-sys? mediary-category-sys?)]
-  [category-sys-replace-mediary-category-sys
-    (-> category-sys? mediary-category-sys? category-sys?)]
   [category-sys-object-set-sys (-> category-sys? set-sys?)]
   [category-sys-replace-object-set-sys
     (-> category-sys? set-sys? category-sys?)]
+  [category-sys-object/c (-> category-sys? contract?)]
   [category-sys-object-replace-category-sys
     (->i
       (
@@ -487,6 +455,13 @@
           (-> (category-sys-object/c cs) (category-sys-object/c cs)
             set-sys?)])
       [_ category-sys?])]
+  [category-sys-morphism/c
+    (->i
+      (
+        [cs category-sys?]
+        [s (cs) (category-sys-object/c cs)]
+        [t (cs) (category-sys-object/c cs)])
+      [_ contract?])]
   [category-sys-morphism-replace-category-sys
     (->i
       (
@@ -519,24 +494,19 @@
         [morphism (cs s t) (category-sys-morphism/c cs s t)]
         [new-t (cs) (category-sys-object/c cs)])
       [_ (cs s new-t) (swap/c #/category-sys-morphism/c cs s new-t)])]
+  [category-sys-morphism-chain-two
+    (->i
+      (
+        [cs category-sys?]
+        [a (cs) (category-sys-object/c cs)]
+        [b (cs) (category-sys-object/c cs)]
+        [c (cs) (category-sys-object/c cs)]
+        [ab (cs a b) (category-sys-morphism/c cs a b)]
+        [bc (cs b c) (category-sys-morphism/c cs b c)])
+      [_ (cs a c) (category-sys-morphism/c cs a c)])]
   [prop:category-sys (struct-type-property/c category-sys-impl?)]
-  [make-category-sys-impl-from-mediary
+  [make-category-sys-impl-from-chain-two
     (->
-      (-> category-sys? mediary-set-sys?)
-      (-> category-sys? mediary-set-sys? category-sys?)
-      (->i ([cs category-sys?])
-        [_ (cs)
-          (-> (category-sys-object/c cs) (category-sys-object/c cs)
-            mediary-set-sys?)])
-      (->i
-        (
-          [cs category-sys?]
-          [morphism-mediary-set-sys-family (cs)
-            (-> (category-sys-object/c cs) (category-sys-object/c cs)
-              mediary-set-sys?)])
-        [_ category-sys?])
-      (-> category-sys? mediary-category-sys?)
-      (-> category-sys? mediary-category-sys? category-sys?)
       (-> category-sys? set-sys?)
       (-> category-sys? set-sys? category-sys?)
       (->i
@@ -590,6 +560,15 @@
           [new-t (cs) (category-sys-object/c cs)])
         [_ (cs s new-t)
           (swap/c #/category-sys-morphism/c cs s new-t)])
+      (->i
+        (
+          [cs category-sys?]
+          [a (cs) (category-sys-object/c cs)]
+          [b (cs) (category-sys-object/c cs)]
+          [c (cs) (category-sys-object/c cs)]
+          [ab (cs a b) (category-sys-morphism/c cs a b)]
+          [bc (cs b c) (category-sys-morphism/c cs b c)])
+        [_ (cs a c) (category-sys-morphism/c cs a c)])
       category-sys-impl?)])
 
 (provide #/contract-out
@@ -928,17 +907,12 @@
 ; the fact that an important part of the system resides in the
 ; corresponding `atomic-...` and `...-atomicity` types.
 ;
-; Note that at the moment, the `mediary-category-sys?` and
-; `category-sys?` code have an interdependency. Mediary categories are
-; awfully complicated (and could easily be a broken or unstable
-; design), and this complexity is not likely to help illuminate
-; category theory ideas (nor functional programming ideas), so
-; `category-sys?` should probably be redesigned to avoid requiring
-; people to think about `mediary-category-sys?`.
-;
-; As useful as `mediary-set-sys?` is, if only for giving a home to
-; `atomic-set-object-accepts/c`, we can pretty easily redesign
-; `set-sys?` to avoid such explicit association with it as well.
+; Note that since mediary categories are awfully complicated (and
+; could easily be a broken or unstable design), and this complexity is
+; not likely to help illuminate category theory ideas (nor functional
+; programming ideas), we don't use `mediary-category-sys?` in the
+; representation of `category-sys?`. People who use `category-sys?`
+; generally shouldn't have to think about `mediary-category-sys?`.
 ;
 ; If we decide to extrapolate these things to arbitrarily higher
 ; dimensions, we should probably start an "n-dimensional" or
@@ -951,12 +925,6 @@
 ;   (mediary-category-sys/c
 ;     object-mediary-set-sys/c morphism-mediary-set-sys-family/c)
 ;   (category-sys/c object-set-sys/c morphism-set-sys-family/c)
-;
-; Note that as it is now, the `category-sys/c` one could take
-; contracts to apply separately to its object mediary set, its
-; morphism mediary set family, and its mediary category, but soon we
-; should have it refactored to avoid making references to mediary
-; categories.
 ;
 ; These contract combinators fit a pattern that could be abstracted.
 
@@ -1408,15 +1376,11 @@
 
 (define-imitation-simple-generics
   set-sys? set-sys-impl?
-  (#:method set-sys-mediary-set-sys (#:this))
-  (#:method set-sys-replace-mediary-set-sys (#:this) ())
+  (#:method set-sys-element/c (#:this))
   (#:method set-sys-element-accepts/c (#:this) ())
   (#:method set-sys-element-replace-set-sys (#:this) () ())
-  prop:set-sys make-set-sys-impl-from-mediary
+  prop:set-sys make-set-sys-impl-from-contract
   'set-sys 'set-sys-impl (list))
-
-(define (set-sys-element/c ss)
-  (mediary-set-sys-element/c #/set-sys-mediary-set-sys ss))
 
 ; TODO: See if we should have functions between mediary sets too, i.e.
 ; `mediary-function-sys?`.
@@ -1792,14 +1756,6 @@
 
 (define-imitation-simple-generics
   category-sys? category-sys-impl?
-  (#:method category-sys-object-mediary-set-sys (#:this))
-  (#:method category-sys-replace-object-mediary-set-sys (#:this) ())
-  (#:method category-sys-morphism-mediary-set-sys-family (#:this))
-  (#:method category-sys-replace-morphism-mediary-set-sys-family
-    (#:this)
-    ())
-  (#:method category-sys-mediary-category-sys (#:this))
-  (#:method category-sys-replace-mediary-category-sys (#:this) ())
   (#:method category-sys-object-set-sys (#:this))
   (#:method category-sys-replace-object-set-sys (#:this) ())
   (#:method category-sys-object-replace-category-sys (#:this) () ())
@@ -1814,16 +1770,16 @@
     ())
   (#:method category-sys-morphism-replace-source (#:this) () () () ())
   (#:method category-sys-morphism-replace-target (#:this) () () () ())
-  prop:category-sys make-category-sys-impl-from-mediary
+  (#:method category-sys-morphism-chain-two (#:this) () () () () ())
+  prop:category-sys make-category-sys-impl-from-chain-two
   'category-sys 'category-sys-impl (list))
 
 (define (category-sys-object/c cs)
-  (mediary-set-sys-element/c
-    (category-sys-object-mediary-set-sys cs)))
+  (set-sys-element/c #/category-sys-object-set-sys cs))
 
 (define (category-sys-morphism/c cs s t)
-  (mediary-set-sys-element/c
-    ( (category-sys-morphism-mediary-set-sys-family cs) s t)))
+  (set-sys-element/c
+    ( (category-sys-morphism-set-sys-family cs) s t)))
 
 (define-match-expander-attenuated
   attenuated-category-morphism-atomicity
