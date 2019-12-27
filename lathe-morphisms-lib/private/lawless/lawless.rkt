@@ -161,59 +161,59 @@
           (accepts/c #/function-sys-target bc))])])
 
 (provide #/contract-out
-  [mediary-digraph-sys? (-> any/c boolean?)]
-  [mediary-digraph-sys-impl? (-> any/c boolean?)]
-  [mediary-digraph-sys-node-mediary-set-sys
-    (-> mediary-digraph-sys? mediary-set-sys?)]
-  [mediary-digraph-sys-replace-node-mediary-set-sys
-    (-> mediary-digraph-sys? mediary-set-sys? mediary-digraph-sys?)]
-  [mediary-digraph-sys-node/c (-> mediary-digraph-sys? contract?)]
-  [mediary-digraph-sys-edge-mediary-set-sys-family
-    (->i ([mds mediary-digraph-sys?])
+  [mediary-quiver-sys? (-> any/c boolean?)]
+  [mediary-quiver-sys-impl? (-> any/c boolean?)]
+  [mediary-quiver-sys-node-mediary-set-sys
+    (-> mediary-quiver-sys? mediary-set-sys?)]
+  [mediary-quiver-sys-replace-node-mediary-set-sys
+    (-> mediary-quiver-sys? mediary-set-sys? mediary-quiver-sys?)]
+  [mediary-quiver-sys-node/c (-> mediary-quiver-sys? contract?)]
+  [mediary-quiver-sys-edge-mediary-set-sys-family
+    (->i ([mds mediary-quiver-sys?])
       [_ (mds)
         (->
-          (mediary-digraph-sys-node/c mds)
-          (mediary-digraph-sys-node/c mds)
+          (mediary-quiver-sys-node/c mds)
+          (mediary-quiver-sys-node/c mds)
           mediary-set-sys?)])]
-  [mediary-digraph-sys-replace-edge-mediary-set-sys-family
+  [mediary-quiver-sys-replace-edge-mediary-set-sys-family
     (->i
       (
-        [mds mediary-digraph-sys?]
+        [mds mediary-quiver-sys?]
         [edge-mediary-set-sys-family (mds)
           (->
-            (mediary-digraph-sys-node/c mds)
-            (mediary-digraph-sys-node/c mds)
+            (mediary-quiver-sys-node/c mds)
+            (mediary-quiver-sys-node/c mds)
             mediary-set-sys?)])
-      [_ mediary-digraph-sys?])]
-  [mediary-digraph-sys-edge/c
+      [_ mediary-quiver-sys?])]
+  [mediary-quiver-sys-edge/c
     (->i
       (
-        [mds mediary-digraph-sys?]
-        [s (mds) (mediary-digraph-sys-node/c mds)]
-        [t (mds) (mediary-digraph-sys-node/c mds)])
+        [mds mediary-quiver-sys?]
+        [s (mds) (mediary-quiver-sys-node/c mds)]
+        [t (mds) (mediary-quiver-sys-node/c mds)])
       [_ contract?])]
-  [prop:mediary-digraph-sys
-    (struct-type-property/c mediary-digraph-sys-impl?)]
-  [make-mediary-digraph-sys-impl-from-mediary-set-systems
+  [prop:mediary-quiver-sys
+    (struct-type-property/c mediary-quiver-sys-impl?)]
+  [make-mediary-quiver-sys-impl-from-mediary-set-systems
     (->
-      (-> mediary-digraph-sys? mediary-set-sys?)
-      (-> mediary-digraph-sys? mediary-set-sys? mediary-digraph-sys?)
-      (->i ([mds mediary-digraph-sys?])
+      (-> mediary-quiver-sys? mediary-set-sys?)
+      (-> mediary-quiver-sys? mediary-set-sys? mediary-quiver-sys?)
+      (->i ([mds mediary-quiver-sys?])
         [_ (mds)
           (->
-            (mediary-digraph-sys-node/c mds)
-            (mediary-digraph-sys-node/c mds)
+            (mediary-quiver-sys-node/c mds)
+            (mediary-quiver-sys-node/c mds)
             mediary-set-sys?)])
       (->i
         (
-          [mds mediary-digraph-sys?]
+          [mds mediary-quiver-sys?]
           [edge-mediary-set-sys-family (mds)
             (->
-              (mediary-digraph-sys-node/c mds)
-              (mediary-digraph-sys-node/c mds)
+              (mediary-quiver-sys-node/c mds)
+              (mediary-quiver-sys-node/c mds)
               mediary-set-sys?)])
-        [_ mediary-digraph-sys?])
-      mediary-digraph-sys-impl?)])
+        [_ mediary-quiver-sys?])
+      mediary-quiver-sys-impl?)])
 
 (provide #/contract-out
   [atomic-category-object-sys? (-> any/c boolean?)]
@@ -226,18 +226,18 @@
   [atomic-category-object-sys-coherence-constraints
     (->i ([object atomic-category-object-sys?])
       [_ (object)
-        (and/c mediary-digraph-sys?
+        (and/c mediary-quiver-sys?
           (by-own-method/c mds
             (contract-first-order-passes?
-              (mediary-digraph-sys-node/c mds)
+              (mediary-quiver-sys-node/c mds)
               object)))])]
   [atomic-category-object-sys-constrain-coherence
     (->i
       (
-        [mds mediary-digraph-sys?]
+        [mds mediary-quiver-sys?]
         [object (mds)
           (and/c atomic-category-object-sys?
-            (mediary-digraph-sys-node/c mds))])
+            (mediary-quiver-sys-node/c mds))])
       [_ atomic-category-object-sys?])]
   [atomic-category-object-sys-coherence
     (->i
@@ -250,7 +250,7 @@
         (w- mds
           (atomic-category-object-sys-coherence-constraints object)
         #/list/c
-          (mediary-digraph-sys-edge/c mds object object)
+          (mediary-quiver-sys-edge/c mds object object)
           category-morphism-atomicity?)])]
   [prop:atomic-category-object-sys
     (struct-type-property/c atomic-category-object-sys-impl?)]
@@ -261,17 +261,17 @@
         atomic-category-object-sys?)
       (->i ([object atomic-category-object-sys?])
         [_ (object)
-          (and/c mediary-digraph-sys?
+          (and/c mediary-quiver-sys?
             (by-own-method/c mds
               (contract-first-order-passes?
-                (mediary-digraph-sys-node/c mds)
+                (mediary-quiver-sys-node/c mds)
                 object)))])
       (->i
         (
-          [mds mediary-digraph-sys?]
+          [mds mediary-quiver-sys?]
           [object (mds)
             (and/c atomic-category-object-sys?
-              (mediary-digraph-sys-node/c mds))])
+              (mediary-quiver-sys-node/c mds))])
         [_ atomic-category-object-sys?])
       (->i
         (
@@ -283,7 +283,7 @@
           (w- mds
             (atomic-category-object-sys-coherence-constraints object)
           #/list/c
-            (mediary-digraph-sys-edge/c mds object object)
+            (mediary-quiver-sys-edge/c mds object object)
             category-morphism-atomicity?)])
       atomic-category-object-sys-impl?)])
 
@@ -926,10 +926,10 @@
 ; perhaps with corresponding private modules for implementation:
 ;
 ;   lathe-morphisms/lawless/set (since it's a common base case)
-;   lathe-morphisms/lawless/digraph
+;   lathe-morphisms/lawless/quiver
 ;   lathe-morphisms/lawless/category
 ;   lathe-morphisms/lawless/mediary/set
-;   lathe-morphisms/lawless/mediary/digraph
+;   lathe-morphisms/lawless/mediary/quiver
 ;   lathe-morphisms/lawless/mediary/category
 ;
 ; Here, the "mediary" directory is like a "generalized sublibrary" or
@@ -953,7 +953,7 @@
 
 ; TODO: Implement the following contract combinators:
 ;
-;   (mediary-digraph-sys/c
+;   (mediary-quiver-sys/c
 ;     node-mediary-set-sys/c edge-mediary-set-sys-family/c)
 ;   (mediary-category-sys/c
 ;     object-mediary-set-sys/c morphism-mediary-set-sys-family/c)
@@ -1542,34 +1542,33 @@
   function-sys-target
   function-sys-apply-to-element)
 
-; NOTE: Even though we define `mediary-digraph-sys?`, we don't define
-; `atomic-digraph-node-sys?`, `atomic-digraph-edge-sys?`, or
-; `digraph-sys?`, nor do we use `mediary-digraph-sys?` or
-; `digraph-sys?` as a building block for the structure of
-; `mediary-category-sys?` or `category-sys?`. We define this solely to
-; be passed into an `atomic-category-object-sys-constrain-coherence`
-; method.
+; NOTE: Even though we define `mediary-quiver-sys?`, we don't define
+; `atomic-quiver-node-sys?`, `atomic-quiver-edge-sys?`, or
+; `quiver-sys?`, nor do we use `mediary-quiver-sys?` or `quiver-sys?`
+; as a building block for the structure of `mediary-category-sys?` or
+; `category-sys?`. We define this solely to be passed into an
+; `atomic-category-object-sys-constrain-coherence` method.
 (define-imitation-simple-generics
-  mediary-digraph-sys? mediary-digraph-sys-impl?
-  (#:method mediary-digraph-sys-node-mediary-set-sys (#:this))
-  (#:method mediary-digraph-sys-replace-node-mediary-set-sys
+  mediary-quiver-sys? mediary-quiver-sys-impl?
+  (#:method mediary-quiver-sys-node-mediary-set-sys (#:this))
+  (#:method mediary-quiver-sys-replace-node-mediary-set-sys
     (#:this)
     ())
-  (#:method mediary-digraph-sys-edge-mediary-set-sys-family (#:this))
-  (#:method mediary-digraph-sys-replace-edge-mediary-set-sys-family
+  (#:method mediary-quiver-sys-edge-mediary-set-sys-family (#:this))
+  (#:method mediary-quiver-sys-replace-edge-mediary-set-sys-family
     (#:this)
     ())
-  prop:mediary-digraph-sys
-  make-mediary-digraph-sys-impl-from-mediary-set-systems
-  'mediary-digraph-sys 'mediary-digraph-sys-impl (list))
+  prop:mediary-quiver-sys
+  make-mediary-quiver-sys-impl-from-mediary-set-systems
+  'mediary-quiver-sys 'mediary-quiver-sys-impl (list))
 
-(define (mediary-digraph-sys-node/c mcs)
+(define (mediary-quiver-sys-node/c mcs)
   (mediary-set-sys-element/c
-    (mediary-digraph-sys-node-mediary-set-sys mcs)))
+    (mediary-quiver-sys-node-mediary-set-sys mcs)))
 
-(define (mediary-digraph-sys-edge/c mcs s t)
+(define (mediary-quiver-sys-edge/c mcs s t)
   (mediary-set-sys-element/c
-    ( (mediary-digraph-sys-edge-mediary-set-sys-family mcs) s t)))
+    ( (mediary-quiver-sys-edge-mediary-set-sys-family mcs) s t)))
 
 (define-imitation-simple-generics
   atomic-category-object-sys? atomic-category-object-sys-impl?
@@ -1589,18 +1588,18 @@
   ;   [atomic-category-object-sys-coherence-constraints
   ;     (->i ([object atomic-category-object-sys?])
   ;       [_
-  ;         (and/c mediary-digraph-sys?
+  ;         (and/c mediary-quiver-sys?
   ;           (by-own-method/c mds
   ;             (contract-first-order-passes?
-  ;               (mediary-digraph-sys-node/c mds)
+  ;               (mediary-quiver-sys-node/c mds)
   ;               object)))])]
   ;   [atomic-category-object-sys-constrain-coherence
   ;     (->i
   ;       (
-  ;         [mds mediary-digraph-sys?]
+  ;         [mds mediary-quiver-sys?]
   ;         [object (mds)
   ;           (and/c atomic-category-object-sys?
-  ;             (mediary-digraph-sys-node/c mds))])
+  ;             (mediary-quiver-sys-node/c mds))])
   ;       [_ atomic-category-object-sys?])]
   ;   [atomic-category-object-sys-coherence
   ;     (->i
@@ -1614,7 +1613,7 @@
   ;           (atomic-category-object-sys-coherence-constraints
   ;             object)
   ;         #/list/c
-  ;           (mediary-digraph-sys-edge/c mds object object)
+  ;           (mediary-quiver-sys-edge/c mds object object)
   ;           category-morphism-atomicity?)])]
   ;
   ; The purpose of `atomic-category-object-sys-coherence` is mainly to
@@ -1652,15 +1651,16 @@
   ; The constraints accepted by
   ; `atomic-category-object-sys-constrain-coherence` and exposed again
   ; by `atomic-category-object-sys-coherence-constraints` are carried
-  ; in a mediary directed graph, which contains just enough structure
-  ; to allow these functions to have informative contracts.
-  ; (Specifically, the "directed graph" is an n-category without
-  ; identities or composition, and it's "mediary" because it omits the
-  ; error-checking-specific capability to specify a contract on a cell
-  ; that ensures it's an acceptable repeat of a given cell
-  ; (`...-accepts/c`).) (TODO: There are several terms for variations
-  ; on the theme of directed graphs. Figure out which specific term
-  ; we're looking for here.)
+  ; in a mediary quiver, which contains just enough structure to allow
+  ; these functions to have informative contracts. (Specifically, a
+  ; "quiver" is a category without identities or composition, and the
+  ; "mediary" version omits the error-checking-specific capability to
+  ; specify a contract on a cell that ensures it's an acceptable
+  ; repeat of a given cell (`...-accepts/c`). A quiver is a kind of
+  ; directed graph that specifically allows for loops and parallel
+  ; edges, just like a category allows for endomorphisms and parallel
+  ; morphisms. The term "digraph" is often used for directed graphs
+  ; which don't allow for these things.)
   ;
   ; Note that it is straightforward to take the intersection of the
   ; contracts of two directed graphs like these, since they consist
