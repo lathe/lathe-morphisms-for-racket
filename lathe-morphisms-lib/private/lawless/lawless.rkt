@@ -106,6 +106,8 @@
         [_ (new-ss) (swap/c #/set-sys-element/c new-ss)])
       set-sys-impl?)])
 
+; TODO: Export these from `lathe-morphisms/lawless/set` once we need
+; them.
 (provide #/contract-out
   [function-sys? (-> any/c boolean?)]
   [function-sys-impl? (-> any/c boolean?)]
@@ -160,6 +162,8 @@
           (accepts/c #/function-sys-source ab)
           (accepts/c #/function-sys-target bc))])])
 
+; TODO: Export these from `lathe-morphisms/lawless/mediary/quiver`
+; once we need them.
 (provide #/contract-out
   [mediary-quiver-sys? (-> any/c boolean?)]
   [mediary-quiver-sys-impl? (-> any/c boolean?)]
@@ -215,6 +219,8 @@
         [_ mediary-quiver-sys?])
       mediary-quiver-sys-impl?)])
 
+; TODO: Export these from `lathe-morphisms/lawless/mediary/category`
+; once we need them.
 (provide #/contract-out
   [atomic-category-object-sys? (-> any/c boolean?)]
   [atomic-category-object-sys-impl? (-> any/c boolean?)]
@@ -287,6 +293,8 @@
             category-morphism-atomicity?)])
       atomic-category-object-sys-impl?)])
 
+; TODO: Export these from `lathe-morphisms/lawless/mediary/category`
+; once we need them.
 (provide
   category-morphism-atomicity)
 (provide #/contract-out
@@ -300,6 +308,8 @@
   [category-morphism-atomicity-replace-target
     (-> category-morphism-atomicity? (-> any/c any/c any/c))])
 
+; TODO: Export these from `lathe-morphisms/lawless/mediary/category`
+; once we need them.
 (provide #/contract-out
   [atomic-category-morphism-sys? (-> any/c boolean?)]
   [atomic-category-morphism-sys-impl? (-> any/c boolean?)]
@@ -327,6 +337,8 @@
       atomic-category-morphism-sys-impl?)]
   [atomic-category-morphism-sys/c (-> contract? contract? contract?)])
 
+; TODO: Export these from `lathe-morphisms/lawless/mediary/category`
+; once we need them.
 (provide #/contract-out
   [mediary-category-sys? (-> any/c boolean?)]
   [mediary-category-sys-impl? (-> any/c boolean?)]
@@ -920,25 +932,26 @@
 ; allow the operations that look up those associated parts to have
 ; names that are analogous with each other.
 
-; TODO: Split this file into a few different files:
+; NOTE:
 ;
-; We should probably have these separate modules, at least in public,
-; perhaps with corresponding private modules for implementation:
+; We export or intend to export the definitions of this file from a
+; few different public modules:
 ;
 ;   lathe-morphisms/lawless/set (since it's a common base case)
-;   lathe-morphisms/lawless/quiver
+;   lathe-morphisms/lawless/quiver (once we need it)
 ;   lathe-morphisms/lawless/category
 ;   lathe-morphisms/lawless/mediary/set
-;   lathe-morphisms/lawless/mediary/quiver
-;   lathe-morphisms/lawless/mediary/category
+;   lathe-morphisms/lawless/mediary/quiver (once we need it)
+;   lathe-morphisms/lawless/mediary/category (once we need it)
 ;
 ; Here, the "mediary" directory is like a "generalized sublibrary" or
 ; "specialized sublibrary" (as discussed in README.md), since they're
 ; a pretty unusual experiment that involves defining variants of most
-; of the other abstractions. Nevertheless, we should keep the
-; `mediary-...` prefix on the names of those systems, since it signals
-; the fact that an important part of the system resides in the
-; corresponding `atomic-...` and `...-atomicity` types.
+; of the other abstractions. Although we do separate these into a
+; subdirectory where we reuse the module names, we nevertheless keep
+; the `mediary-...` prefix on those systems' exported identifiers,
+; since it signals the fact that an important part of the system
+; resides in the corresponding `atomic-...` and `...-atomicity` types.
 ;
 ; Note that since mediary categories are awfully complicated (and
 ; could easily be a broken or unstable design), and this complexity is
@@ -946,8 +959,8 @@
 ; programming ideas), we don't use `mediary-category-sys?` in the
 ; representation of `category-sys?`. People who use `category-sys?`
 ; generally shouldn't have to think about `mediary-category-sys?`.
-;
-; If we decide to extrapolate these things to arbitrarily higher
+
+; TODO: If we decide to extrapolate these things to arbitrarily higher
 ; dimensions, we should probably start an "n-dimensional" or
 ; "globular" generalized sublibrary for that.
 
