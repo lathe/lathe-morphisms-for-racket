@@ -30,12 +30,10 @@
   category-sys-object-set-sys
   category-sys-replace-object-set-sys
   category-sys-object/c
-  category-sys-object-replace-category-sys
   category-sys-object-identity-morphism
   category-sys-morphism-set-sys-family
   category-sys-replace-morphism-set-sys-family
   category-sys-morphism/c
-  category-sys-morphism-replace-category-sys
   category-sys-morphism-replace-source
   category-sys-morphism-replace-target
   category-sys-morphism-chain-two
@@ -84,12 +82,10 @@
   category-sys-object-set-sys
   category-sys-replace-object-set-sys
   category-sys-object/c
-  category-sys-object-replace-category-sys
   category-sys-object-identity-morphism
   category-sys-morphism-set-sys-family
   category-sys-replace-morphism-set-sys-family
   category-sys-morphism/c
-  category-sys-morphism-replace-category-sys
   category-sys-morphism-replace-source
   category-sys-morphism-replace-target
   category-sys-morphism-chain-two

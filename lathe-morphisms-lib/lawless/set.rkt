@@ -28,7 +28,6 @@
   set-sys-impl?
   set-sys-element/c
   set-sys-element-accepts/c
-  set-sys-element-replace-set-sys
   prop:set-sys
   make-set-sys-impl-from-contract)
 
@@ -37,6 +36,5 @@
   set-sys-impl?
   set-sys-element/c
   set-sys-element-accepts/c
-  set-sys-element-replace-set-sys
   prop:set-sys
   make-set-sys-impl-from-contract)

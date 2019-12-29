@@ -29,9 +29,8 @@
   atomic-set-element-sys?
   atomic-set-element-sys-impl?
   atomic-set-element-sys-accepts/c
-  atomic-set-element-sys-replace-set-sys
   prop:atomic-set-element-sys
-  make-atomic-set-element-sys-impl-from-accepts-and-replace
+  make-atomic-set-element-sys-impl-from-accepts
   
   mediary-set-sys?
   mediary-set-sys-impl?
@@ -46,9 +45,8 @@
   atomic-set-element-sys?
   atomic-set-element-sys-impl?
   atomic-set-element-sys-accepts/c
-  atomic-set-element-sys-replace-set-sys
   prop:atomic-set-element-sys
-  make-atomic-set-element-sys-impl-from-accepts-and-replace
+  make-atomic-set-element-sys-impl-from-accepts
   
   mediary-set-sys?
   mediary-set-sys-impl?

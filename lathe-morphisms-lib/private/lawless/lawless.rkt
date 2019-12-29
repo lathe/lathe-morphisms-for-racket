@@ -56,14 +56,10 @@
   [atomic-set-element-sys-impl? (-> any/c boolean?)]
   [atomic-set-element-sys-accepts/c
     (-> atomic-set-element-sys? contract?)]
-  [atomic-set-element-sys-replace-set-sys
-    (-> atomic-set-element-sys? set-sys? any/c)]
   [prop:atomic-set-element-sys
     (struct-type-property/c atomic-set-element-sys-impl?)]
-  [make-atomic-set-element-sys-impl-from-accepts-and-replace
-    (->
-      (-> atomic-set-element-sys? contract?)
-      (-> atomic-set-element-sys? set-sys? any/c)
+  [make-atomic-set-element-sys-impl-from-accepts
+    (-> (-> atomic-set-element-sys? contract?)
       atomic-set-element-sys-impl?)])
 
 (provide #/contract-out
@@ -85,25 +81,12 @@
   [set-sys-element-accepts/c
     (->i ([ss set-sys?] [element (ss) (set-sys-element/c ss)])
       [_ contract?])]
-  [set-sys-element-replace-set-sys
-    (->i
-      (
-        [ss set-sys?]
-        [element (ss) (set-sys-element/c ss)]
-        [new-ss set-sys?])
-      [_ (new-ss) (swap/c #/set-sys-element/c new-ss)])]
   [prop:set-sys (struct-type-property/c set-sys-impl?)]
   [make-set-sys-impl-from-contract
     (->
       (-> set-sys? contract?)
       (->i ([ss set-sys?] [element (ss) (set-sys-element/c ss)])
         [_ contract?])
-      (->i
-        (
-          [ss set-sys?]
-          [element (ss) (set-sys-element/c ss)]
-          [new-ss set-sys?])
-        [_ (new-ss) (swap/c #/set-sys-element/c new-ss)])
       set-sys-impl?)])
 
 ; TODO: Export these from `lathe-morphisms/lawless/set` once we need
@@ -226,9 +209,6 @@
   [atomic-category-object-sys-impl? (-> any/c boolean?)]
   [atomic-category-object-sys-accepts/c
     (-> atomic-category-object-sys? contract?)]
-  [atomic-category-object-sys-replace-category-sys
-    (-> atomic-category-object-sys? category-sys?
-      atomic-category-object-sys?)]
   [atomic-category-object-sys-coherence-constraints
     (->i ([object atomic-category-object-sys?])
       [_ (object)
@@ -263,8 +243,6 @@
   [make-atomic-category-object-sys-impl-from-coherence
     (->
       (-> atomic-category-object-sys? contract?)
-      (-> atomic-category-object-sys? category-sys?
-        atomic-category-object-sys?)
       (->i ([object atomic-category-object-sys?])
         [_ (object)
           (and/c mediary-quiver-sys?
@@ -301,8 +279,6 @@
   [category-morphism-atomicity? (-> any/c boolean?)]
   [category-morphism-atomicity-accepts/c
     (-> category-morphism-atomicity? (-> any/c contract?))]
-  [category-morphism-atomicity-replace-category-sys
-    (-> category-morphism-atomicity? (-> any/c category-sys? any/c))]
   [category-morphism-atomicity-replace-source
     (-> category-morphism-atomicity? (-> any/c any/c any/c))]
   [category-morphism-atomicity-replace-target
@@ -315,8 +291,6 @@
   [atomic-category-morphism-sys-impl? (-> any/c boolean?)]
   [atomic-category-morphism-sys-accepts/c
     (-> atomic-category-morphism-sys? contract?)]
-  [atomic-category-morphism-sys-replace-category-sys
-    (-> atomic-category-morphism-sys? category-sys? any/c)]
   [atomic-category-morphism-sys-source
     (-> atomic-category-morphism-sys? any/c)]
   [atomic-category-morphism-sys-replace-source
@@ -444,13 +418,6 @@
   [category-sys-replace-object-set-sys
     (-> category-sys? set-sys? category-sys?)]
   [category-sys-object/c (-> category-sys? contract?)]
-  [category-sys-object-replace-category-sys
-    (->i
-      (
-        [cs category-sys?]
-        [object (cs) (category-sys-object/c cs)]
-        [new-cs category-sys?])
-      [_ (new-cs) (swap/c #/category-sys-object/c new-cs)])]
   [category-sys-object-identity-morphism
     (->i ([cs category-sys?] [object (cs) (category-sys-object/c cs)])
       [_ (cs object) (category-sys-morphism/c cs object object)])]
@@ -474,20 +441,6 @@
         [s (cs) (category-sys-object/c cs)]
         [t (cs) (category-sys-object/c cs)])
       [_ contract?])]
-  [category-sys-morphism-replace-category-sys
-    (->i
-      (
-        [cs category-sys?]
-        [s (cs) (category-sys-object/c cs)]
-        [t (cs) (category-sys-object/c cs)]
-        [morphism (cs s t) (category-sys-morphism/c cs s t)]
-        [new-cs category-sys?])
-      [_ (cs new-cs s t)
-        (swap/c
-          (category-sys-morphism/c new-cs
-            (category-sys-object-replace-category-sys cs s new-cs)
-            (category-sys-object-replace-category-sys
-              cs t new-cs)))])]
   [category-sys-morphism-replace-source
     (->i
       (
@@ -522,12 +475,6 @@
       (-> category-sys? set-sys?)
       (-> category-sys? set-sys? category-sys?)
       (->i
-        (
-          [cs category-sys?]
-          [object (cs) (category-sys-object/c cs)]
-          [new-cs category-sys?])
-        [_ (new-cs) (swap/c #/category-sys-object/c new-cs)])
-      (->i
         ([cs category-sys?] [object (cs) (category-sys-object/c cs)])
         [_ (cs object) (category-sys-morphism/c cs object object)])
       (->i ([cs category-sys?])
@@ -541,19 +488,6 @@
             (-> (category-sys-object/c cs) (category-sys-object/c cs)
               set-sys?)])
         [_ category-sys?])
-      (->i
-        (
-          [cs category-sys?]
-          [s (cs) (category-sys-object/c cs)]
-          [t (cs) (category-sys-object/c cs)]
-          [morphism (cs s t) (category-sys-morphism/c cs s t)]
-          [new-cs category-sys?])
-        [_ (cs new-cs s t)
-          (swap/c
-            (category-sys-morphism/c new-cs
-              (category-sys-object-replace-category-sys cs s new-cs)
-              (category-sys-object-replace-category-sys
-                cs t new-cs)))])
       (->i
         (
           [cs category-sys?]
@@ -1499,9 +1433,8 @@
 (define-imitation-simple-generics
   atomic-set-element-sys? atomic-set-element-sys-impl?
   (#:method atomic-set-element-sys-accepts/c (#:this))
-  (#:method atomic-set-element-sys-replace-set-sys (#:this) ())
   prop:atomic-set-element-sys
-  make-atomic-set-element-sys-impl-from-accepts-and-replace
+  make-atomic-set-element-sys-impl-from-accepts
   'atomic-set-element-sys 'atomic-set-element-sys-impl (list))
 
 (define-imitation-simple-generics
@@ -1519,7 +1452,6 @@
   set-sys? set-sys-impl?
   (#:method set-sys-element/c (#:this))
   (#:method set-sys-element-accepts/c (#:this) ())
-  (#:method set-sys-element-replace-set-sys (#:this) () ())
   prop:set-sys make-set-sys-impl-from-contract
   'set-sys 'set-sys-impl (list))
 
@@ -1684,9 +1616,6 @@
   ; method.
   ;
   (#:method atomic-category-object-sys-accepts/c (#:this))
-  (#:method atomic-category-object-sys-replace-category-sys
-    (#:this)
-    ())
   (#:method atomic-category-object-sys-coherence-constraints (#:this))
   (#:method atomic-category-object-sys-constrain-coherence
     ()
@@ -1702,11 +1631,6 @@
     ;   [category-morphism-atomicity-accepts/c
     ;     (-> category-morphism-atomicity? (-> any/c contract?))]
     category-morphism-atomicity-accepts/c
-    
-    ;   [category-morphism-atomicity-replace-category-sys
-    ;     (-> category-morphism-atomicity?
-    ;       (-> any/c category-sys? any/c))]
-    category-morphism-atomicity-replace-category-sys
     
     ;   [category-morphism-atomicity-replace-source
     ;     (-> category-morphism-atomicity? (-> any/c any/c any/c))]
@@ -1758,13 +1682,6 @@
     (category-morphism-atomicity-accepts/c
       (atomic-category-morphism-sys-atomicity ms))
     ms))
-
-(define (atomic-category-morphism-sys-replace-category-sys ms cs)
-  (
-    (category-morphism-atomicity-replace-category-sys
-      (atomic-category-morphism-sys-atomicity ms))
-    ms
-    cs))
 
 (define (atomic-category-morphism-sys-replace-source ms s)
   (
@@ -1899,16 +1816,9 @@
   category-sys? category-sys-impl?
   (#:method category-sys-object-set-sys (#:this))
   (#:method category-sys-replace-object-set-sys (#:this) ())
-  (#:method category-sys-object-replace-category-sys (#:this) () ())
   (#:method category-sys-object-identity-morphism (#:this) ())
   (#:method category-sys-morphism-set-sys-family (#:this))
   (#:method category-sys-replace-morphism-set-sys-family (#:this) ())
-  (#:method category-sys-morphism-replace-category-sys
-    (#:this)
-    ()
-    ()
-    ()
-    ())
   (#:method category-sys-morphism-replace-source (#:this) () () () ())
   (#:method category-sys-morphism-replace-target (#:this) () () () ())
   (#:method category-sys-morphism-chain-two (#:this) () () () () ())
