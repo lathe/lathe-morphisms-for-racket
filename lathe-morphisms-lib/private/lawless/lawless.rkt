@@ -201,73 +201,70 @@
               (mediary-quiver-sys-node/c mqs)
               mediary-set-sys?)])
         [_ mediary-quiver-sys?])
-      mediary-quiver-sys-impl?)])
+      mediary-quiver-sys-impl?)]
+  [makeshift-mediary-quiver-sys
+    (->i
+      (
+        [n mediary-set-sys?]
+        [e (n)
+          (->
+            (mediary-set-sys-element/c n)
+            (mediary-set-sys-element/c n)
+            mediary-set-sys?)])
+      [_ mediary-quiver-sys?])])
+
+; TODO: Export these from `lathe-morphisms/lawless/mediary/category`
+; once we need them.
+(provide
+  category-object-good-behavior)
+(provide #/contract-out
+  [category-object-good-behavior? (-> any/c boolean?)]
+  [category-object-good-behavior-getter-of-value
+    (-> category-object-good-behavior? (-> any/c))]
+  [category-object-good-behavior-getter-of-accepts/c
+    (-> category-object-good-behavior? (-> contract?))]
+  [category-object-good-behavior-getter-of-identity-morphism
+    (-> category-object-good-behavior?
+      (-> category-morphism-good-behavior?))]
+  [category-object-good-behavior-with-value/c
+    (-> contract? contract?)]
+  [category-object-good-behavior-for-mediary-quiver-sys/c
+    (-> mediary-quiver-sys? contract?)]
+  [category-object-good-behavior-for-mediary-category-sys/c
+    (-> mediary-category-sys? contract?)])
 
 ; TODO: Export these from `lathe-morphisms/lawless/mediary/category`
 ; once we need them.
 (provide #/contract-out
   [atomic-category-object-sys? (-> any/c boolean?)]
   [atomic-category-object-sys-impl? (-> any/c boolean?)]
+  [atomic-category-object-sys-uncoverer-of-good-behavior
+    (-> atomic-category-object-sys?
+      (-> atomic-category-object-sys?
+        category-object-good-behavior?))]
+  [atomic-category-object-sys-replace-uncoverer-of-good-behavior
+    (->
+      atomic-category-object-sys?
+      (-> atomic-category-object-sys? category-object-good-behavior?)
+      atomic-category-object-sys?)]
+  [atomic-category-object-sys-good-behavior
+    (-> atomic-category-object-sys? category-object-good-behavior?)]
   [atomic-category-object-sys-accepts/c
     (-> atomic-category-object-sys? contract?)]
-  [atomic-category-object-sys-coherence-constraints
-    (->i ([object atomic-category-object-sys?])
-      [_ (object)
-        (and/c mediary-quiver-sys?
-          (by-own-method/c mqs
-            (contract-first-order-passes?
-              (mediary-quiver-sys-node/c mqs)
-              object)))])]
-  [atomic-category-object-sys-constrain-coherence
-    (->i
-      (
-        [mqs mediary-quiver-sys?]
-        [object (mqs)
-          (and/c atomic-category-object-sys?
-            (mediary-quiver-sys-node/c mqs))])
-      [_ atomic-category-object-sys?])]
-  [atomic-category-object-sys-coherence
-    (->i
-      (
-        [ss set-sys?]
-        [object (ss)
-          (and/c atomic-category-object-sys?
-            (set-sys-element/c ss))])
-      [_ (object)
-        (w- mqs
-          (atomic-category-object-sys-coherence-constraints object)
-        #/category-morphism-good-behavior-for-mediary-quiver-sys/c
-          mqs object object)])]
+  [atomic-category-object-sys-identity-morphism-good-behavior
+    (-> atomic-category-object-sys? category-morphism-good-behavior?)]
   [prop:atomic-category-object-sys
     (struct-type-property/c atomic-category-object-sys-impl?)]
-  [make-atomic-category-object-sys-impl-from-coherence
+  [make-atomic-category-object-sys-impl-from-good-behavior
     (->
-      (-> atomic-category-object-sys? contract?)
-      (->i ([object atomic-category-object-sys?])
-        [_ (object)
-          (and/c mediary-quiver-sys?
-            (by-own-method/c mqs
-              (contract-first-order-passes?
-                (mediary-quiver-sys-node/c mqs)
-                object)))])
-      (->i
-        (
-          [mqs mediary-quiver-sys?]
-          [object (mqs)
-            (and/c atomic-category-object-sys?
-              (mediary-quiver-sys-node/c mqs))])
-        [_ atomic-category-object-sys?])
-      (->i
-        (
-          [ss set-sys?]
-          [object (ss)
-            (and/c atomic-category-object-sys?
-              (set-sys-element/c ss))])
-        [_ (object)
-          (w- mqs
-            (atomic-category-object-sys-coherence-constraints object)
-          #/category-morphism-good-behavior-for-mediary-quiver-sys/c
-            mqs object object)])
+      (-> atomic-category-object-sys?
+        (-> atomic-category-object-sys?
+          category-object-good-behavior?))
+      (->
+        atomic-category-object-sys?
+        (-> atomic-category-object-sys?
+          category-object-good-behavior?)
+        atomic-category-object-sys?)
       atomic-category-object-sys-impl?)])
 
 ; TODO: Export these from `lathe-morphisms/lawless/mediary/category`
@@ -276,14 +273,14 @@
   category-morphism-good-behavior)
 (provide #/contract-out
   [category-morphism-good-behavior? (-> any/c boolean?)]
-  [category-morphism-good-behavior-get-value
+  [category-morphism-good-behavior-getter-of-value
     (-> category-morphism-good-behavior? (-> any/c))]
-  [category-morphism-good-behavior-get-accepts/c
+  [category-morphism-good-behavior-getter-of-accepts/c
     (-> category-morphism-good-behavior? (-> contract?))]
-  [category-morphism-good-behavior-get-replace-source
+  [category-morphism-good-behavior-getter-of-replace-source
     (-> category-morphism-good-behavior?
       (-> any/c category-morphism-good-behavior?))]
-  [category-morphism-good-behavior-get-replace-target
+  [category-morphism-good-behavior-getter-of-replace-target
     (-> category-morphism-good-behavior?
       (-> any/c category-morphism-good-behavior?))]
   [category-morphism-good-behavior-with-value/c
@@ -308,19 +305,29 @@
 (provide #/contract-out
   [atomic-category-morphism-sys? (-> any/c boolean?)]
   [atomic-category-morphism-sys-impl? (-> any/c boolean?)]
-  [atomic-category-morphism-sys-accepts/c
-    (-> atomic-category-morphism-sys? contract?)]
   [atomic-category-morphism-sys-source
     (-> atomic-category-morphism-sys? any/c)]
-  [atomic-category-morphism-sys-replace-source
-    (-> atomic-category-morphism-sys? any/c any/c)]
   [atomic-category-morphism-sys-target
     (-> atomic-category-morphism-sys? any/c)]
-  [atomic-category-morphism-sys-replace-target
-    (-> atomic-category-morphism-sys? any/c any/c)]
+  [atomic-category-morphism-sys-uncoverer-of-good-behavior
+    (-> atomic-category-morphism-sys?
+      (-> atomic-category-morphism-sys?
+        category-morphism-good-behavior?))]
+  [atomic-category-morphism-sys-replace-uncoverer-of-good-behavior
+    (->
+      atomic-category-morphism-sys?
+      (-> atomic-category-morphism-sys?
+        category-morphism-good-behavior?)
+      atomic-category-morphism-sys?)]
   [atomic-category-morphism-sys-good-behavior
     (-> atomic-category-morphism-sys?
       category-morphism-good-behavior?)]
+  [atomic-category-morphism-sys-accepts/c
+    (-> atomic-category-morphism-sys? contract?)]
+  [atomic-category-morphism-sys-replace-source
+    (-> atomic-category-morphism-sys? any/c any/c)]
+  [atomic-category-morphism-sys-replace-target
+    (-> atomic-category-morphism-sys? any/c any/c)]
   [prop:atomic-category-morphism-sys
     (struct-type-property/c atomic-category-morphism-sys-impl?)]
   [make-atomic-category-morphism-sys-impl-from-good-behavior
@@ -328,7 +335,13 @@
       (-> atomic-category-morphism-sys? any/c)
       (-> atomic-category-morphism-sys? any/c)
       (-> atomic-category-morphism-sys?
-        category-morphism-good-behavior?)
+        (-> atomic-category-morphism-sys?
+          category-morphism-good-behavior?))
+      (->
+        atomic-category-morphism-sys?
+        (-> atomic-category-morphism-sys?
+          category-morphism-good-behavior?)
+        atomic-category-morphism-sys?)
       atomic-category-morphism-sys-impl?)]
   [atomic-category-morphism-sys/c (-> contract? contract? contract?)])
 
@@ -439,6 +452,12 @@
           (category-morphism-good-behavior-for-mediary-category-sys/c
             mcs a c)])
       mediary-category-sys-impl?)])
+
+; TODO: Export this from `lathe-morphisms/lawless/mediary/quiver` or
+; `lathe-morphisms/lawless/mediary/category` once we need it.
+(provide #/contract-out
+  [mediary-category-sys-mediary-quiver-sys
+    (-> mediary-category-sys? mediary-quiver-sys?)])
 
 (provide #/contract-out
   [category-sys? (-> any/c boolean?)]
@@ -1517,12 +1536,31 @@
   function-sys-target
   function-sys-apply-to-element)
 
-; NOTE: Even though we define `mediary-quiver-sys?`, we don't define
-; `atomic-quiver-node-sys?`, `atomic-quiver-edge-sys?`, or
-; `quiver-sys?`, nor do we use `mediary-quiver-sys?` or `quiver-sys?`
-; as a building block for the structure of `mediary-category-sys?` or
-; `category-sys?`. We define this solely to be passed into an
-; `atomic-category-object-sys-constrain-coherence` method.
+; NOTE:
+;
+; A quiver is a kind of directed graph that specifically allows for
+; loops and parallel edges, just like a category allows for
+; endomorphisms and parallel morphisms. (The term "digraph" is often
+; used for directed graphs which don't allow for these things.)
+;
+; We don't use quivers to define `mediary-category-sys?` or
+; `category-sys?`. Instead, we define them solely to be passed into
+; `category-object-good-behavior-for-mediary-quiver-sys/c` and
+; `category-morphism-good-behavior-for-mediary-quiver-sys/c`. In
+; general, the coherence information for lawless N-dimensional
+; categories will need to be something like an (N-1)-dimensional
+; category enriched in a quiver. That is, it will be some kind of
+; N-dimensional quiver whose cells have compositional structure at all
+; dimensions less than N. The composition operations will be needed
+; to express the sources and targets of the N-dimensional category's
+; unitor cells.
+;
+; Since we're not using this as infrastructure, we don't bother to
+; define `atomic-quiver-node-sys?`, `atomic-quiver-edge-sys?`, or
+; `quiver-sys?`. The `atomic-quiver-node-sys?` and
+; `atomic-quiver-edge-sys?` interfaces would likely be equivalent to
+; `atomic-set-element-sys?` anyway.
+;
 (define-imitation-simple-generics
   mediary-quiver-sys? mediary-quiver-sys-impl?
   (#:method mediary-quiver-sys-node-mediary-set-sys (#:this))
@@ -1545,135 +1583,131 @@
   (mediary-set-sys-element/c
     ( (mediary-quiver-sys-edge-mediary-set-sys-family mcs) s t)))
 
+(define-imitation-simple-struct
+  (makeshift-mediary-quiver-sys?
+    makeshift-mediary-quiver-sys-node-mediary-set-sys
+    makeshift-mediary-quiver-sys-edge-mediary-set-sys-family)
+  unguarded-makeshift-mediary-quiver-sys
+  'makeshift-mediary-quiver-sys (current-inspector)
+  (#:prop prop:mediary-quiver-sys
+    (make-mediary-quiver-sys-impl-from-mediary-set-systems
+      ; mediary-quiver-sys-node-mediary-set-sys
+      (dissectfn (unguarded-makeshift-mediary-quiver-sys n e) n)
+      ; mediary-quiver-sys-replace-node-mediary-set-sys
+      (fn mqs new-n
+        (dissect mqs (unguarded-makeshift-mediary-quiver-sys n e)
+        #/unguarded-makeshift-mediary-quiver-sys new-n e))
+      ; mediary-quiver-sys-edge-mediary-set-sys-family
+      (dissectfn (unguarded-makeshift-mediary-quiver-sys n e) e)
+      ; mediary-quiver-sys-replace-edge-mediary-set-sys-family
+      (fn mqs new-e
+        (dissect mqs (unguarded-makeshift-mediary-quiver-sys n e)
+        #/unguarded-makeshift-mediary-quiver-sys n new-e)))))
+
+(define (makeshift-mediary-quiver-sys n e)
+  (unguarded-makeshift-mediary-quiver-sys n e))
+
+(define-imitation-simple-struct
+  (category-object-good-behavior?
+    
+    ;   [category-object-good-behavior-getter-of-value
+    ;     (-> category-object-good-behavior? (-> any/c))]
+    category-object-good-behavior-getter-of-value
+    
+    ;   [category-object-good-behavior-getter-of-accepts/c
+    ;     (-> category-object-good-behavior? (-> contract?))]
+    category-object-good-behavior-getter-of-accepts/c
+    
+    ;   [category-object-good-behavior-getter-of-identity-morphism
+    ;     (-> category-object-good-behavior?
+    ;       (-> category-morphism-good-behavior?))]
+    category-object-good-behavior-getter-of-identity-morphism)
+  
+  unguarded-category-object-good-behavior
+  'category-object-good-behavior (current-inspector)
+  (auto-write)
+  (auto-equal))
+
+(define (category-object-good-behavior-with-value/c value/c)
+  (rename-contract
+    (match/c category-object-good-behavior (-> value/c) any/c any/c)
+    `(category-object-good-behavior-with-value/c
+       ,(value-name-for-contract value/c))))
+
+(define (category-object-good-behavior-for-mediary-quiver-sys/c mqs)
+  (rename-contract
+    (and/c
+      (match/c category-object-good-behavior
+        (-> #/mediary-quiver-sys-node/c mqs)
+        any/c
+        any/c)
+      (by-own-method/c good-behavior
+      #/w- object
+        (
+          (category-object-good-behavior-getter-of-value
+            good-behavior))
+      #/match/c category-object-good-behavior
+        any/c
+        any/c
+        (->
+          (category-morphism-good-behavior-for-mediary-quiver-sys/c
+            mqs object object))))
+    `(category-object-good-behavior-for-mediary-quiver-sys/c
+       ,(value-name-for-contract mqs))))
+
+(define (category-object-good-behavior-for-mediary-category-sys/c mcs)
+  (rename-contract
+    (category-object-good-behavior-for-mediary-quiver-sys/c
+      (mediary-category-sys-mediary-quiver-sys mcs))
+    `(category-object-good-behavior-for-mediary-category-sys/c
+       ,(value-name-for-contract mcs))))
+
 (define-imitation-simple-generics
   atomic-category-object-sys? atomic-category-object-sys-impl?
-  
-  ; NOTE:
-  ;
-  ; Most of the methods here correspond to particular methods of
-  ; `category-sys?`. The
-  ; `atomic-category-object-sys-coherence-constraints`,
-  ; `atomic-category-object-constrain-coherence`, and
-  ; `atomic-category-object-sys-coherence` methods are an exception;
-  ; they don't correspond to `category-sys?` methods named
-  ; `category-sys-object-coherence-constraints`,
-  ; `category-sys-object-constrain-coherence`, and
-  ; `category-sys-object-coherence` as one might expect.
-  ;
-  ;   [atomic-category-object-sys-coherence-constraints
-  ;     (->i ([object atomic-category-object-sys?])
-  ;       [_
-  ;         (and/c mediary-quiver-sys?
-  ;           (by-own-method/c mqs
-  ;             (contract-first-order-passes?
-  ;               (mediary-quiver-sys-node/c mqs)
-  ;               object)))])]
-  ;   [atomic-category-object-sys-constrain-coherence
-  ;     (->i
-  ;       (
-  ;         [mqs mediary-quiver-sys?]
-  ;         [object (mqs)
-  ;           (and/c atomic-category-object-sys?
-  ;             (mediary-quiver-sys-node/c mqs))])
-  ;       [_ atomic-category-object-sys?])]
-  ;   [atomic-category-object-sys-coherence
-  ;     (->i
-  ;       (
-  ;         [ss set-sys?]
-  ;         [object (ss)
-  ;           (and/c atomic-category-object-sys?
-  ;             (set-sys-element/c ss))])
-  ;       [_
-  ;         (w- mqs
-  ;           (atomic-category-object-sys-coherence-constraints
-  ;             object)
-  ;         #/category-morphism-good-behavior-for-mediary-quiver-sys/c
-  ;           mqs object object)])]
-  ;
-  ; The purpose of `atomic-category-object-sys-coherence` is mainly to
-  ; let the object supply its own identity morphism. A
-  ; `mediary-category-sys?` doesn't supply an identity morphism for
-  ; every object; the objects have to bring their own.
-  ;
-  ; There are a few complications to the signature of
-  ; `atomic-category-object-sys-coherence` so as to be more consistent
-  ; with the way we represent coherence information on
-  ; higher-dimensional cells.
-  ;
-  ; Coherence information tends to include unitor laws, which are
-  ; cells that relate a morphism to its composition with one of its
-  ; endpoints' identity cells. To express this composition, one of the
-  ; arguments to `atomic-category-object-sys-coherence` is the
-  ; composition algebra in which to express it (in this
-  ; low-dimensional case, merely a `set-sys?` with no form of
-  ; composition at all).
-  ;
-  ; The purpose of `atomic-category-object-sys-constrain-coherence` is
-  ; to let an object's coherence information (in this low-dimensional
-  ; case, just its identity morphism) be subject to the expectations
-  ; of the surrounding category. Even if a category is designed to be
-  ; extended with `atomic-category-object-sys?` values, the particular
-  ; `atomic-category-object-sys?` values it allows should be ones that
-  ; have coherence information that is also allowed. By using this
-  ; method, the category can impose that constraint on the objects.
-  ;
-  ; Once imposed, those constraints can be retrieved again via
-  ; `atomic-category-object-sys-coherence-constraints`, which the
-  ; signature of `atomic-category-object-sys-coherence` makes use of
-  ; to report appropriate contract violation errors.
-  ;
-  ; The constraints accepted by
-  ; `atomic-category-object-sys-constrain-coherence` and exposed again
-  ; by `atomic-category-object-sys-coherence-constraints` are carried
-  ; in a mediary quiver, which contains just enough structure to allow
-  ; these functions to have informative contracts. (Specifically, a
-  ; "quiver" is a category without identities or composition, and the
-  ; "mediary" version omits the error-checking-specific capability to
-  ; specify a contract on a cell that ensures it's an acceptable
-  ; repeat of a given cell (`...-accepts/c`). A quiver is a kind of
-  ; directed graph that specifically allows for loops and parallel
-  ; edges, just like a category allows for endomorphisms and parallel
-  ; morphisms. The term "digraph" is often used for directed graphs
-  ; which don't allow for these things.)
-  ;
-  ; Note that it is straightforward to take the intersection of the
-  ; contracts of two directed graphs like these, since they consist
-  ; only of contracts that cells of various shapes must abide by, and
-  ; the contracts can be combined with `and/c`. As such, the result of
-  ; a `...-coherence-constraints` method will often be an intersection
-  ; of the directed graphs given to the `...-constrain-coherence`
-  ; method.
-  ;
-  (#:method atomic-category-object-sys-accepts/c (#:this))
-  (#:method atomic-category-object-sys-coherence-constraints (#:this))
-  (#:method atomic-category-object-sys-constrain-coherence
-    ()
+  (#:method atomic-category-object-sys-uncoverer-of-good-behavior
     (#:this))
-  (#:method atomic-category-object-sys-coherence () (#:this))
+  (#:method
+    atomic-category-object-sys-replace-uncoverer-of-good-behavior
+    (#:this)
+    ())
   prop:atomic-category-object-sys
-  make-atomic-category-object-sys-impl-from-coherence
+  make-atomic-category-object-sys-impl-from-good-behavior
   'atomic-category-object-sys 'atomic-category-object-sys-impl (list))
+
+(define (atomic-category-object-sys-good-behavior object)
+  (
+    (atomic-category-object-sys-uncoverer-of-good-behavior object)
+    object))
+
+(define (atomic-category-object-sys-accepts/c object)
+  ( #/category-object-good-behavior-getter-of-accepts/c
+    (atomic-category-object-sys-good-behavior object)))
+
+(define
+  (atomic-category-object-sys-identity-morphism-good-behavior object)
+  ( #/category-object-good-behavior-getter-of-identity-morphism
+    (atomic-category-object-sys-good-behavior object)))
 
 (define-imitation-simple-struct
   (category-morphism-good-behavior?
     
-    ;   [category-morphism-good-behavior-get-value
+    ;   [category-morphism-good-behavior-getter-of-value
     ;     (-> category-morphism-good-behavior? (-> any/c))]
-    category-morphism-good-behavior-get-value
+    category-morphism-good-behavior-getter-of-value
     
-    ;   [category-morphism-good-behavior-get-accepts/c
+    ;   [category-morphism-good-behavior-getter-of-accepts/c
     ;     (-> category-morphism-good-behavior? (-> contract?))]
-    category-morphism-good-behavior-get-accepts/c
+    category-morphism-good-behavior-getter-of-accepts/c
     
-    ;   [category-morphism-good-behavior-get-replace-source
+    ;   [category-morphism-good-behavior-getter-of-replace-source
     ;     (-> category-morphism-good-behavior?
     ;       (-> any/c category-morphism-good-behavior?))]
-    category-morphism-good-behavior-get-replace-source
+    category-morphism-good-behavior-getter-of-replace-source
     
-    ;   [category-morphism-good-behavior-get-replace-target
+    ;   [category-morphism-good-behavior-getter-of-replace-target
     ;     (-> category-morphism-good-behavior?
     ;       (-> any/c category-morphism-good-behavior?))]
-    category-morphism-good-behavior-get-replace-target)
+    category-morphism-good-behavior-getter-of-replace-target)
   
   unguarded-category-morphism-good-behavior
   'category-morphism-good-behavior (current-inspector)
@@ -1692,6 +1726,19 @@
   unguarded-category-morphism-good-behavior
   attenuated-category-morphism-good-behavior
   attenuated-category-morphism-good-behavior)
+
+(define-match-expander-attenuated
+  attenuated-category-object-good-behavior
+  unguarded-category-object-good-behavior
+  [get-value (-> any/c)]
+  [get-accepts/c (-> contract?)]
+  [get-identity-morphism (-> category-morphism-good-behavior?)]
+  #t)
+(define-match-expander-from-match-and-make
+  category-object-good-behavior
+  unguarded-category-object-good-behavior
+  attenuated-category-object-good-behavior
+  attenuated-category-object-good-behavior)
 
 (define (category-morphism-good-behavior-with-value/c value/c)
   (rename-contract
@@ -1719,8 +1766,10 @@
   (category-morphism-good-behavior-for-mediary-category-sys/c
     mcs source target)
   (rename-contract
-    (category-morphism-good-behavior-with-value/c
-      (mediary-category-sys-morphism/c mcs source target))
+    (category-morphism-good-behavior-for-mediary-quiver-sys/c
+      (mediary-category-sys-mediary-quiver-sys mcs)
+      source
+      target)
     `(category-morphism-good-behavior-for-mediary-category-sys/c
        ,(value-name-for-contract mcs)
        ,(value-name-for-contract source)
@@ -1733,8 +1782,8 @@
   ;
   ; Most of the functionality here is comprised of the fields of the
   ; `category-morphism-good-behavior?` result of
-  ; `atomic-category-morphism-sys-good-behavior`, which correspond to
-  ; various particular methods of `category-sys?`. The
+  ; `atomic-category-morphism-sys-uncoverer-of-good-behavior`, which
+  ; correspond to various particular methods of `category-sys?`. The
   ; `atomic-category-morphism-sys-source` and
   ; `atomic-category-morphism-sys-target` methods don't follow the
   ; pattern; they don't correspond to `category-sys?` methods named
@@ -1752,25 +1801,33 @@
   ;
   (#:method atomic-category-morphism-sys-source (#:this))
   (#:method atomic-category-morphism-sys-target (#:this))
-  (#:method atomic-category-morphism-sys-good-behavior (#:this))
+  (#:method atomic-category-morphism-sys-uncoverer-of-good-behavior
+    (#:this))
+  (#:method
+    atomic-category-morphism-sys-replace-uncoverer-of-good-behavior
+    (#:this)
+    ())
   prop:atomic-category-morphism-sys
   make-atomic-category-morphism-sys-impl-from-good-behavior
   'atomic-category-morphism-sys 'atomic-category-morphism-sys-impl
   (list))
 
+(define (atomic-category-morphism-sys-good-behavior ms)
+  ( (atomic-category-morphism-sys-uncoverer-of-good-behavior ms) ms))
+
 (define (atomic-category-morphism-sys-accepts/c ms)
-  ( #/category-morphism-good-behavior-get-accepts/c
+  ( #/category-morphism-good-behavior-getter-of-accepts/c
     (atomic-category-morphism-sys-good-behavior ms)))
 
 (define (atomic-category-morphism-sys-replace-source ms s)
-  ( #/category-morphism-good-behavior-get-value #/
-    (category-morphism-good-behavior-get-replace-source
+  ( #/category-morphism-good-behavior-getter-of-value #/
+    (category-morphism-good-behavior-getter-of-replace-source
       (atomic-category-morphism-sys-good-behavior ms))
     s))
 
 (define (atomic-category-morphism-sys-replace-target ms t)
-  ( #/category-morphism-good-behavior-get-value #/
-    (category-morphism-good-behavior-get-replace-target
+  ( #/category-morphism-good-behavior-getter-of-value #/
+    (category-morphism-good-behavior-getter-of-replace-target
       (atomic-category-morphism-sys-good-behavior ms))
     t))
 
@@ -1890,6 +1947,11 @@
       (mediary-category-sys-morphism-mediary-set-sys-family mcs)
       s
       t)))
+
+(define (mediary-category-sys-mediary-quiver-sys mcs)
+  (makeshift-mediary-quiver-sys
+    (mediary-category-sys-object-mediary-set-sys mcs)
+    (mediary-category-sys-morphism-mediary-set-sys-family mcs)))
 
 (define-imitation-simple-generics
   category-sys? category-sys-impl?
