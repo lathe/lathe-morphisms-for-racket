@@ -1644,6 +1644,18 @@
   'category-morphism-atomicity (current-inspector)
   (auto-write)
   (auto-equal))
+(define-match-expander-attenuated
+  attenuated-category-morphism-atomicity
+  unguarded-category-morphism-atomicity
+  [accepts/c (-> any/c contract?)]
+  [replace-source (-> any/c any/c any/c)]
+  [replace-target (-> any/c any/c any/c)]
+  #t)
+(define-match-expander-from-match-and-make
+  category-morphism-atomicity
+  unguarded-category-morphism-atomicity
+  attenuated-category-morphism-atomicity
+  attenuated-category-morphism-atomicity)
 
 (define-imitation-simple-generics
   atomic-category-morphism-sys? atomic-category-morphism-sys-impl?
@@ -1831,20 +1843,6 @@
 (define (category-sys-morphism/c cs s t)
   (set-sys-element/c
     ( (category-sys-morphism-set-sys-family cs) s t)))
-
-(define-match-expander-attenuated
-  attenuated-category-morphism-atomicity
-  unguarded-category-morphism-atomicity
-  [accepts/c (-> any/c contract?)]
-  [replace-category-sys (-> any/c category-sys? any/c)]
-  [replace-source (-> any/c any/c any/c)]
-  [replace-target (-> any/c any/c any/c)]
-  #t)
-(define-match-expander-from-match-and-make
-  category-morphism-atomicity
-  unguarded-category-morphism-atomicity
-  attenuated-category-morphism-atomicity
-  attenuated-category-morphism-atomicity)
 
 (define-imitation-simple-generics
   functor-sys? functor-sys-impl?
