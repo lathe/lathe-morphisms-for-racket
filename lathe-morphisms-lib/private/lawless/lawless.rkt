@@ -42,10 +42,11 @@
   define-simple-macro)
 
 (require #/only-in lathe-comforts dissect dissectfn fn w-)
-(require #/only-in lathe-comforts/contract by-own-method/c swap/c)
+(require #/only-in lathe-comforts/contract
+  by-own-method/c fix/c swap/c value-name-for-contract)
 (require #/only-in lathe-comforts/match
   define-match-expander-attenuated
-  define-match-expander-from-match-and-make)
+  define-match-expander-from-match-and-make match/c)
 (require #/only-in lathe-comforts/struct
   auto-equal auto-write define-imitation-simple-generics
   define-imitation-simple-struct)
@@ -235,9 +236,8 @@
       [_ (object)
         (w- mqs
           (atomic-category-object-sys-coherence-constraints object)
-        #/list/c
-          (mediary-quiver-sys-edge/c mqs object object)
-          category-morphism-atomicity?)])]
+        #/category-morphism-good-behavior-for-mediary-quiver-sys/c
+          mqs object object)])]
   [prop:atomic-category-object-sys
     (struct-type-property/c atomic-category-object-sys-impl?)]
   [make-atomic-category-object-sys-impl-from-coherence
@@ -266,23 +266,42 @@
         [_ (object)
           (w- mqs
             (atomic-category-object-sys-coherence-constraints object)
-          #/list/c
-            (mediary-quiver-sys-edge/c mqs object object)
-            category-morphism-atomicity?)])
+          #/category-morphism-good-behavior-for-mediary-quiver-sys/c
+            mqs object object)])
       atomic-category-object-sys-impl?)])
 
 ; TODO: Export these from `lathe-morphisms/lawless/mediary/category`
 ; once we need them.
 (provide
-  category-morphism-atomicity)
+  category-morphism-good-behavior)
 (provide #/contract-out
-  [category-morphism-atomicity? (-> any/c boolean?)]
-  [category-morphism-atomicity-accepts/c
-    (-> category-morphism-atomicity? (-> any/c contract?))]
-  [category-morphism-atomicity-replace-source
-    (-> category-morphism-atomicity? (-> any/c any/c any/c))]
-  [category-morphism-atomicity-replace-target
-    (-> category-morphism-atomicity? (-> any/c any/c any/c))])
+  [category-morphism-good-behavior? (-> any/c boolean?)]
+  [category-morphism-good-behavior-get-value
+    (-> category-morphism-good-behavior? (-> any/c))]
+  [category-morphism-good-behavior-get-accepts/c
+    (-> category-morphism-good-behavior? (-> contract?))]
+  [category-morphism-good-behavior-get-replace-source
+    (-> category-morphism-good-behavior?
+      (-> any/c category-morphism-good-behavior?))]
+  [category-morphism-good-behavior-get-replace-target
+    (-> category-morphism-good-behavior?
+      (-> any/c category-morphism-good-behavior?))]
+  [category-morphism-good-behavior-with-value/c
+    (-> contract? contract?)]
+  [category-morphism-good-behavior-for-mediary-quiver-sys/c
+    (->i
+      (
+        [mqs mediary-quiver-sys?]
+        [source (mqs) (mediary-quiver-sys-node/c mqs)]
+        [target (mqs) (mediary-quiver-sys-node/c mqs)])
+      [_ contract?])]
+  [category-morphism-good-behavior-for-mediary-category-sys/c
+    (->i
+      (
+        [mcs mediary-category-sys?]
+        [source (mcs) (mediary-category-sys-object/c mcs)]
+        [target (mcs) (mediary-category-sys-object/c mcs)])
+      [_ contract?])])
 
 ; TODO: Export these from `lathe-morphisms/lawless/mediary/category`
 ; once we need them.
@@ -299,15 +318,17 @@
     (-> atomic-category-morphism-sys? any/c)]
   [atomic-category-morphism-sys-replace-target
     (-> atomic-category-morphism-sys? any/c any/c)]
-  [atomic-category-morphism-sys-atomicity
-    (-> atomic-category-morphism-sys? category-morphism-atomicity?)]
+  [atomic-category-morphism-sys-good-behavior
+    (-> atomic-category-morphism-sys?
+      category-morphism-good-behavior?)]
   [prop:atomic-category-morphism-sys
     (struct-type-property/c atomic-category-morphism-sys-impl?)]
-  [make-atomic-category-morphism-sys-impl-from-atomicity
+  [make-atomic-category-morphism-sys-impl-from-good-behavior
     (->
       (-> atomic-category-morphism-sys? any/c)
       (-> atomic-category-morphism-sys? any/c)
-      (-> atomic-category-morphism-sys? category-morphism-atomicity?)
+      (-> atomic-category-morphism-sys?
+        category-morphism-good-behavior?)
       atomic-category-morphism-sys-impl?)]
   [atomic-category-morphism-sys/c (-> contract? contract? contract?)])
 
@@ -355,18 +376,22 @@
         [ab (mcs a b) (mediary-category-sys-morphism/c mcs a b)]
         [bc (mcs b c) (mediary-category-sys-morphism/c mcs b c)])
       [_ (mcs a c) (mediary-category-sys-morphism/c mcs a c)])]
-  [mediary-category-sys-morphism-atomicity-chain-two
+  [mediary-category-sys-morphism-good-behavior-chain-two
     (->i
       (
         [mcs mediary-category-sys?]
         [a (mcs) (mediary-category-sys-object/c mcs)]
         [b (mcs) (mediary-category-sys-object/c mcs)]
         [c (mcs) (mediary-category-sys-object/c mcs)]
-        [ab (mcs a b) (mediary-category-sys-morphism/c mcs a b)]
-        [ab-atomicity category-morphism-atomicity?]
-        [bc (mcs b c) (mediary-category-sys-morphism/c mcs b c)]
-        [bc-atomicity category-morphism-atomicity?])
-      [_ category-morphism-atomicity?])]
+        [ab (mcs a b)
+          (category-morphism-good-behavior-for-mediary-category-sys/c
+            mcs a b)]
+        [bc (mcs b c)
+          (category-morphism-good-behavior-for-mediary-category-sys/c
+            mcs b c)])
+      [_ (mcs a c)
+        (category-morphism-good-behavior-for-mediary-category-sys/c
+          mcs a c)])]
   [prop:mediary-category-sys
     (struct-type-property/c mediary-category-sys-impl?)]
   [make-mediary-category-sys-impl-from-chain-two
@@ -404,11 +429,15 @@
           [a (mcs) (mediary-category-sys-object/c mcs)]
           [b (mcs) (mediary-category-sys-object/c mcs)]
           [c (mcs) (mediary-category-sys-object/c mcs)]
-          [ab (mcs a b) (mediary-category-sys-morphism/c mcs a b)]
-          [ab-atomicity category-morphism-atomicity?]
-          [bc (mcs b c) (mediary-category-sys-morphism/c mcs b c)]
-          [bc-atomicity category-morphism-atomicity?])
-        [_ category-morphism-atomicity?])
+          [ab (mcs a b)
+            (category-morphism-good-behavior-for-mediary-category-sys/c
+              mcs a b)]
+          [bc (mcs b c)
+            (category-morphism-good-behavior-for-mediary-category-sys/c
+              mcs b c)])
+        [_ (mcs a c)
+          (category-morphism-good-behavior-for-mediary-category-sys/c
+            mcs a c)])
       mediary-category-sys-impl?)])
 
 (provide #/contract-out
@@ -885,7 +914,8 @@
 ; subdirectory where we reuse the module names, we nevertheless keep
 ; the `mediary-...` prefix on those systems' exported identifiers,
 ; since it signals the fact that an important part of the system
-; resides in the corresponding `atomic-...` and `...-atomicity` types.
+; resides in the corresponding `atomic-...` and `...-good-behavior`
+; types.
 ;
 ; Note that since mediary categories are awfully complicated (and
 ; could easily be a broken or unstable design), and this complexity is
@@ -1557,9 +1587,8 @@
   ;         (w- mqs
   ;           (atomic-category-object-sys-coherence-constraints
   ;             object)
-  ;         #/list/c
-  ;           (mediary-quiver-sys-edge/c mqs object object)
-  ;           category-morphism-atomicity?)])]
+  ;         #/category-morphism-good-behavior-for-mediary-quiver-sys/c
+  ;           mqs object object)])]
   ;
   ; The purpose of `atomic-category-object-sys-coherence` is mainly to
   ; let the object supply its own identity morphism. A
@@ -1626,36 +1655,76 @@
   'atomic-category-object-sys 'atomic-category-object-sys-impl (list))
 
 (define-imitation-simple-struct
-  (category-morphism-atomicity?
+  (category-morphism-good-behavior?
     
-    ;   [category-morphism-atomicity-accepts/c
-    ;     (-> category-morphism-atomicity? (-> any/c contract?))]
-    category-morphism-atomicity-accepts/c
+    ;   [category-morphism-good-behavior-get-value
+    ;     (-> category-morphism-good-behavior? (-> any/c))]
+    category-morphism-good-behavior-get-value
     
-    ;   [category-morphism-atomicity-replace-source
-    ;     (-> category-morphism-atomicity? (-> any/c any/c any/c))]
-    category-morphism-atomicity-replace-source
+    ;   [category-morphism-good-behavior-get-accepts/c
+    ;     (-> category-morphism-good-behavior? (-> contract?))]
+    category-morphism-good-behavior-get-accepts/c
     
-    ;   [category-morphism-atomicity-replace-target
-    ;     (-> category-morphism-atomicity? (-> any/c any/c any/c))]
-    category-morphism-atomicity-replace-target)
+    ;   [category-morphism-good-behavior-get-replace-source
+    ;     (-> category-morphism-good-behavior?
+    ;       (-> any/c category-morphism-good-behavior?))]
+    category-morphism-good-behavior-get-replace-source
+    
+    ;   [category-morphism-good-behavior-get-replace-target
+    ;     (-> category-morphism-good-behavior?
+    ;       (-> any/c category-morphism-good-behavior?))]
+    category-morphism-good-behavior-get-replace-target)
   
-  unguarded-category-morphism-atomicity
-  'category-morphism-atomicity (current-inspector)
+  unguarded-category-morphism-good-behavior
+  'category-morphism-good-behavior (current-inspector)
   (auto-write)
   (auto-equal))
 (define-match-expander-attenuated
-  attenuated-category-morphism-atomicity
-  unguarded-category-morphism-atomicity
-  [accepts/c (-> any/c contract?)]
-  [replace-source (-> any/c any/c any/c)]
-  [replace-target (-> any/c any/c any/c)]
+  attenuated-category-morphism-good-behavior
+  unguarded-category-morphism-good-behavior
+  [get-value (-> any/c)]
+  [get-accepts/c (-> contract?)]
+  [get-replace-source (-> any/c category-morphism-good-behavior?)]
+  [get-replace-target (-> any/c category-morphism-good-behavior?)]
   #t)
 (define-match-expander-from-match-and-make
-  category-morphism-atomicity
-  unguarded-category-morphism-atomicity
-  attenuated-category-morphism-atomicity
-  attenuated-category-morphism-atomicity)
+  category-morphism-good-behavior
+  unguarded-category-morphism-good-behavior
+  attenuated-category-morphism-good-behavior
+  attenuated-category-morphism-good-behavior)
+
+(define (category-morphism-good-behavior-with-value/c value/c)
+  (rename-contract
+    (fix/c this/c
+      (match/c category-morphism-good-behavior
+        (-> value/c)
+        (-> contract?)
+        (-> any/c this/c)
+        (-> any/c this/c)))
+    `(category-morphism-good-behavior-with-value/c
+       ,(value-name-for-contract value/c))))
+
+(define
+  (category-morphism-good-behavior-for-mediary-quiver-sys/c
+    mqs source target)
+  (rename-contract
+    (category-morphism-good-behavior-with-value/c
+      (mediary-quiver-sys-edge/c mqs source target))
+    `(category-morphism-good-behavior-for-mediary-quiver-sys/c
+       ,(value-name-for-contract mqs)
+       ,(value-name-for-contract source)
+       ,(value-name-for-contract target))))
+
+(define
+  (category-morphism-good-behavior-for-mediary-category-sys/c
+    mcs source target)
+  (rename-contract
+    (category-morphism-good-behavior-with-value/c
+      (mediary-category-sys-morphism/c mcs source target))
+    `(category-morphism-good-behavior-for-mediary-category-sys/c
+       ,(value-name-for-contract mcs)
+       ,(value-name-for-contract source)
+       ,(value-name-for-contract target))))
 
 (define-imitation-simple-generics
   atomic-category-morphism-sys? atomic-category-morphism-sys-impl?
@@ -1663,8 +1732,8 @@
   ; NOTE:
   ;
   ; Most of the functionality here is comprised of the fields of the
-  ; `category-morphism-atomicity?` result of
-  ; `atomic-category-morphism-sys-atomicity`, which correspond to
+  ; `category-morphism-good-behavior?` result of
+  ; `atomic-category-morphism-sys-good-behavior`, which correspond to
   ; various particular methods of `category-sys?`. The
   ; `atomic-category-morphism-sys-source` and
   ; `atomic-category-morphism-sys-target` methods don't follow the
@@ -1683,30 +1752,26 @@
   ;
   (#:method atomic-category-morphism-sys-source (#:this))
   (#:method atomic-category-morphism-sys-target (#:this))
-  (#:method atomic-category-morphism-sys-atomicity (#:this))
+  (#:method atomic-category-morphism-sys-good-behavior (#:this))
   prop:atomic-category-morphism-sys
-  make-atomic-category-morphism-sys-impl-from-atomicity
+  make-atomic-category-morphism-sys-impl-from-good-behavior
   'atomic-category-morphism-sys 'atomic-category-morphism-sys-impl
   (list))
 
 (define (atomic-category-morphism-sys-accepts/c ms)
-  (
-    (category-morphism-atomicity-accepts/c
-      (atomic-category-morphism-sys-atomicity ms))
-    ms))
+  ( #/category-morphism-good-behavior-get-accepts/c
+    (atomic-category-morphism-sys-good-behavior ms)))
 
 (define (atomic-category-morphism-sys-replace-source ms s)
-  (
-    (category-morphism-atomicity-replace-source
-      (atomic-category-morphism-sys-atomicity ms))
-    ms
+  ( #/category-morphism-good-behavior-get-value #/
+    (category-morphism-good-behavior-get-replace-source
+      (atomic-category-morphism-sys-good-behavior ms))
     s))
 
 (define (atomic-category-morphism-sys-replace-target ms t)
-  (
-    (category-morphism-atomicity-replace-target
-      (atomic-category-morphism-sys-atomicity ms))
-    ms
+  ( #/category-morphism-good-behavior-get-value #/
+    (category-morphism-good-behavior-get-replace-target
+      (atomic-category-morphism-sys-good-behavior ms))
     t))
 
 (define atomic-category-morphism-sys/c
@@ -1733,7 +1798,7 @@
 ; help; it's specialized to a particular property implementation
 ; constructor signature format where source and target accessors and
 ; replacers come first, and
-; `make-atomic-category-morphism-sys-impl-from-atomicity` isn't a
+; `make-atomic-category-morphism-sys-impl-from-good-behavior` isn't a
 ; property implementation constructor with that signature format. We
 ; would simply have to define it without the help of the
 ; `define-makeshift-morphism` abstraction.
@@ -1782,28 +1847,30 @@
   ; morphisms are well-behaved like the others.
   ;
   ; We can ensure this by making it so the composition of any two
-  ; morphisms that have "atomicity" functionality has its own
-  ; atomicity functionality in turn. This also allows small parts of a
-  ; `mediary-category-sys?` to be poorly behaved without interfering
-  ; with the usefulness of well-behaved subsystems.
+  ; morphisms that are well-behaved is well-behaved in turn. This also
+  ; allows small parts of a `mediary-category-sys?` to be poorly
+  ; behaved without interfering with the usefulness of well-behaved
+  ; subsystems.
   ;
-  ;   [mediary-category-sys-morphism-atomicity-chain-two
+  ;   [mediary-category-sys-morphism-good-behavior-chain-two
   ;     (->i
   ;       (
   ;         [mcs mediary-category-sys?]
   ;         [a (mcs) (mediary-category-sys-object/c mcs)]
   ;         [b (mcs) (mediary-category-sys-object/c mcs)]
   ;         [c (mcs) (mediary-category-sys-object/c mcs)]
-  ;         [ab (mcs a b) (mediary-category-sys-morphism/c mcs a b)]
-  ;         [ab-atomicity category-morphism-atomicity?]
-  ;         [bc (mcs b c) (mediary-category-sys-morphism/c mcs b c)]
-  ;         [bc-atomicity category-morphism-atomicity?])
-  ;       [_ category-morphism-atomicity?])]
+  ;         [ab (mcs a b)
+  ;           (category-morphism-good-behavior-for-mediary-category-sys/c
+  ;             mcs a b)]
+  ;         [bc (mcs b c)
+  ;           (category-morphism-good-behavior-for-mediary-category-sys/c
+  ;             mcs b c)])
+  ;       [_ (mcs a c)
+  ;         (category-morphism-good-behavior-for-mediary-category-sys/c
+  ;           mcs a c)])]
   ;
-  (#:method mediary-category-sys-morphism-atomicity-chain-two
+  (#:method mediary-category-sys-morphism-good-behavior-chain-two
     (#:this)
-    ()
-    ()
     ()
     ()
     ()
