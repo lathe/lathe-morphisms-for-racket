@@ -26,11 +26,19 @@
 
 (require #/only-in lathe-morphisms/private/lawless/lawless
   
+  set-element-good-behavior
+  set-element-good-behavior?
+  set-element-good-behavior-getter-of-value
+  set-element-good-behavior-getter-of-accepts/c
+  set-element-good-behavior-with-value/c
+  set-element-good-behavior-for-mediary-set-sys/c
+  
   atomic-set-element-sys?
   atomic-set-element-sys-impl?
+  atomic-set-element-sys-good-behavior
   atomic-set-element-sys-accepts/c
   prop:atomic-set-element-sys
-  make-atomic-set-element-sys-impl-from-accepts
+  make-atomic-set-element-sys-impl-from-good-behavior
   
   mediary-set-sys?
   mediary-set-sys-impl?
@@ -40,18 +48,30 @@
   
   accepts/c)
 
+
+(provide
+  set-element-good-behavior)
 (provide #/recontract-out
-  
+  set-element-good-behavior?
+  set-element-good-behavior-getter-of-value
+  set-element-good-behavior-getter-of-accepts/c
+  set-element-good-behavior-with-value/c
+  set-element-good-behavior-for-mediary-set-sys/c)
+
+(provide #/recontract-out
   atomic-set-element-sys?
   atomic-set-element-sys-impl?
+  atomic-set-element-sys-good-behavior
   atomic-set-element-sys-accepts/c
   prop:atomic-set-element-sys
-  make-atomic-set-element-sys-impl-from-accepts
-  
+  make-atomic-set-element-sys-impl-from-good-behavior)
+
+(provide #/recontract-out
   mediary-set-sys?
   mediary-set-sys-impl?
   mediary-set-sys-element/c
   prop:mediary-set-sys
-  make-mediary-set-sys-impl-from-contract
-  
+  make-mediary-set-sys-impl-from-contract)
+
+(provide #/recontract-out
   accepts/c)

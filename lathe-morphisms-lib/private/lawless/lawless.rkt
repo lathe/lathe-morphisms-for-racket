@@ -52,15 +52,29 @@
   define-imitation-simple-struct)
 
 
+(provide
+  set-element-good-behavior)
+(provide #/contract-out
+  [set-element-good-behavior? (-> any/c boolean?)]
+  [set-element-good-behavior-getter-of-value
+    (-> set-element-good-behavior? (-> any/c))]
+  [set-element-good-behavior-getter-of-accepts/c
+    (-> set-element-good-behavior? (-> contract?))]
+  [set-element-good-behavior-with-value/c (-> contract? contract?)]
+  [set-element-good-behavior-for-mediary-set-sys/c
+    (-> mediary-category-sys? contract?)])
+
 (provide #/contract-out
   [atomic-set-element-sys? (-> any/c boolean?)]
   [atomic-set-element-sys-impl? (-> any/c boolean?)]
+  [atomic-set-element-sys-good-behavior
+    (-> atomic-set-element-sys? set-element-good-behavior?)]
   [atomic-set-element-sys-accepts/c
     (-> atomic-set-element-sys? contract?)]
   [prop:atomic-set-element-sys
     (struct-type-property/c atomic-set-element-sys-impl?)]
-  [make-atomic-set-element-sys-impl-from-accepts
-    (-> (-> atomic-set-element-sys? contract?)
+  [make-atomic-set-element-sys-impl-from-good-behavior
+    (-> (-> atomic-set-element-sys? set-element-good-behavior?)
       atomic-set-element-sys-impl?)])
 
 (provide #/contract-out
@@ -1479,12 +1493,56 @@
         ...))))
 
 
+(define-imitation-simple-struct
+  (set-element-good-behavior?
+    
+    ;   [set-element-good-behavior-getter-of-value
+    ;     (-> set-element-good-behavior? (-> any/c))]
+    set-element-good-behavior-getter-of-value
+    
+    ;   [set-element-good-behavior-getter-of-accepts/c
+    ;     (-> set-element-good-behavior? (-> contract?))]
+    set-element-good-behavior-getter-of-accepts/c)
+  
+  unguarded-set-element-good-behavior
+  'set-element-good-behavior (current-inspector)
+  (auto-write)
+  (auto-equal))
+(define-match-expander-attenuated
+  attenuated-set-element-good-behavior
+  unguarded-set-element-good-behavior
+  [getter-of-value (-> any/c)]
+  [getter-of-accepts/c (-> contract?)]
+  #t)
+(define-match-expander-from-match-and-make
+  set-element-good-behavior
+  unguarded-set-element-good-behavior
+  attenuated-set-element-good-behavior
+  attenuated-set-element-good-behavior)
+
+(define (set-element-good-behavior-with-value/c value/c)
+  (rename-contract
+    (match/c set-element-good-behavior (-> value/c) any/c)
+    `(set-element-good-behavior-with-value/c
+       ,(value-name-for-contract value/c))))
+
+(define (set-element-good-behavior-for-mediary-set-sys/c mss)
+  (rename-contract
+    (set-element-good-behavior-with-value/c
+      (mediary-set-sys-element/c mss))
+    `(set-element-good-behavior-for-mediary-set-sys/c
+       ,(value-name-for-contract mss))))
+
 (define-imitation-simple-generics
   atomic-set-element-sys? atomic-set-element-sys-impl?
-  (#:method atomic-set-element-sys-accepts/c (#:this))
+  (#:method atomic-set-element-sys-good-behavior (#:this))
   prop:atomic-set-element-sys
-  make-atomic-set-element-sys-impl-from-accepts
+  make-atomic-set-element-sys-impl-from-good-behavior
   'atomic-set-element-sys 'atomic-set-element-sys-impl (list))
+
+(define (atomic-set-element-sys-accepts/c es)
+  ( #/set-element-good-behavior-getter-of-accepts/c
+    (atomic-set-element-sys-good-behavior es)))
 
 (define-imitation-simple-generics
   mediary-set-sys? mediary-set-sys-impl?
@@ -1505,7 +1563,12 @@
   'set-sys 'set-sys-impl (list))
 
 ; TODO: See if we should have functions between mediary sets too, i.e.
-; `mediary-function-sys?`.
+; `mediary-function-sys?`. A `mediary-function-sys?` would have a
+; method for transforming an element of the source mediary set to an
+; element of the target mediary set, and it would have a more specific
+; method for transforming a `set-element-good-behavior?` of the source
+; to a `set-element-good-behavior?` of the target.
+;
 (define-imitation-simple-generics
   function-sys? function-sys-impl?
   (#:method function-sys-source (#:this))
@@ -1674,19 +1737,17 @@
   make-atomic-category-object-sys-impl-from-good-behavior
   'atomic-category-object-sys 'atomic-category-object-sys-impl (list))
 
-(define (atomic-category-object-sys-good-behavior object)
-  (
-    (atomic-category-object-sys-uncoverer-of-good-behavior object)
-    object))
+(define (atomic-category-object-sys-good-behavior os)
+  ( (atomic-category-object-sys-uncoverer-of-good-behavior os) os))
 
-(define (atomic-category-object-sys-accepts/c object)
+(define (atomic-category-object-sys-accepts/c os)
   ( #/category-object-good-behavior-getter-of-accepts/c
-    (atomic-category-object-sys-good-behavior object)))
+    (atomic-category-object-sys-good-behavior os)))
 
 (define
-  (atomic-category-object-sys-identity-morphism-good-behavior object)
+  (atomic-category-object-sys-identity-morphism-good-behavior os)
   ( #/category-object-good-behavior-getter-of-identity-morphism
-    (atomic-category-object-sys-good-behavior object)))
+    (atomic-category-object-sys-good-behavior os)))
 
 (define-imitation-simple-struct
   (category-morphism-good-behavior?
@@ -1716,10 +1777,12 @@
 (define-match-expander-attenuated
   attenuated-category-morphism-good-behavior
   unguarded-category-morphism-good-behavior
-  [get-value (-> any/c)]
-  [get-accepts/c (-> contract?)]
-  [get-replace-source (-> any/c category-morphism-good-behavior?)]
-  [get-replace-target (-> any/c category-morphism-good-behavior?)]
+  [getter-of-value (-> any/c)]
+  [getter-of-accepts/c (-> contract?)]
+  [getter-of-replace-source
+    (-> any/c category-morphism-good-behavior?)]
+  [getter-of-replace-target
+    (-> any/c category-morphism-good-behavior?)]
   #t)
 (define-match-expander-from-match-and-make
   category-morphism-good-behavior
@@ -1730,9 +1793,9 @@
 (define-match-expander-attenuated
   attenuated-category-object-good-behavior
   unguarded-category-object-good-behavior
-  [get-value (-> any/c)]
-  [get-accepts/c (-> contract?)]
-  [get-identity-morphism (-> category-morphism-good-behavior?)]
+  [getter-of-value (-> any/c)]
+  [getter-of-accepts/c (-> contract?)]
+  [getter-of-identity-morphism (-> category-morphism-good-behavior?)]
   #t)
 (define-match-expander-from-match-and-make
   category-object-good-behavior
