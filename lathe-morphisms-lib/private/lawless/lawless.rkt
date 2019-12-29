@@ -173,28 +173,28 @@
     (-> mediary-quiver-sys? mediary-set-sys? mediary-quiver-sys?)]
   [mediary-quiver-sys-node/c (-> mediary-quiver-sys? contract?)]
   [mediary-quiver-sys-edge-mediary-set-sys-family
-    (->i ([mds mediary-quiver-sys?])
-      [_ (mds)
+    (->i ([mqs mediary-quiver-sys?])
+      [_ (mqs)
         (->
-          (mediary-quiver-sys-node/c mds)
-          (mediary-quiver-sys-node/c mds)
+          (mediary-quiver-sys-node/c mqs)
+          (mediary-quiver-sys-node/c mqs)
           mediary-set-sys?)])]
   [mediary-quiver-sys-replace-edge-mediary-set-sys-family
     (->i
       (
-        [mds mediary-quiver-sys?]
-        [edge-mediary-set-sys-family (mds)
+        [mqs mediary-quiver-sys?]
+        [edge-mediary-set-sys-family (mqs)
           (->
-            (mediary-quiver-sys-node/c mds)
-            (mediary-quiver-sys-node/c mds)
+            (mediary-quiver-sys-node/c mqs)
+            (mediary-quiver-sys-node/c mqs)
             mediary-set-sys?)])
       [_ mediary-quiver-sys?])]
   [mediary-quiver-sys-edge/c
     (->i
       (
-        [mds mediary-quiver-sys?]
-        [s (mds) (mediary-quiver-sys-node/c mds)]
-        [t (mds) (mediary-quiver-sys-node/c mds)])
+        [mqs mediary-quiver-sys?]
+        [s (mqs) (mediary-quiver-sys-node/c mqs)]
+        [t (mqs) (mediary-quiver-sys-node/c mqs)])
       [_ contract?])]
   [prop:mediary-quiver-sys
     (struct-type-property/c mediary-quiver-sys-impl?)]
@@ -202,19 +202,19 @@
     (->
       (-> mediary-quiver-sys? mediary-set-sys?)
       (-> mediary-quiver-sys? mediary-set-sys? mediary-quiver-sys?)
-      (->i ([mds mediary-quiver-sys?])
-        [_ (mds)
+      (->i ([mqs mediary-quiver-sys?])
+        [_ (mqs)
           (->
-            (mediary-quiver-sys-node/c mds)
-            (mediary-quiver-sys-node/c mds)
+            (mediary-quiver-sys-node/c mqs)
+            (mediary-quiver-sys-node/c mqs)
             mediary-set-sys?)])
       (->i
         (
-          [mds mediary-quiver-sys?]
-          [edge-mediary-set-sys-family (mds)
+          [mqs mediary-quiver-sys?]
+          [edge-mediary-set-sys-family (mqs)
             (->
-              (mediary-quiver-sys-node/c mds)
-              (mediary-quiver-sys-node/c mds)
+              (mediary-quiver-sys-node/c mqs)
+              (mediary-quiver-sys-node/c mqs)
               mediary-set-sys?)])
         [_ mediary-quiver-sys?])
       mediary-quiver-sys-impl?)])
@@ -233,17 +233,17 @@
     (->i ([object atomic-category-object-sys?])
       [_ (object)
         (and/c mediary-quiver-sys?
-          (by-own-method/c mds
+          (by-own-method/c mqs
             (contract-first-order-passes?
-              (mediary-quiver-sys-node/c mds)
+              (mediary-quiver-sys-node/c mqs)
               object)))])]
   [atomic-category-object-sys-constrain-coherence
     (->i
       (
-        [mds mediary-quiver-sys?]
-        [object (mds)
+        [mqs mediary-quiver-sys?]
+        [object (mqs)
           (and/c atomic-category-object-sys?
-            (mediary-quiver-sys-node/c mds))])
+            (mediary-quiver-sys-node/c mqs))])
       [_ atomic-category-object-sys?])]
   [atomic-category-object-sys-coherence
     (->i
@@ -253,10 +253,10 @@
           (and/c atomic-category-object-sys?
             (set-sys-element/c ss))])
       [_ (object)
-        (w- mds
+        (w- mqs
           (atomic-category-object-sys-coherence-constraints object)
         #/list/c
-          (mediary-quiver-sys-edge/c mds object object)
+          (mediary-quiver-sys-edge/c mqs object object)
           category-morphism-atomicity?)])]
   [prop:atomic-category-object-sys
     (struct-type-property/c atomic-category-object-sys-impl?)]
@@ -268,16 +268,16 @@
       (->i ([object atomic-category-object-sys?])
         [_ (object)
           (and/c mediary-quiver-sys?
-            (by-own-method/c mds
+            (by-own-method/c mqs
               (contract-first-order-passes?
-                (mediary-quiver-sys-node/c mds)
+                (mediary-quiver-sys-node/c mqs)
                 object)))])
       (->i
         (
-          [mds mediary-quiver-sys?]
-          [object (mds)
+          [mqs mediary-quiver-sys?]
+          [object (mqs)
             (and/c atomic-category-object-sys?
-              (mediary-quiver-sys-node/c mds))])
+              (mediary-quiver-sys-node/c mqs))])
         [_ atomic-category-object-sys?])
       (->i
         (
@@ -286,10 +286,10 @@
             (and/c atomic-category-object-sys?
               (set-sys-element/c ss))])
         [_ (object)
-          (w- mds
+          (w- mqs
             (atomic-category-object-sys-coherence-constraints object)
           #/list/c
-            (mediary-quiver-sys-edge/c mds object object)
+            (mediary-quiver-sys-edge/c mqs object object)
             category-morphism-atomicity?)])
       atomic-category-object-sys-impl?)])
 
@@ -1602,17 +1602,17 @@
   ;     (->i ([object atomic-category-object-sys?])
   ;       [_
   ;         (and/c mediary-quiver-sys?
-  ;           (by-own-method/c mds
+  ;           (by-own-method/c mqs
   ;             (contract-first-order-passes?
-  ;               (mediary-quiver-sys-node/c mds)
+  ;               (mediary-quiver-sys-node/c mqs)
   ;               object)))])]
   ;   [atomic-category-object-sys-constrain-coherence
   ;     (->i
   ;       (
-  ;         [mds mediary-quiver-sys?]
-  ;         [object (mds)
+  ;         [mqs mediary-quiver-sys?]
+  ;         [object (mqs)
   ;           (and/c atomic-category-object-sys?
-  ;             (mediary-quiver-sys-node/c mds))])
+  ;             (mediary-quiver-sys-node/c mqs))])
   ;       [_ atomic-category-object-sys?])]
   ;   [atomic-category-object-sys-coherence
   ;     (->i
@@ -1622,11 +1622,11 @@
   ;           (and/c atomic-category-object-sys?
   ;             (set-sys-element/c ss))])
   ;       [_
-  ;         (w- mds
+  ;         (w- mqs
   ;           (atomic-category-object-sys-coherence-constraints
   ;             object)
   ;         #/list/c
-  ;           (mediary-quiver-sys-edge/c mds object object)
+  ;           (mediary-quiver-sys-edge/c mqs object object)
   ;           category-morphism-atomicity?)])]
   ;
   ; The purpose of `atomic-category-object-sys-coherence` is mainly to
