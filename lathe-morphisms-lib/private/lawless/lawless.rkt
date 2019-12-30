@@ -167,26 +167,14 @@
   [mediary-quiver-sys-impl? (-> any/c boolean?)]
   [mediary-quiver-sys-node-mediary-set-sys
     (-> mediary-quiver-sys? mediary-set-sys?)]
-  [mediary-quiver-sys-replace-node-mediary-set-sys
-    (-> mediary-quiver-sys? mediary-set-sys? mediary-quiver-sys?)]
   [mediary-quiver-sys-node/c (-> mediary-quiver-sys? contract?)]
-  [mediary-quiver-sys-edge-mediary-set-sys-family
-    (->i ([mqs mediary-quiver-sys?])
-      [_ (mqs)
-        (->
-          (mediary-quiver-sys-node/c mqs)
-          (mediary-quiver-sys-node/c mqs)
-          mediary-set-sys?)])]
-  [mediary-quiver-sys-replace-edge-mediary-set-sys-family
+  [mediary-quiver-sys-edge-mediary-set-sys
     (->i
       (
         [mqs mediary-quiver-sys?]
-        [edge-mediary-set-sys-family (mqs)
-          (->
-            (mediary-quiver-sys-node/c mqs)
-            (mediary-quiver-sys-node/c mqs)
-            mediary-set-sys?)])
-      [_ mediary-quiver-sys?])]
+        [s (mqs) (mediary-quiver-sys-node/c mqs)]
+        [t (mqs) (mediary-quiver-sys-node/c mqs)])
+      [_ mediary-set-sys?])]
   [mediary-quiver-sys-edge/c
     (->i
       (
@@ -199,22 +187,12 @@
   [make-mediary-quiver-sys-impl-from-mediary-set-systems
     (->
       (-> mediary-quiver-sys? mediary-set-sys?)
-      (-> mediary-quiver-sys? mediary-set-sys? mediary-quiver-sys?)
-      (->i ([mqs mediary-quiver-sys?])
-        [_ (mqs)
-          (->
-            (mediary-quiver-sys-node/c mqs)
-            (mediary-quiver-sys-node/c mqs)
-            mediary-set-sys?)])
       (->i
         (
           [mqs mediary-quiver-sys?]
-          [edge-mediary-set-sys-family (mqs)
-            (->
-              (mediary-quiver-sys-node/c mqs)
-              (mediary-quiver-sys-node/c mqs)
-              mediary-set-sys?)])
-        [_ mediary-quiver-sys?])
+          [s (mqs) (mediary-quiver-sys-node/c mqs)]
+          [t (mqs) (mediary-quiver-sys-node/c mqs)])
+        [_ mediary-set-sys?])
       mediary-quiver-sys-impl?)]
   [makeshift-mediary-quiver-sys
     (->i
@@ -366,26 +344,14 @@
   [mediary-category-sys-impl? (-> any/c boolean?)]
   [mediary-category-sys-object-mediary-set-sys
     (-> mediary-category-sys? mediary-set-sys?)]
-  [mediary-category-sys-replace-object-mediary-set-sys
-    (-> mediary-category-sys? mediary-set-sys? mediary-category-sys?)]
   [mediary-category-sys-object/c (-> mediary-category-sys? contract?)]
-  [mediary-category-sys-morphism-mediary-set-sys-family
-    (->i ([mcs mediary-category-sys?])
-      [_ (mcs)
-        (->
-          (mediary-category-sys-object/c mcs)
-          (mediary-category-sys-object/c mcs)
-          mediary-set-sys?)])]
-  [mediary-category-sys-replace-morphism-mediary-set-sys-family
+  [mediary-category-sys-morphism-mediary-set-sys
     (->i
       (
         [mcs mediary-category-sys?]
-        [morphism-mediary-set-sys-family (mcs)
-          (->
-            (mediary-category-sys-object/c mcs)
-            (mediary-category-sys-object/c mcs)
-            mediary-set-sys?)])
-      [_ mediary-category-sys?])]
+        [s (mcs) (mediary-category-sys-object/c mcs)]
+        [t (mcs) (mediary-category-sys-object/c mcs)])
+      [_ mediary-set-sys?])]
   [mediary-category-sys-morphism/c
     (->i
       (
@@ -424,23 +390,12 @@
   [make-mediary-category-sys-impl-from-chain-two
     (->
       (-> mediary-category-sys? mediary-set-sys?)
-      (-> mediary-category-sys? mediary-set-sys?
-        mediary-category-sys?)
-      (->i ([mcs mediary-category-sys?])
-        [_ (mcs)
-          (->
-            (mediary-category-sys-object/c mcs)
-            (mediary-category-sys-object/c mcs)
-            mediary-set-sys?)])
       (->i
         (
           [mcs mediary-category-sys?]
-          [morphism-mediary-set-sys-family (mcs)
-            (->
-              (mediary-category-sys-object/c mcs)
-              (mediary-category-sys-object/c mcs)
-              mediary-set-sys?)])
-        [_ mediary-category-sys?])
+          [s (mcs) (mediary-category-sys-object/c mcs)]
+          [t (mcs) (mediary-category-sys-object/c mcs)])
+        [_ mediary-set-sys?])
       (->i
         (
           [mcs mediary-category-sys?]
@@ -477,25 +432,17 @@
   [category-sys? (-> any/c boolean?)]
   [category-sys-impl? (-> any/c boolean?)]
   [category-sys-object-set-sys (-> category-sys? set-sys?)]
-  [category-sys-replace-object-set-sys
-    (-> category-sys? set-sys? category-sys?)]
   [category-sys-object/c (-> category-sys? contract?)]
   [category-sys-object-identity-morphism
     (->i ([cs category-sys?] [object (cs) (category-sys-object/c cs)])
       [_ (cs object) (category-sys-morphism/c cs object object)])]
-  [category-sys-morphism-set-sys-family
-    (->i ([cs category-sys?])
-      [_ (cs)
-        (-> (category-sys-object/c cs) (category-sys-object/c cs)
-          set-sys?)])]
-  [category-sys-replace-morphism-set-sys-family
+  [category-sys-morphism-set-sys
     (->i
       (
         [cs category-sys?]
-        [morphism-set-sys-family (cs)
-          (-> (category-sys-object/c cs) (category-sys-object/c cs)
-            set-sys?)])
-      [_ category-sys?])]
+        [s (cs) (category-sys-object/c cs)]
+        [t (cs) (category-sys-object/c cs)])
+      [_ set-sys?])]
   [category-sys-morphism/c
     (->i
       (
@@ -535,21 +482,15 @@
   [make-category-sys-impl-from-chain-two
     (->
       (-> category-sys? set-sys?)
-      (-> category-sys? set-sys? category-sys?)
       (->i
         ([cs category-sys?] [object (cs) (category-sys-object/c cs)])
         [_ (cs object) (category-sys-morphism/c cs object object)])
-      (->i ([cs category-sys?])
-        [_ (cs)
-          (-> (category-sys-object/c cs) (category-sys-object/c cs)
-            set-sys?)])
       (->i
         (
           [cs category-sys?]
-          [morphism-set-sys-family (cs)
-            (-> (category-sys-object/c cs) (category-sys-object/c cs)
-              set-sys?)])
-        [_ category-sys?])
+          [s (cs) (category-sys-object/c cs)]
+          [t (cs) (category-sys-object/c cs)])
+        [_ set-sys?])
       (->i
         (
           [cs category-sys?]
@@ -960,16 +901,6 @@
 ; TODO: If we decide to extrapolate these things to arbitrarily higher
 ; dimensions, we should probably start an "n-dimensional" or
 ; "globular" generalized sublibrary for that.
-
-; TODO: Implement the following contract combinators:
-;
-;   (mediary-quiver-sys/c
-;     node-mediary-set-sys/c edge-mediary-set-sys-family/c)
-;   (mediary-category-sys/c
-;     object-mediary-set-sys/c morphism-mediary-set-sys-family/c)
-;   (category-sys/c object-set-sys/c morphism-set-sys-family/c)
-;
-; These contract combinators fit a pattern that could be abstracted.
 
 
 (define
@@ -1627,13 +1558,7 @@
 (define-imitation-simple-generics
   mediary-quiver-sys? mediary-quiver-sys-impl?
   (#:method mediary-quiver-sys-node-mediary-set-sys (#:this))
-  (#:method mediary-quiver-sys-replace-node-mediary-set-sys
-    (#:this)
-    ())
-  (#:method mediary-quiver-sys-edge-mediary-set-sys-family (#:this))
-  (#:method mediary-quiver-sys-replace-edge-mediary-set-sys-family
-    (#:this)
-    ())
+  (#:method mediary-quiver-sys-edge-mediary-set-sys (#:this) () ())
   prop:mediary-quiver-sys
   make-mediary-quiver-sys-impl-from-mediary-set-systems
   'mediary-quiver-sys 'mediary-quiver-sys-impl (list))
@@ -1644,7 +1569,7 @@
 
 (define (mediary-quiver-sys-edge/c mcs s t)
   (mediary-set-sys-element/c
-    ( (mediary-quiver-sys-edge-mediary-set-sys-family mcs) s t)))
+    (mediary-quiver-sys-edge-mediary-set-sys mcs s t)))
 
 (define-imitation-simple-struct
   (makeshift-mediary-quiver-sys?
@@ -1656,16 +1581,10 @@
     (make-mediary-quiver-sys-impl-from-mediary-set-systems
       ; mediary-quiver-sys-node-mediary-set-sys
       (dissectfn (unguarded-makeshift-mediary-quiver-sys n e) n)
-      ; mediary-quiver-sys-replace-node-mediary-set-sys
-      (fn mqs new-n
+      ; mediary-quiver-sys-edge-mediary-set-sys
+      (fn mqs s t
         (dissect mqs (unguarded-makeshift-mediary-quiver-sys n e)
-        #/unguarded-makeshift-mediary-quiver-sys new-n e))
-      ; mediary-quiver-sys-edge-mediary-set-sys-family
-      (dissectfn (unguarded-makeshift-mediary-quiver-sys n e) e)
-      ; mediary-quiver-sys-replace-edge-mediary-set-sys-family
-      (fn mqs new-e
-        (dissect mqs (unguarded-makeshift-mediary-quiver-sys n e)
-        #/unguarded-makeshift-mediary-quiver-sys n new-e)))))
+        #/e s t)))))
 
 (define (makeshift-mediary-quiver-sys n e)
   (unguarded-makeshift-mediary-quiver-sys n e))
@@ -1927,14 +1846,9 @@
 (define-imitation-simple-generics
   mediary-category-sys? mediary-category-sys-impl?
   (#:method mediary-category-sys-object-mediary-set-sys (#:this))
-  (#:method mediary-category-sys-replace-object-mediary-set-sys
+  (#:method mediary-category-sys-morphism-mediary-set-sys
     (#:this)
-    ())
-  (#:method mediary-category-sys-morphism-mediary-set-sys-family
-    (#:this))
-  (#:method
-    mediary-category-sys-replace-morphism-mediary-set-sys-family
-    (#:this)
+    ()
     ())
   ;   [mediary-category-sys-morphism-chain-two
   ;     (->i
@@ -2006,23 +1920,18 @@
 
 (define (mediary-category-sys-morphism/c mcs s t)
   (mediary-set-sys-element/c
-    (
-      (mediary-category-sys-morphism-mediary-set-sys-family mcs)
-      s
-      t)))
+    (mediary-category-sys-morphism-mediary-set-sys mcs s t)))
 
 (define (mediary-category-sys-mediary-quiver-sys mcs)
   (makeshift-mediary-quiver-sys
     (mediary-category-sys-object-mediary-set-sys mcs)
-    (mediary-category-sys-morphism-mediary-set-sys-family mcs)))
+    (fn s t #/mediary-category-sys-morphism-mediary-set-sys mcs s t)))
 
 (define-imitation-simple-generics
   category-sys? category-sys-impl?
   (#:method category-sys-object-set-sys (#:this))
-  (#:method category-sys-replace-object-set-sys (#:this) ())
   (#:method category-sys-object-identity-morphism (#:this) ())
-  (#:method category-sys-morphism-set-sys-family (#:this))
-  (#:method category-sys-replace-morphism-set-sys-family (#:this) ())
+  (#:method category-sys-morphism-set-sys (#:this) () ())
   (#:method category-sys-morphism-replace-source (#:this) () () () ())
   (#:method category-sys-morphism-replace-target (#:this) () () () ())
   (#:method category-sys-morphism-chain-two (#:this) () () () () ())
@@ -2033,8 +1942,7 @@
   (set-sys-element/c #/category-sys-object-set-sys cs))
 
 (define (category-sys-morphism/c cs s t)
-  (set-sys-element/c
-    ( (category-sys-morphism-set-sys-family cs) s t)))
+  (set-sys-element/c #/category-sys-morphism-set-sys cs s t))
 
 (define-imitation-simple-generics
   functor-sys? functor-sys-impl?

@@ -28,11 +28,9 @@
   category-sys?
   category-sys-impl?
   category-sys-object-set-sys
-  category-sys-replace-object-set-sys
   category-sys-object/c
   category-sys-object-identity-morphism
-  category-sys-morphism-set-sys-family
-  category-sys-replace-morphism-set-sys-family
+  category-sys-morphism-set-sys
   category-sys-morphism/c
   category-sys-morphism-replace-source
   category-sys-morphism-replace-target
@@ -80,11 +78,9 @@
   category-sys?
   category-sys-impl?
   category-sys-object-set-sys
-  category-sys-replace-object-set-sys
   category-sys-object/c
   category-sys-object-identity-morphism
-  category-sys-morphism-set-sys-family
-  category-sys-replace-morphism-set-sys-family
+  category-sys-morphism-set-sys
   category-sys-morphism/c
   category-sys-morphism-replace-source
   category-sys-morphism-replace-target
