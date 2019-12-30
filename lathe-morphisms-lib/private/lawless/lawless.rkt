@@ -43,7 +43,7 @@
 
 (require #/only-in lathe-comforts dissect dissectfn fn w-)
 (require #/only-in lathe-comforts/contract
-  by-own-method/c fix/c swap/c value-name-for-contract)
+  by-own-method/c swap/c value-name-for-contract)
 (require #/only-in lathe-comforts/match
   define-match-expander-attenuated
   define-match-expander-from-match-and-make match/c)
@@ -269,12 +269,6 @@
     (-> category-morphism-good-behavior? (-> any/c))]
   [category-morphism-good-behavior-getter-of-accepts/c
     (-> category-morphism-good-behavior? (-> contract?))]
-  [category-morphism-good-behavior-getter-of-replace-source
-    (-> category-morphism-good-behavior?
-      (-> any/c category-morphism-good-behavior?))]
-  [category-morphism-good-behavior-getter-of-replace-target
-    (-> category-morphism-good-behavior?
-      (-> any/c category-morphism-good-behavior?))]
   [category-morphism-good-behavior-with-value/c
     (-> contract? contract?)]
   [category-morphism-good-behavior-for-mediary-quiver-sys/c
@@ -299,8 +293,14 @@
   [atomic-category-morphism-sys-impl? (-> any/c boolean?)]
   [atomic-category-morphism-sys-source
     (-> atomic-category-morphism-sys? any/c)]
+  [atomic-category-morphism-sys-replace-source
+    (-> atomic-category-morphism-sys? any/c
+      atomic-category-morphism-sys?)]
   [atomic-category-morphism-sys-target
     (-> atomic-category-morphism-sys? any/c)]
+  [atomic-category-morphism-sys-replace-target
+    (-> atomic-category-morphism-sys? any/c
+      atomic-category-morphism-sys?)]
   [atomic-category-morphism-sys-uncoverer-of-good-behavior
     (-> atomic-category-morphism-sys?
       (-> atomic-category-morphism-sys?
@@ -316,16 +316,16 @@
       category-morphism-good-behavior?)]
   [atomic-category-morphism-sys-accepts/c
     (-> atomic-category-morphism-sys? contract?)]
-  [atomic-category-morphism-sys-replace-source
-    (-> atomic-category-morphism-sys? any/c any/c)]
-  [atomic-category-morphism-sys-replace-target
-    (-> atomic-category-morphism-sys? any/c any/c)]
   [prop:atomic-category-morphism-sys
     (struct-type-property/c atomic-category-morphism-sys-impl?)]
   [make-atomic-category-morphism-sys-impl-from-good-behavior
     (->
       (-> atomic-category-morphism-sys? any/c)
+      (-> atomic-category-morphism-sys? any/c
+        atomic-category-morphism-sys?)
       (-> atomic-category-morphism-sys? any/c)
+      (-> atomic-category-morphism-sys? any/c
+        atomic-category-morphism-sys?)
       (-> atomic-category-morphism-sys?
         (-> atomic-category-morphism-sys?
           category-morphism-good-behavior?))
@@ -450,24 +450,6 @@
         [s (cs) (category-sys-object/c cs)]
         [t (cs) (category-sys-object/c cs)])
       [_ contract?])]
-  [category-sys-morphism-replace-source
-    (->i
-      (
-        [cs category-sys?]
-        [s (cs) (category-sys-object/c cs)]
-        [t (cs) (category-sys-object/c cs)]
-        [morphism (cs s t) (category-sys-morphism/c cs s t)]
-        [new-s (cs) (category-sys-object/c cs)])
-      [_ (cs new-s t) (swap/c #/category-sys-morphism/c cs new-s t)])]
-  [category-sys-morphism-replace-target
-    (->i
-      (
-        [cs category-sys?]
-        [s (cs) (category-sys-object/c cs)]
-        [t (cs) (category-sys-object/c cs)]
-        [morphism (cs s t) (category-sys-morphism/c cs s t)]
-        [new-t (cs) (category-sys-object/c cs)])
-      [_ (cs s new-t) (swap/c #/category-sys-morphism/c cs s new-t)])]
   [category-sys-morphism-chain-two
     (->i
       (
@@ -491,24 +473,6 @@
           [s (cs) (category-sys-object/c cs)]
           [t (cs) (category-sys-object/c cs)])
         [_ set-sys?])
-      (->i
-        (
-          [cs category-sys?]
-          [s (cs) (category-sys-object/c cs)]
-          [t (cs) (category-sys-object/c cs)]
-          [morphism (cs s t) (category-sys-morphism/c cs s t)]
-          [new-s (cs) (category-sys-object/c cs)])
-        [_ (cs new-s t)
-          (swap/c #/category-sys-morphism/c cs new-s t)])
-      (->i
-        (
-          [cs category-sys?]
-          [s (cs) (category-sys-object/c cs)]
-          [t (cs) (category-sys-object/c cs)]
-          [morphism (cs s t) (category-sys-morphism/c cs s t)]
-          [new-t (cs) (category-sys-object/c cs)])
-        [_ (cs s new-t)
-          (swap/c #/category-sys-morphism/c cs s new-t)])
       (->i
         (
           [cs category-sys?]
@@ -1677,17 +1641,7 @@
     
     ;   [category-morphism-good-behavior-getter-of-accepts/c
     ;     (-> category-morphism-good-behavior? (-> contract?))]
-    category-morphism-good-behavior-getter-of-accepts/c
-    
-    ;   [category-morphism-good-behavior-getter-of-replace-source
-    ;     (-> category-morphism-good-behavior?
-    ;       (-> any/c category-morphism-good-behavior?))]
-    category-morphism-good-behavior-getter-of-replace-source
-    
-    ;   [category-morphism-good-behavior-getter-of-replace-target
-    ;     (-> category-morphism-good-behavior?
-    ;       (-> any/c category-morphism-good-behavior?))]
-    category-morphism-good-behavior-getter-of-replace-target)
+    category-morphism-good-behavior-getter-of-accepts/c)
   
   unguarded-category-morphism-good-behavior
   'category-morphism-good-behavior (current-inspector)
@@ -1698,10 +1652,6 @@
   unguarded-category-morphism-good-behavior
   [getter-of-value (-> any/c)]
   [getter-of-accepts/c (-> contract?)]
-  [getter-of-replace-source
-    (-> any/c category-morphism-good-behavior?)]
-  [getter-of-replace-target
-    (-> any/c category-morphism-good-behavior?)]
   #t)
 (define-match-expander-from-match-and-make
   category-morphism-good-behavior
@@ -1724,12 +1674,9 @@
 
 (define (category-morphism-good-behavior-with-value/c value/c)
   (rename-contract
-    (fix/c this/c
-      (match/c category-morphism-good-behavior
-        (-> value/c)
-        (-> contract?)
-        (-> any/c this/c)
-        (-> any/c this/c)))
+    (match/c category-morphism-good-behavior
+      (-> value/c)
+      (-> contract?))
     `(category-morphism-good-behavior-with-value/c
        ,(value-name-for-contract value/c))))
 
@@ -1766,11 +1713,15 @@
   ; `category-morphism-good-behavior?` result of
   ; `atomic-category-morphism-sys-uncoverer-of-good-behavior`, which
   ; correspond to various particular methods of `category-sys?`. The
-  ; `atomic-category-morphism-sys-source` and
-  ; `atomic-category-morphism-sys-target` methods don't follow the
-  ; pattern; they don't correspond to `category-sys?` methods named
-  ; `category-sys-morphism-source` and `category-sys-morphism-target`
-  ; as one might expect.
+  ; `atomic-category-morphism-sys-source`,
+  ; `atomic-category-morphism-sys-replace-source`,
+  ; `atomic-category-morphism-sys-target`, and
+  ; `atomic-category-morphism-sys-replace-target` methods don't follow
+  ; the pattern; they don't correspond to `category-sys?` methods
+  ; named `category-sys-morphism-source`,
+  ; `category-sys-morphism-replace-source`,
+  ; `category-sys-morphism-target`, and
+  ; `category-sys-morphism-replace-target` as one might expect.
   ;
   ; That's by design. Even if a category is designed to be extended
   ; with `atomic-category-morphism-sys?` values, its
@@ -1782,7 +1733,9 @@
   ; values that can be checked this way.
   ;
   (#:method atomic-category-morphism-sys-source (#:this))
+  (#:method atomic-category-morphism-sys-replace-source (#:this) ())
   (#:method atomic-category-morphism-sys-target (#:this))
+  (#:method atomic-category-morphism-sys-replace-target (#:this) ())
   (#:method atomic-category-morphism-sys-uncoverer-of-good-behavior
     (#:this))
   (#:method
@@ -1800,18 +1753,6 @@
 (define (atomic-category-morphism-sys-accepts/c ms)
   ( #/category-morphism-good-behavior-getter-of-accepts/c
     (atomic-category-morphism-sys-good-behavior ms)))
-
-(define (atomic-category-morphism-sys-replace-source ms s)
-  ( #/category-morphism-good-behavior-getter-of-value #/
-    (category-morphism-good-behavior-getter-of-replace-source
-      (atomic-category-morphism-sys-good-behavior ms))
-    s))
-
-(define (atomic-category-morphism-sys-replace-target ms t)
-  ( #/category-morphism-good-behavior-getter-of-value #/
-    (category-morphism-good-behavior-getter-of-replace-target
-      (atomic-category-morphism-sys-good-behavior ms))
-    t))
 
 (define atomic-category-morphism-sys/c
   (make-morphism/c
@@ -1932,8 +1873,6 @@
   (#:method category-sys-object-set-sys (#:this))
   (#:method category-sys-object-identity-morphism (#:this) ())
   (#:method category-sys-morphism-set-sys (#:this) () ())
-  (#:method category-sys-morphism-replace-source (#:this) () () () ())
-  (#:method category-sys-morphism-replace-target (#:this) () () () ())
   (#:method category-sys-morphism-chain-two (#:this) () () () () ())
   prop:category-sys make-category-sys-impl-from-chain-two
   'category-sys 'category-sys-impl (list))

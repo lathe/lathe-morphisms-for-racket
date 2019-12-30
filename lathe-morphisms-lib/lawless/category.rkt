@@ -32,8 +32,6 @@
   category-sys-object-identity-morphism
   category-sys-morphism-set-sys
   category-sys-morphism/c
-  category-sys-morphism-replace-source
-  category-sys-morphism-replace-target
   category-sys-morphism-chain-two
   prop:category-sys
   make-category-sys-impl-from-chain-two
@@ -82,8 +80,6 @@
   category-sys-object-identity-morphism
   category-sys-morphism-set-sys
   category-sys-morphism/c
-  category-sys-morphism-replace-source
-  category-sys-morphism-replace-target
   category-sys-morphism-chain-two
   prop:category-sys
   make-category-sys-impl-from-chain-two
