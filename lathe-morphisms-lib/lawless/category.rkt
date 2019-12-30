@@ -29,9 +29,9 @@
   category-sys-impl?
   category-sys-object-set-sys
   category-sys-object/c
-  category-sys-object-identity-morphism
   category-sys-morphism-set-sys
   category-sys-morphism/c
+  category-sys-object-identity-morphism
   category-sys-morphism-chain-two
   prop:category-sys
   make-category-sys-impl-from-chain-two
@@ -77,9 +77,9 @@
   category-sys-impl?
   category-sys-object-set-sys
   category-sys-object/c
-  category-sys-object-identity-morphism
   category-sys-morphism-set-sys
   category-sys-morphism/c
+  category-sys-object-identity-morphism
   category-sys-morphism-chain-two
   prop:category-sys
   make-category-sys-impl-from-chain-two

@@ -433,9 +433,6 @@
   [category-sys-impl? (-> any/c boolean?)]
   [category-sys-object-set-sys (-> category-sys? set-sys?)]
   [category-sys-object/c (-> category-sys? contract?)]
-  [category-sys-object-identity-morphism
-    (->i ([cs category-sys?] [object (cs) (category-sys-object/c cs)])
-      [_ (cs object) (category-sys-morphism/c cs object object)])]
   [category-sys-morphism-set-sys
     (->i
       (
@@ -450,6 +447,9 @@
         [s (cs) (category-sys-object/c cs)]
         [t (cs) (category-sys-object/c cs)])
       [_ contract?])]
+  [category-sys-object-identity-morphism
+    (->i ([cs category-sys?] [object (cs) (category-sys-object/c cs)])
+      [_ (cs object) (category-sys-morphism/c cs object object)])]
   [category-sys-morphism-chain-two
     (->i
       (
@@ -465,14 +465,14 @@
     (->
       (-> category-sys? set-sys?)
       (->i
-        ([cs category-sys?] [object (cs) (category-sys-object/c cs)])
-        [_ (cs object) (category-sys-morphism/c cs object object)])
-      (->i
         (
           [cs category-sys?]
           [s (cs) (category-sys-object/c cs)]
           [t (cs) (category-sys-object/c cs)])
         [_ set-sys?])
+      (->i
+        ([cs category-sys?] [object (cs) (category-sys-object/c cs)])
+        [_ (cs object) (category-sys-morphism/c cs object object)])
       (->i
         (
           [cs category-sys?]
@@ -1871,8 +1871,8 @@
 (define-imitation-simple-generics
   category-sys? category-sys-impl?
   (#:method category-sys-object-set-sys (#:this))
-  (#:method category-sys-object-identity-morphism (#:this) ())
   (#:method category-sys-morphism-set-sys (#:this) () ())
+  (#:method category-sys-object-identity-morphism (#:this) ())
   (#:method category-sys-morphism-chain-two (#:this) () () () () ())
   prop:category-sys make-category-sys-impl-from-chain-two
   'category-sys 'category-sys-impl (list))
