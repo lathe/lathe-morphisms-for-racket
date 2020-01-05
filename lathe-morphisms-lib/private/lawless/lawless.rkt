@@ -1942,7 +1942,7 @@
   (rename-contract
     (functor-sys/c
       (accepts/c #/natural-transformation-sys-endpoint-source nts)
-      (accepts/c #/natural-transformation-sys-endpoint-source nts))
+      (accepts/c #/natural-transformation-sys-endpoint-target nts))
     `(natural-transformation-sys-endpoint/c ,nts)))
 
 (define natural-transformation-sys/c
