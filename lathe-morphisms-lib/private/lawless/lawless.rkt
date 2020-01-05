@@ -37,7 +37,7 @@
   flat-contract? list/c rename-contract unconstrained-domain->)
 (require #/only-in racket/contract/combinator
   blame-add-context coerce-contract contract-first-order-passes?
-  make-contract)
+  make-contract make-flat-contract)
 (require #/only-in syntax/parse/define
   define-simple-macro)
 
@@ -886,7 +886,12 @@
       (get/build-late-neg-projection source/c)
     #/w- target/c-late-neg-projection
       (get/build-late-neg-projection target/c)
-    #/make-contract #:name name
+    #/
+      (if (and (flat-contract? source/c) (flat-contract? target/c))
+        make-flat-contract
+        make-contract)
+      
+      #:name name
       
       #:first-order
       (fn v
@@ -906,14 +911,20 @@
           (target/c-late-neg-projection
             (blame-add-context blame "target of"))
         #/fn v missing-party
-          (w- v
-            (morphism-sys-replace-source v
-              (source/c-projection (morphism-sys-source v)
-                missing-party))
+          (w- replace-if-not-flat
+            (fn c c-projection replace get v
+              (w- c-projection (c-projection (get v) missing-party)
+              #/if (flat-contract? c)
+                v
+                (replace v c-projection)))
           #/w- v
-            (morphism-sys-replace-target v
-              (target/c-projection (morphism-sys-target v)
-                missing-party))
+            (replace-if-not-flat
+              source/c source/c-projection
+              morphism-sys-replace-source morphism-sys-source v)
+          #/w- v
+            (replace-if-not-flat
+              target/c target/c-projection
+              morphism-sys-replace-target morphism-sys-target v)
             v))))))
 
 (define
@@ -949,7 +960,17 @@
       (get/build-late-neg-projection source/c)
     #/w- target/c-late-neg-projection
       (get/build-late-neg-projection target/c)
-    #/make-contract #:name name
+    #/
+      (if
+        (and
+          (flat-contract? endpoint-source/c)
+          (flat-contract? endpoint-target/c)
+          (flat-contract? source/c)
+          (flat-contract? target/c))
+        make-flat-contract
+        make-contract)
+      
+      #:name name
       
       #:first-order
       (fn v
@@ -979,24 +1000,32 @@
           (target/c-late-neg-projection
             (blame-add-context blame "target of"))
         #/fn v missing-party
-          (w- v
-            (cell-sys-replace-endpoint-source v
-              (endpoint-source/c-projection
-                (cell-sys-endpoint-source v)
-                missing-party))
+          (w- replace-if-not-flat
+            (fn c c-projection replace get v
+              (w- c-projection (c-projection (get v) missing-party)
+              #/if (flat-contract? c)
+                v
+                (replace v c-projection)))
           #/w- v
-            (cell-sys-replace-endpoint-target v
-              (endpoint-target/c-projection
-                (cell-sys-endpoint-target v)
-                missing-party))
+            (replace-if-not-flat
+              endpoint-source/c endpoint-source/c-projection
+              cell-sys-replace-endpoint-source
+              cell-sys-endpoint-source
+              v)
           #/w- v
-            (cell-sys-replace-source v
-              (source/c-projection (cell-sys-source v)
-                missing-party))
+            (replace-if-not-flat
+              endpoint-target/c endpoint-target/c-projection
+              cell-sys-replace-endpoint-target
+              cell-sys-endpoint-target
+              v)
           #/w- v
-            (cell-sys-replace-target v
-              (target/c-projection (cell-sys-target v)
-                missing-party))
+            (replace-if-not-flat
+              source/c source/c-projection
+              cell-sys-replace-source cell-sys-source v)
+          #/w- v
+            (replace-if-not-flat
+              target/c target/c-projection
+              cell-sys-replace-target cell-sys-target v)
             v))))))
 
 
