@@ -33,8 +33,8 @@
 (require #/only-in racket/contract
   get/build-late-neg-projection struct-type-property/c)
 (require #/only-in racket/contract/base
-  -> ->i and/c any/c contract? contract-name contract-out list/c
-  rename-contract unconstrained-domain->)
+  -> ->i and/c any/c contract? contract-name contract-out
+  flat-contract? list/c rename-contract unconstrained-domain->)
 (require #/only-in racket/contract/combinator
   blame-add-context coerce-contract contract-first-order-passes?
   make-contract)
@@ -59,7 +59,7 @@
   [set-element-good-behavior-getter-of-value
     (-> set-element-good-behavior? (-> any/c))]
   [set-element-good-behavior-getter-of-accepts/c
-    (-> set-element-good-behavior? (-> contract?))]
+    (-> set-element-good-behavior? (-> flat-contract?))]
   [set-element-good-behavior-with-value/c (-> contract? contract?)]
   [set-element-good-behavior-for-mediary-set-sys/c
     (-> mediary-category-sys? contract?)])
@@ -70,7 +70,7 @@
   [atomic-set-element-sys-good-behavior
     (-> atomic-set-element-sys? set-element-good-behavior?)]
   [atomic-set-element-sys-accepts/c
-    (-> atomic-set-element-sys? contract?)]
+    (-> atomic-set-element-sys? flat-contract?)]
   [prop:atomic-set-element-sys
     (struct-type-property/c atomic-set-element-sys-impl?)]
   [make-atomic-set-element-sys-impl-from-good-behavior
@@ -87,7 +87,7 @@
     (-> (-> mediary-set-sys? contract?) mediary-set-sys-impl?)])
 
 (provide #/contract-out
-  [accepts/c (-> any/c contract?)])
+  [accepts/c (-> any/c flat-contract?)])
 
 (provide #/contract-out
   [set-sys? (-> any/c boolean?)]
@@ -95,7 +95,7 @@
   [set-sys-element/c (-> set-sys? contract?)]
   [set-sys-element-accepts/c
     (->i ([ss set-sys?] [element (ss) (set-sys-element/c ss)])
-      [_ contract?])]
+      [_ flat-contract?])]
   [prop:set-sys (struct-type-property/c set-sys-impl?)]
   [make-set-sys-impl-from-contract
     (->
@@ -214,7 +214,7 @@
   [category-object-good-behavior-getter-of-value
     (-> category-object-good-behavior? (-> any/c))]
   [category-object-good-behavior-getter-of-accepts/c
-    (-> category-object-good-behavior? (-> contract?))]
+    (-> category-object-good-behavior? (-> flat-contract?))]
   [category-object-good-behavior-getter-of-identity-morphism
     (-> category-object-good-behavior?
       (-> category-morphism-good-behavior?))]
@@ -242,7 +242,7 @@
   [atomic-category-object-sys-good-behavior
     (-> atomic-category-object-sys? category-object-good-behavior?)]
   [atomic-category-object-sys-accepts/c
-    (-> atomic-category-object-sys? contract?)]
+    (-> atomic-category-object-sys? flat-contract?)]
   [atomic-category-object-sys-identity-morphism-good-behavior
     (-> atomic-category-object-sys? category-morphism-good-behavior?)]
   [prop:atomic-category-object-sys
@@ -268,7 +268,7 @@
   [category-morphism-good-behavior-getter-of-value
     (-> category-morphism-good-behavior? (-> any/c))]
   [category-morphism-good-behavior-getter-of-accepts/c
-    (-> category-morphism-good-behavior? (-> contract?))]
+    (-> category-morphism-good-behavior? (-> flat-contract?))]
   [category-morphism-good-behavior-with-value/c
     (-> contract? contract?)]
   [category-morphism-good-behavior-for-mediary-quiver-sys/c
@@ -315,7 +315,7 @@
     (-> atomic-category-morphism-sys?
       category-morphism-good-behavior?)]
   [atomic-category-morphism-sys-accepts/c
-    (-> atomic-category-morphism-sys? contract?)]
+    (-> atomic-category-morphism-sys? flat-contract?)]
   [prop:atomic-category-morphism-sys
     (struct-type-property/c atomic-category-morphism-sys-impl?)]
   [make-atomic-category-morphism-sys-impl-from-good-behavior
@@ -1396,7 +1396,7 @@
     set-element-good-behavior-getter-of-value
     
     ;   [set-element-good-behavior-getter-of-accepts/c
-    ;     (-> set-element-good-behavior? (-> contract?))]
+    ;     (-> set-element-good-behavior? (-> flat-contract?))]
     set-element-good-behavior-getter-of-accepts/c)
   
   unguarded-set-element-good-behavior
@@ -1407,7 +1407,7 @@
   attenuated-set-element-good-behavior
   unguarded-set-element-good-behavior
   [getter-of-value (-> any/c)]
-  [getter-of-accepts/c (-> contract?)]
+  [getter-of-accepts/c (-> flat-contract?)]
   #t)
 (define-match-expander-from-match-and-make
   set-element-good-behavior
@@ -1561,7 +1561,7 @@
     category-object-good-behavior-getter-of-value
     
     ;   [category-object-good-behavior-getter-of-accepts/c
-    ;     (-> category-object-good-behavior? (-> contract?))]
+    ;     (-> category-object-good-behavior? (-> flat-contract?))]
     category-object-good-behavior-getter-of-accepts/c
     
     ;   [category-object-good-behavior-getter-of-identity-morphism
@@ -1640,7 +1640,7 @@
     category-morphism-good-behavior-getter-of-value
     
     ;   [category-morphism-good-behavior-getter-of-accepts/c
-    ;     (-> category-morphism-good-behavior? (-> contract?))]
+    ;     (-> category-morphism-good-behavior? (-> flat-contract?))]
     category-morphism-good-behavior-getter-of-accepts/c)
   
   unguarded-category-morphism-good-behavior
@@ -1651,7 +1651,7 @@
   attenuated-category-morphism-good-behavior
   unguarded-category-morphism-good-behavior
   [getter-of-value (-> any/c)]
-  [getter-of-accepts/c (-> contract?)]
+  [getter-of-accepts/c (-> flat-contract?)]
   #t)
 (define-match-expander-from-match-and-make
   category-morphism-good-behavior
@@ -1663,7 +1663,7 @@
   attenuated-category-object-good-behavior
   unguarded-category-object-good-behavior
   [getter-of-value (-> any/c)]
-  [getter-of-accepts/c (-> contract?)]
+  [getter-of-accepts/c (-> flat-contract?)]
   [getter-of-identity-morphism (-> category-morphism-good-behavior?)]
   #t)
 (define-match-expander-from-match-and-make
