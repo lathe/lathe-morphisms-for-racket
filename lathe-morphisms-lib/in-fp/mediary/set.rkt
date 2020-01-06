@@ -29,6 +29,7 @@
   set-element-good-behavior
   set-element-good-behavior?
   set-element-good-behavior-getter-of-value
+  set-element-good-behavior-value
   set-element-good-behavior-getter-of-accepts/c
   set-element-good-behavior-with-value/c
   set-element-good-behavior-for-mediary-set-sys/c
@@ -54,6 +55,7 @@
 (provide #/recontract-out
   set-element-good-behavior?
   set-element-good-behavior-getter-of-value
+  set-element-good-behavior-value
   set-element-good-behavior-getter-of-accepts/c
   set-element-good-behavior-with-value/c
   set-element-good-behavior-for-mediary-set-sys/c)

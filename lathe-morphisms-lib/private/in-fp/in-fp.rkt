@@ -39,12 +39,13 @@
 (require #/only-in racket/contract/combinator
   blame-add-context coerce-contract contract-first-order-passes?
   make-contract make-flat-contract)
+(require #/only-in racket/contract/region define/contract)
 (require #/only-in syntax/parse/define
   define-simple-macro)
 
 (require #/only-in lathe-comforts dissect dissectfn fn w-)
 (require #/only-in lathe-comforts/contract
-  by-own-method/c value-name-for-contract)
+  by-own-method/c flat-contract-accepting/c value-name-for-contract)
 (require #/only-in lathe-comforts/match
   define-match-expander-attenuated
   define-match-expander-from-match-and-make match/c)
@@ -59,8 +60,14 @@
   [set-element-good-behavior? (-> any/c boolean?)]
   [set-element-good-behavior-getter-of-value
     (-> set-element-good-behavior? (-> any/c))]
+  [set-element-good-behavior-value
+    (-> set-element-good-behavior? any/c)]
   [set-element-good-behavior-getter-of-accepts/c
-    (-> set-element-good-behavior? (-> flat-contract?))]
+    (->i ([element set-element-good-behavior?])
+      [_ (element)
+        (->
+          (flat-contract-accepting/c
+            (set-element-good-behavior-value element)))])]
   [set-element-good-behavior-with-value/c (-> contract? contract?)]
   [set-element-good-behavior-for-mediary-set-sys/c
     (-> mediary-category-sys? contract?)])
@@ -71,7 +78,8 @@
   [atomic-set-element-sys-good-behavior
     (-> atomic-set-element-sys? set-element-good-behavior?)]
   [atomic-set-element-sys-accepts/c
-    (-> atomic-set-element-sys? flat-contract?)]
+    (->i ([element atomic-set-element-sys?])
+      [_ (element) (flat-contract-accepting/c element)])]
   [prop:atomic-set-element-sys
     (struct-type-property/c atomic-set-element-sys-impl?)]
   [make-atomic-set-element-sys-impl-from-good-behavior
@@ -88,7 +96,9 @@
     (-> (-> mediary-set-sys? contract?) mediary-set-sys-impl?)])
 
 (provide #/contract-out
-  [ok/c (-> any/c flat-contract?)])
+  [ok/c
+    (->i ([example any/c])
+      [_ (example) (flat-contract-accepting/c example)])])
 
 (provide #/contract-out
   [set-sys? (-> any/c boolean?)]
@@ -96,13 +106,13 @@
   [set-sys-element/c (-> set-sys? contract?)]
   [set-sys-element-accepts/c
     (->i ([ss set-sys?] [element (ss) (set-sys-element/c ss)])
-      [_ flat-contract?])]
+      [_ (element) (flat-contract-accepting/c element)])]
   [prop:set-sys (struct-type-property/c set-sys-impl?)]
   [make-set-sys-impl-from-contract
     (->
       (-> set-sys? contract?)
       (->i ([ss set-sys?] [element (ss) (set-sys-element/c ss)])
-        [_ contract?])
+        [_ (element) (flat-contract-accepting/c element)])
       set-sys-impl?)])
 
 ; TODO: Export these from `lathe-morphisms/in-fp/set` once we need
@@ -212,8 +222,14 @@
   [category-object-good-behavior? (-> any/c boolean?)]
   [category-object-good-behavior-getter-of-value
     (-> category-object-good-behavior? (-> any/c))]
+  [category-object-good-behavior-value
+    (-> category-object-good-behavior? any/c)]
   [category-object-good-behavior-getter-of-accepts/c
-    (-> category-object-good-behavior? (-> flat-contract?))]
+    (->i ([object category-object-good-behavior?])
+      [_ (object)
+        (->
+          (flat-contract-accepting/c
+            (category-object-good-behavior-value object)))])]
   [category-object-good-behavior-getter-of-identity-morphism
     (-> category-object-good-behavior?
       (-> category-morphism-good-behavior?))]
@@ -241,7 +257,8 @@
   [atomic-category-object-sys-good-behavior
     (-> atomic-category-object-sys? category-object-good-behavior?)]
   [atomic-category-object-sys-accepts/c
-    (-> atomic-category-object-sys? flat-contract?)]
+    (->i ([object atomic-category-object-sys?])
+      [_ (object) (flat-contract-accepting/c object)])]
   [atomic-category-object-sys-identity-morphism-good-behavior
     (-> atomic-category-object-sys? category-morphism-good-behavior?)]
   [prop:atomic-category-object-sys
@@ -266,8 +283,14 @@
   [category-morphism-good-behavior? (-> any/c boolean?)]
   [category-morphism-good-behavior-getter-of-value
     (-> category-morphism-good-behavior? (-> any/c))]
+  [category-morphism-good-behavior-value
+    (-> category-morphism-good-behavior? any/c)]
   [category-morphism-good-behavior-getter-of-accepts/c
-    (-> category-morphism-good-behavior? (-> flat-contract?))]
+    (->i ([morphism category-morphism-good-behavior?])
+      [_ (morphism)
+        (->
+          (flat-contract-accepting/c
+            (category-morphism-good-behavior-value morphism)))])]
   [category-morphism-good-behavior-with-value/c
     (-> contract? contract?)]
   [category-morphism-good-behavior-for-mediary-quiver-sys/c
@@ -314,7 +337,8 @@
     (-> atomic-category-morphism-sys?
       category-morphism-good-behavior?)]
   [atomic-category-morphism-sys-accepts/c
-    (-> atomic-category-morphism-sys? flat-contract?)]
+    (->i ([morphism atomic-category-morphism-sys?])
+      [_ (morphism) (flat-contract-accepting/c morphism)])]
   [prop:atomic-category-morphism-sys
     (struct-type-property/c atomic-category-morphism-sys-impl?)]
   [make-atomic-category-morphism-sys-impl-from-good-behavior
@@ -1423,13 +1447,42 @@
     set-element-good-behavior-getter-of-value
     
     ;   [set-element-good-behavior-getter-of-accepts/c
-    ;     (-> set-element-good-behavior? (-> flat-contract?))]
+    ;     (->i ([element set-element-good-behavior?])
+    ;       [_ (element)
+    ;         (->
+    ;           (flat-contract-accepting/c
+    ;             (set-element-good-behavior-value element)))])]
     set-element-good-behavior-getter-of-accepts/c)
   
   unguarded-set-element-good-behavior
   'set-element-good-behavior (current-inspector)
   (auto-write)
   (auto-equal))
+; TODO: We have a dilemma. The `define/contract` version of
+; `attenuated-set-element-good-behavior` will give less precise source
+; location information in its errors, and it won't catch applications
+; with incorrect arity. On the other hand, the
+; `define-match-expander-attenuated` version can't express a fully
+; precise contract for `getter-of-accepts/c`, namely
+; `(-> #/flat-contract-accepting/c #/getter-of-value)`. Dependent
+; contracts would be difficult to make matchers for, but perhaps we
+; could implement an alternative to `define-match-expander-attenuated`
+; that just defined the function-like side and not actually the match
+; expander.
+(define attenuated-set-element-good-behavior
+  (let ()
+    (define/contract
+      (set-element-good-behavior getter-of-value getter-of-accepts/c)
+      (->i
+        (
+          [getter-of-value (-> any/c)]
+          [getter-of-accepts/c (getter-of-value)
+            (-> #/flat-contract-accepting/c #/getter-of-value)])
+        [_ set-element-good-behavior?])
+      (unguarded-set-element-good-behavior
+        getter-of-value getter-of-accepts/c))
+    set-element-good-behavior))
+#;
 (define-match-expander-attenuated
   attenuated-set-element-good-behavior
   unguarded-set-element-good-behavior
@@ -1441,6 +1494,9 @@
   unguarded-set-element-good-behavior
   attenuated-set-element-good-behavior
   attenuated-set-element-good-behavior)
+
+(define (set-element-good-behavior-value element)
+  ( #/set-element-good-behavior-getter-of-value element))
 
 (define (set-element-good-behavior-with-value/c value/c)
   (rename-contract
@@ -1472,9 +1528,9 @@
   prop:mediary-set-sys make-mediary-set-sys-impl-from-contract
   'mediary-set-sys 'mediary-set-sys-impl (list))
 
-(define (ok/c v)
-  (if (atomic-set-element-sys? v)
-    (atomic-set-element-sys-accepts/c v)
+(define (ok/c example)
+  (if (atomic-set-element-sys? example)
+    (atomic-set-element-sys-accepts/c example)
     any/c))
 
 (define-imitation-simple-generics
@@ -1588,7 +1644,11 @@
     category-object-good-behavior-getter-of-value
     
     ;   [category-object-good-behavior-getter-of-accepts/c
-    ;     (-> category-object-good-behavior? (-> flat-contract?))]
+    ;     (->i ([object category-object-good-behavior?])
+    ;       [_ (object)
+    ;         (->
+    ;           (flat-contract-accepting/c
+    ;             (category-object-good-behavior-value object)))])]
     category-object-good-behavior-getter-of-accepts/c
     
     ;   [category-object-good-behavior-getter-of-identity-morphism
@@ -1600,6 +1660,9 @@
   'category-object-good-behavior (current-inspector)
   (auto-write)
   (auto-equal))
+
+(define (category-object-good-behavior-value element)
+  ( #/category-object-good-behavior-getter-of-value element))
 
 (define (category-object-good-behavior-with-value/c value/c)
   (rename-contract
@@ -1615,10 +1678,7 @@
         any/c
         any/c)
       (by-own-method/c good-behavior
-      #/w- object
-        (
-          (category-object-good-behavior-getter-of-value
-            good-behavior))
+      #/w- object (category-object-good-behavior-value good-behavior)
       #/match/c category-object-good-behavior
         any/c
         any/c
@@ -1667,13 +1727,44 @@
     category-morphism-good-behavior-getter-of-value
     
     ;   [category-morphism-good-behavior-getter-of-accepts/c
-    ;     (-> category-morphism-good-behavior? (-> flat-contract?))]
+    ;     (->i ([morphism category-morphism-good-behavior?])
+    ;       [_ (morphism)
+    ;         (->
+    ;           (flat-contract-accepting/c
+    ;             (category-morphism-good-behavior-value
+    ;               morphism)))])]
     category-morphism-good-behavior-getter-of-accepts/c)
   
   unguarded-category-morphism-good-behavior
   'category-morphism-good-behavior (current-inspector)
   (auto-write)
   (auto-equal))
+; TODO: We have a dilemma. The `define/contract` version of
+; `attenuated-category-morphism-good-behavior` will give less precise
+; source location information in its errors, and it won't catch
+; applications with incorrect arity. On the other hand, the
+; `define-match-expander-attenuated` version can't express a fully
+; precise contract for `getter-of-accepts/c`, namely
+; `(-> #/flat-contract-accepting/c #/getter-of-value)`. Dependent
+; contracts would be difficult to make matchers for, but perhaps we
+; could implement an alternative to `define-match-expander-attenuated`
+; that just defined the function-like side and not actually the match
+; expander.
+(define attenuated-category-morphism-good-behavior
+  (let ()
+    (define/contract
+      (category-morphism-good-behavior
+        getter-of-value getter-of-accepts/c)
+      (->i
+        (
+          [getter-of-value (-> any/c)]
+          [getter-of-accepts/c (getter-of-value)
+            (-> #/flat-contract-accepting/c #/getter-of-value)])
+        [_ category-morphism-good-behavior?])
+      (unguarded-category-morphism-good-behavior
+        getter-of-value getter-of-accepts/c))
+    category-morphism-good-behavior))
+#;
 (define-match-expander-attenuated
   attenuated-category-morphism-good-behavior
   unguarded-category-morphism-good-behavior
@@ -1686,6 +1777,38 @@
   attenuated-category-morphism-good-behavior
   attenuated-category-morphism-good-behavior)
 
+; TODO: We have a dilemma. The `define/contract` version of
+; `attenuated-category-object-good-behavior` will give less precise
+; source location information in its errors, and it won't catch
+; applications with incorrect arity. On the other hand, the
+; `define-match-expander-attenuated` version can't express a fully
+; precise contract for `getter-of-accepts/c`, namely
+; `(-> #/flat-contract-accepting/c #/getter-of-value)`. Dependent
+; contracts would be difficult to make matchers for, but perhaps we
+; could implement an alternative to `define-match-expander-attenuated`
+; that just defined the function-like side and not actually the match
+; expander.
+(define attenuated-category-object-good-behavior
+  (let ()
+    (define/contract
+      (category-object-good-behavior
+        getter-of-value
+        getter-of-accepts/c
+        getter-of-identity-morphism)
+      (->i
+        (
+          [getter-of-value (-> any/c)]
+          [getter-of-accepts/c (getter-of-value)
+            (-> #/flat-contract-accepting/c #/getter-of-value)]
+          [getter-of-identity-morphism
+            (-> category-morphism-good-behavior?)])
+        [_ category-object-good-behavior?])
+      (unguarded-category-object-good-behavior
+        getter-of-value
+        getter-of-accepts/c
+        getter-of-identity-morphism))
+    category-object-good-behavior))
+#;
 (define-match-expander-attenuated
   attenuated-category-object-good-behavior
   unguarded-category-object-good-behavior
@@ -1698,6 +1821,9 @@
   unguarded-category-object-good-behavior
   attenuated-category-object-good-behavior
   attenuated-category-object-good-behavior)
+
+(define (category-morphism-good-behavior-value element)
+  ( #/category-morphism-good-behavior-getter-of-value element))
 
 (define (category-morphism-good-behavior-with-value/c value/c)
   (rename-contract
