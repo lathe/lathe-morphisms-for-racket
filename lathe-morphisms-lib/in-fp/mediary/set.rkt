@@ -46,7 +46,7 @@
   prop:mediary-set-sys
   make-mediary-set-sys-impl-from-contract
   
-  accepts/c)
+  ok/c)
 
 
 (provide
@@ -74,4 +74,4 @@
   make-mediary-set-sys-impl-from-contract)
 
 (provide #/recontract-out
-  accepts/c)
+  ok/c)

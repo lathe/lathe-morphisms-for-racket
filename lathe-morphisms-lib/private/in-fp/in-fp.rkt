@@ -88,7 +88,7 @@
     (-> (-> mediary-set-sys? contract?) mediary-set-sys-impl?)])
 
 (provide #/contract-out
-  [accepts/c (-> any/c flat-contract?)])
+  [ok/c (-> any/c flat-contract?)])
 
 (provide #/contract-out
   [set-sys? (-> any/c boolean?)]
@@ -143,23 +143,21 @@
         [t set-sys?]
         [apply-to-element (s t)
           (-> (set-sys-element/c s) (set-sys-element/c t))])
-      [_ (s t) (function-sys/c (accepts/c s) (accepts/c t))])]
+      [_ (s t) (function-sys/c (ok/c s) (ok/c t))])]
   [function-sys-identity
     (->i ([endpoint set-sys?])
       [_ (endpoint)
-        (function-sys/c (accepts/c endpoint) (accepts/c endpoint))])]
+        (function-sys/c (ok/c endpoint) (ok/c endpoint))])]
   [function-sys-chain-two
     (->i
       (
         [ab function-sys?]
         [bc (ab)
-          (function-sys/c
-            (accepts/c #/function-sys-target ab)
-            any/c)])
+          (function-sys/c (ok/c #/function-sys-target ab) any/c)])
       [_ (ab bc)
         (function-sys/c
-          (accepts/c #/function-sys-source ab)
-          (accepts/c #/function-sys-target bc))])])
+          (ok/c #/function-sys-source ab)
+          (ok/c #/function-sys-target bc))])])
 
 ; TODO: Export these from `lathe-morphisms/in-fp/mediary/quiver` once
 ; we need them.
@@ -555,21 +553,20 @@
               (category-sys-morphism/c t
                 (apply-to-object a)
                 (apply-to-object b))])])
-      [_ (s t) (functor-sys/c (accepts/c s) (accepts/c t))])]
+      [_ (s t) (functor-sys/c (ok/c s) (ok/c t))])]
   [functor-sys-identity
     (->i ([endpoint category-sys?])
-      [_ (endpoint)
-        (functor-sys/c (accepts/c endpoint) (accepts/c endpoint))])]
+      [_ (endpoint) (functor-sys/c (ok/c endpoint) (ok/c endpoint))])]
   [functor-sys-chain-two
     (->i
       (
         [ab functor-sys?]
         [bc (ab)
-          (functor-sys/c (accepts/c #/functor-sys-target ab) any/c)])
+          (functor-sys/c (ok/c #/functor-sys-target ab) any/c)])
       [_ (ab bc)
         (functor-sys/c
-          (accepts/c #/functor-sys-source ab)
-          (accepts/c #/functor-sys-target bc))])])
+          (ok/c #/functor-sys-source ab)
+          (ok/c #/functor-sys-target bc))])])
 
 (provide #/contract-out
   [natural-transformation-sys? (-> any/c boolean?)]
@@ -675,8 +672,8 @@
       (
         [es category-sys?]
         [et category-sys?]
-        [s (es et) (functor-sys/c (accepts/c es) (accepts/c et))]
-        [t (es et) (functor-sys/c (accepts/c es) (accepts/c et))]
+        [s (es et) (functor-sys/c (ok/c es) (ok/c et))]
+        [t (es et) (functor-sys/c (ok/c es) (ok/c et))]
         [apply-to-object (es et s t)
           (->i ([object (category-sys-object/c es)])
             [_ (object)
@@ -685,55 +682,52 @@
                 (functor-sys-apply-to-object t object))])])
       [_ (es et s t)
         (natural-transformation-sys/c
-          (accepts/c es)
-          (accepts/c et)
-          (accepts/c s)
-          (accepts/c t))])]
+          (ok/c es)
+          (ok/c et)
+          (ok/c s)
+          (ok/c t))])]
   [natural-transformation-sys-identity
     (->i ([endpoint functor-sys?])
       [_ (endpoint)
         (natural-transformation-sys/c
-          (accepts/c #/functor-sys-source endpoint)
-          (accepts/c #/functor-sys-target endpoint)
-          (accepts/c endpoint)
-          (accepts/c endpoint))])]
+          (ok/c #/functor-sys-source endpoint)
+          (ok/c #/functor-sys-target endpoint)
+          (ok/c endpoint)
+          (ok/c endpoint))])]
   [natural-transformation-sys-chain-two
     (->i
       (
         [ab natural-transformation-sys?]
         [bc (ab)
           (natural-transformation-sys/c
-            (accepts/c
-              (natural-transformation-sys-endpoint-source ab))
-            (accepts/c
-              (natural-transformation-sys-endpoint-target ab))
-            (accepts/c #/natural-transformation-sys-target ab)
+            (ok/c #/natural-transformation-sys-endpoint-source ab)
+            (ok/c #/natural-transformation-sys-endpoint-target ab)
+            (ok/c #/natural-transformation-sys-target ab)
             any/c)])
       [_ (ab bc)
         (natural-transformation-sys/c
-          (accepts/c #/natural-transformation-sys-endpoint-source ab)
-          (accepts/c #/natural-transformation-sys-endpoint-target ab)
-          (accepts/c #/natural-transformation-sys-source ab)
-          (accepts/c #/natural-transformation-sys-target bc))])]
+          (ok/c #/natural-transformation-sys-endpoint-source ab)
+          (ok/c #/natural-transformation-sys-endpoint-target ab)
+          (ok/c #/natural-transformation-sys-source ab)
+          (ok/c #/natural-transformation-sys-target bc))])]
   [natural-transformation-sys-chain-two-along-end
     (->i
       (
         [ab natural-transformation-sys?]
         [bc (ab)
           (natural-transformation-sys/c
-            (accepts/c
-              (natural-transformation-sys-endpoint-target ab))
+            (ok/c #/natural-transformation-sys-endpoint-target ab)
             any/c
             any/c
             any/c)])
       [_ (ab bc)
         (natural-transformation-sys/c
-          (accepts/c #/natural-transformation-sys-endpoint-source ab)
-          (accepts/c #/natural-transformation-sys-endpoint-target bc)
-          (accepts/c #/functor-sys-chain-two
+          (ok/c #/natural-transformation-sys-endpoint-source ab)
+          (ok/c #/natural-transformation-sys-endpoint-target bc)
+          (ok/c #/functor-sys-chain-two
             (natural-transformation-sys-source ab)
             (natural-transformation-sys-source bc))
-          (accepts/c #/functor-sys-chain-two
+          (ok/c #/functor-sys-chain-two
             (natural-transformation-sys-target ab)
             (natural-transformation-sys-target bc)))])])
 
@@ -1478,7 +1472,7 @@
   prop:mediary-set-sys make-mediary-set-sys-impl-from-contract
   'mediary-set-sys 'mediary-set-sys-impl (list))
 
-(define (accepts/c v)
+(define (ok/c v)
   (if (atomic-set-element-sys? v)
     (atomic-set-element-sys-accepts/c v)
     any/c))
@@ -1975,8 +1969,8 @@
 (define (natural-transformation-sys-endpoint/c nts)
   (rename-contract
     (functor-sys/c
-      (accepts/c #/natural-transformation-sys-endpoint-source nts)
-      (accepts/c #/natural-transformation-sys-endpoint-target nts))
+      (ok/c #/natural-transformation-sys-endpoint-source nts)
+      (ok/c #/natural-transformation-sys-endpoint-target nts))
     `(natural-transformation-sys-endpoint/c ,nts)))
 
 (define natural-transformation-sys/c
