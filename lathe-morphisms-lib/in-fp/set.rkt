@@ -1,10 +1,10 @@
 #lang parendown racket/base
 
-; lathe-morphisms/lawless/set
+; lathe-morphisms/in-fp/set
 ;
 ; Interfaces for sets where none of the laws (of equality between
-; elements) have to hold, but where we still go to some lengths to
-; ensure we can write informative contracts.
+; elements) are represented computationally, but where we still go to
+; some lengths to ensure we can write informative contracts.
 
 ;   Copyright 2019 The Lathe Authors
 ;
@@ -23,7 +23,7 @@
 
 (require #/only-in racket/contract/base recontract-out)
 
-(require #/only-in lathe-morphisms/private/lawless/lawless
+(require #/only-in lathe-morphisms/private/in-fp/in-fp
   set-sys?
   set-sys-impl?
   set-sys-element/c

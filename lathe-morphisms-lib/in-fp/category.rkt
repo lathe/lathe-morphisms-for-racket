@@ -1,10 +1,10 @@
 #lang parendown racket/base
 
-; lathe-morphisms/lawless/category
+; lathe-morphisms/in-fp/category
 ;
-; Interfaces for categories where none of the laws have to hold, but
-; where we still go to some lengths to ensure we can write informative
-; contracts.
+; Interfaces for categories where none of the laws are represented
+; computationally, but where we still go to some lengths to ensure we
+; can write informative contracts.
 
 ;   Copyright 2019 The Lathe Authors
 ;
@@ -23,7 +23,7 @@
 
 (require #/only-in racket/contract/base recontract-out)
 
-(require #/only-in lathe-morphisms/private/lawless/lawless
+(require #/only-in lathe-morphisms/private/in-fp/in-fp
   
   category-sys?
   category-sys-impl?

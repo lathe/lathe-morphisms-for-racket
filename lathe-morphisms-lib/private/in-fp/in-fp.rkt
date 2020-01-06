@@ -1,10 +1,11 @@
 #lang parendown racket/base
 
-; lawless.rkt
+; in-fp.rkt
 ;
-; Interfaces for category theory concepts where none of the laws have
-; to hold. Nevertheless, we do go to some lengths to ensure these
-; interfaces carry enough information to write informative contracts.
+; Interfaces for category theory concepts where none of the laws are
+; represented computationally. Nevertheless, we do go to some lengths
+; to ensure these interfaces carry enough information to write
+; informative contracts.
 
 ;   Copyright 2019 The Lathe Authors
 ;
@@ -104,7 +105,7 @@
         [_ contract?])
       set-sys-impl?)])
 
-; TODO: Export these from `lathe-morphisms/lawless/set` once we need
+; TODO: Export these from `lathe-morphisms/in-fp/set` once we need
 ; them.
 (provide #/contract-out
   [function-sys? (-> any/c boolean?)]
@@ -160,8 +161,8 @@
           (accepts/c #/function-sys-source ab)
           (accepts/c #/function-sys-target bc))])])
 
-; TODO: Export these from `lathe-morphisms/lawless/mediary/quiver`
-; once we need them.
+; TODO: Export these from `lathe-morphisms/in-fp/mediary/quiver` once
+; we need them.
 (provide #/contract-out
   [mediary-quiver-sys? (-> any/c boolean?)]
   [mediary-quiver-sys-impl? (-> any/c boolean?)]
@@ -205,7 +206,7 @@
             mediary-set-sys?)])
       [_ mediary-quiver-sys?])])
 
-; TODO: Export these from `lathe-morphisms/lawless/mediary/category`
+; TODO: Export these from `lathe-morphisms/in-fp/mediary/category`
 ; once we need them.
 (provide
   category-object-good-behavior)
@@ -225,7 +226,7 @@
   [category-object-good-behavior-for-mediary-category-sys/c
     (-> mediary-category-sys? contract?)])
 
-; TODO: Export these from `lathe-morphisms/lawless/mediary/category`
+; TODO: Export these from `lathe-morphisms/in-fp/mediary/category`
 ; once we need them.
 (provide #/contract-out
   [atomic-category-object-sys? (-> any/c boolean?)]
@@ -259,7 +260,7 @@
         atomic-category-object-sys?)
       atomic-category-object-sys-impl?)])
 
-; TODO: Export these from `lathe-morphisms/lawless/mediary/category`
+; TODO: Export these from `lathe-morphisms/in-fp/mediary/category`
 ; once we need them.
 (provide
   category-morphism-good-behavior)
@@ -286,7 +287,7 @@
         [target (mcs) (mediary-category-sys-object/c mcs)])
       [_ contract?])])
 
-; TODO: Export these from `lathe-morphisms/lawless/mediary/category`
+; TODO: Export these from `lathe-morphisms/in-fp/mediary/category`
 ; once we need them.
 (provide #/contract-out
   [atomic-category-morphism-sys? (-> any/c boolean?)]
@@ -337,7 +338,7 @@
       atomic-category-morphism-sys-impl?)]
   [atomic-category-morphism-sys/c (-> contract? contract? contract?)])
 
-; TODO: Export these from `lathe-morphisms/lawless/mediary/category`
+; TODO: Export these from `lathe-morphisms/in-fp/mediary/category`
 ; once we need them.
 (provide #/contract-out
   [mediary-category-sys? (-> any/c boolean?)]
@@ -422,8 +423,8 @@
             mcs a c)])
       mediary-category-sys-impl?)])
 
-; TODO: Export this from `lathe-morphisms/lawless/mediary/quiver` or
-; `lathe-morphisms/lawless/mediary/category` once we need it.
+; TODO: Export this from `lathe-morphisms/in-fp/mediary/quiver` or
+; `lathe-morphisms/in-fp/mediary/category` once we need it.
 (provide #/contract-out
   [mediary-category-sys-mediary-quiver-sys
     (-> mediary-category-sys? mediary-quiver-sys?)])
@@ -763,7 +764,7 @@
 ; can be composed with peer-level identity cells. This takes care of
 ; the unitors, which leaves the associator and interchange cells.
 ;
-; Simpson's conjecture suggests that as long as their are weak
+; Simpson's conjecture suggests that as long as there are weak
 ; unitors, nothing is lost by having strict composition. If true, this
 ; might mean we don't have to have to worry about associators and
 ; interchange at all.
@@ -773,19 +774,22 @@
 ; and morphisms can be added onto it.
 ;
 ; And the reason we've bothered to explore it is because we already
-; have a use for defining open lawless sets. A well-behaved element of
-; a lawful set is one that supports an equality relation. With lawless
-; sets, we don't model such a relation, but for error-checking
-; purposes we do still have a way to create a contract to check that
-; an element is equal enough to a given one (`...-accepts/c`). So if
-; we define something that isn't an element of any one particular set,
-; but which supports an `...-accepts/c` operation to enforce that
-; another value is equal enough, the interface we're instantiating is
-; that of a well-behaved element of a lawless set. Namely, here in
-; this module named "lawless," we call that interface
-; `atomic-set-element-sys?`, and the "lawless" is implied. We use the
-; term "atomic" to convey that this is a well-behaved atom for some
-; medial system, and in this case that medial system is
+; have a use for defining open sets. Although the "in-fp" collection's
+; version of category theory doesn't involve explicit proof witnesses
+; for equality, we still care about equality of set elements enough to
+; let them specify flat contracts for recognizing themselves
+; (`...-accepts/c`). So the kind of value that can recognize itself
+; corresponds directly to what we'd call here a *well-behaved set
+; element*, where the set it's actually an element of doesn't matter.
+;
+; Namely, we call that interface `atomic-set-element-sys?`. Outside of
+; the "in-fp" collection, there may be similar things called
+; `atomic-set-element-sys?` that also deal with proof witnesses, but
+; here we treat the lack of witnesses as being implied by the "in-fp"
+; module path.
+;
+; We use the term "atomic" to convey that this is a well-behaved
+; *atom* for some medial system. In this case, that medial system is
 ; `medial-set-sys?`.
 
 ; NOTE:
@@ -838,12 +842,12 @@
 ; We export or intend to export the definitions of this file from a
 ; few different public modules:
 ;
-;   lathe-morphisms/lawless/set (since it's a common base case)
-;   lathe-morphisms/lawless/quiver (once we need it)
-;   lathe-morphisms/lawless/category
-;   lathe-morphisms/lawless/mediary/set
-;   lathe-morphisms/lawless/mediary/quiver (once we need it)
-;   lathe-morphisms/lawless/mediary/category (once we need it)
+;   lathe-morphisms/in-fp/set (since it's a common base case)
+;   lathe-morphisms/in-fp/quiver (once we need it)
+;   lathe-morphisms/in-fp/category
+;   lathe-morphisms/in-fp/mediary/set
+;   lathe-morphisms/in-fp/mediary/quiver (once we need it)
+;   lathe-morphisms/in-fp/mediary/category (once we need it)
 ;
 ; Here, the "mediary" directory is like a "generalized sublibrary" or
 ; "specialized sublibrary" (as discussed in README.md), since they're
@@ -1534,13 +1538,13 @@
 ; `category-sys?`. Instead, we define them solely to be passed into
 ; `category-object-good-behavior-for-mediary-quiver-sys/c` and
 ; `category-morphism-good-behavior-for-mediary-quiver-sys/c`. In
-; general, the coherence information for lawless N-dimensional
-; categories will need to be something like an (N-1)-dimensional
-; category enriched in a quiver. That is, it will be some kind of
-; N-dimensional quiver whose cells have compositional structure at all
-; dimensions less than N. The composition operations will be needed
-; to express the sources and targets of the N-dimensional category's
-; unitor cells.
+; general, the coherence information for no-proof-witness
+; N-dimensional categories will need to be something like an
+; (N-1)-dimensional category enriched in a quiver. That is, it will be
+; some kind of N-dimensional quiver whose cells have compositional
+; structure at all dimensions less than N. The composition operations
+; will be needed to express the sources and targets of the
+; N-dimensional category's unitor cells.
 ;
 ; Since we're not using this as infrastructure, we don't bother to
 ; define `atomic-quiver-node-sys?`, `atomic-quiver-edge-sys?`, or
@@ -1843,9 +1847,10 @@
   ; It's not enough just to have a composition operation on morphisms.
   ; Not all the objects and morphisms of a `mediary-category-sys?` are
   ; necessarily well-behaved in the sense of having identity cells
-  ; (and, if this were a lawful or higher-dimensional category, unitor
-  ; laws for those cells to obey). However, if all the generating
-  ; objects and morphisms really are well-behaved, then the whole
+  ; (and, if this were a higher-dimensional category or a category
+  ; with proof witnesses of morphism equality, unitor laws for those
+  ; cells to obey). However, if all the generating objects and
+  ; morphisms really are well-behaved, then the whole
   ; `mediary-category-sys?` ought to be as well-behaved as a
   ; `category-sys?`, so we ought to find that the composition
   ; morphisms are well-behaved like the others.
