@@ -44,7 +44,7 @@
 
 (require #/only-in lathe-comforts dissect dissectfn fn w-)
 (require #/only-in lathe-comforts/contract
-  by-own-method/c swap/c value-name-for-contract)
+  by-own-method/c value-name-for-contract)
 (require #/only-in lathe-comforts/match
   define-match-expander-attenuated
   define-match-expander-from-match-and-make match/c)
