@@ -1495,8 +1495,8 @@
   attenuated-set-element-good-behavior
   attenuated-set-element-good-behavior)
 
-(define (set-element-good-behavior-value element)
-  ( #/set-element-good-behavior-getter-of-value element))
+(define (set-element-good-behavior-value element-gb)
+  ( #/set-element-good-behavior-getter-of-value element-gb))
 
 (define (set-element-good-behavior-with-value/c value/c)
   (rename-contract
@@ -1661,8 +1661,8 @@
   (auto-write)
   (auto-equal))
 
-(define (category-object-good-behavior-value element)
-  ( #/category-object-good-behavior-getter-of-value element))
+(define (category-object-good-behavior-value object-gb)
+  ( #/category-object-good-behavior-getter-of-value object-gb))
 
 (define (category-object-good-behavior-with-value/c value/c)
   (rename-contract
@@ -1822,8 +1822,8 @@
   attenuated-category-object-good-behavior
   attenuated-category-object-good-behavior)
 
-(define (category-morphism-good-behavior-value element)
-  ( #/category-morphism-good-behavior-getter-of-value element))
+(define (category-morphism-good-behavior-value morphism-gb)
+  ( #/category-morphism-good-behavior-getter-of-value morphism-gb))
 
 (define (category-morphism-good-behavior-with-value/c value/c)
   (rename-contract

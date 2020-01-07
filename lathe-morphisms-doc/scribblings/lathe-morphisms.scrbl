@@ -100,6 +100,18 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
       getter-of-accepts/c-pat)
   ]
   @defproc[(set-element-good-behavior? [v any/c]) boolean?]
+  @defproc[
+    (set-element-good-behavior-getter-of-value
+      [element-gb set-element-good-behavior?])
+    (-> any/c)
+  ]
+  @defproc[
+    (set-element-good-behavior-getter-of-accepts/c
+      [element-gb set-element-good-behavior?])
+    (->
+      (flat-contract-accepting/c
+        (set-element-good-behavior-value element-gb)))
+  ]
 )]{
   Struct-like operations which construct and deconstruct a value that represents the behavior that makes a set element well-behaved. Namely, this behavior consists of a way to get the value itself (@racket[getter-of-value-expr]) and a way to get a contract that recognizes values that are @tech{close enough} to it (@racket[getter-of-accepts/c-expr]).
   
@@ -108,7 +120,7 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
 
 @defproc[
   (set-element-good-behavior-value
-    [element set-element-good-behavior?])
+    [element-gb set-element-good-behavior?])
   any/c
 ]{
   Given the well-behaved behavior of a well-behaved set element, returns the element.
