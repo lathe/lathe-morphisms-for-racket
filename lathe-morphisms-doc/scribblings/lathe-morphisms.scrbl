@@ -23,7 +23,7 @@
 @(require #/for-label #/only-in racket/contract
   struct-type-property/c)
 @(require #/for-label #/only-in racket/contract/base
-  -> any/c contract? flat-contract?)
+  -> ->i any/c contract? flat-contract?)
 
 @(require #/for-label #/only-in lathe-comforts/contract
   flat-contract-accepting/c)
@@ -33,7 +33,17 @@
 @(require #/for-label lathe-morphisms/in-fp/mediary/set)
 @(require #/for-label lathe-morphisms/in-fp/set)
 
-@(require #/only-in scribble/example examples make-eval-factory)
+@(require #/only-in scribble/decode part-start)
+
+@(require #/only-in lathe-comforts dissect)
+
+
+@(define (sub ps)
+  (dissect ps (part-start depth tag-prefix tags style title)
+  #/part-start (add1 depth) tag-prefix tags style title))
+
+@(define-syntax-rule (subsubsubsection args ...)
+  (sub #/subsubsection args ...))
 
 
 @title{Lathe Morphisms}
@@ -54,15 +64,18 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
 
 
 
-@section[#:tag "in-fp/mediary"]{Functional-programming-based theories that are "mediary" for open extensibility}
+@section[#:tag "in-fp"]{Functional-programming-based theories}
 
 
-@subsection[#:tag "in-fp/mediary/set"]{Mediary sets and their elements}
+@subsection[#:tag "in-fp/mediary"]{Functional-programming-based theories that are "mediary" for open extensibility}
+
+
+@subsubsection[#:tag "in-fp/mediary/set"]{Mediary sets and their elements}
 
 @defmodule[lathe-morphisms/in-fp/mediary/set]
 
 
-@subsubsection[#:tag "in-fp/mediary/set/set-element-good-behavior"]{Behavior of well-behaved set elements}
+@subsubsubsection[#:tag "in-fp/mediary/set/set-element-good-behavior"]{Behavior of well-behaved set elements}
 
 @deftogether[(
   @defidform[set-element-good-behavior]
@@ -117,7 +130,7 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
 }
 
 
-@subsubsection[#:tag "in-fp/mediary/set/atomic-set-element-sys"]{Atomic set elements}
+@subsubsubsection[#:tag "in-fp/mediary/set/atomic-set-element-sys"]{Atomic set elements}
 
 @deftogether[(
   @defproc[(atomic-set-element-sys? [v any/c]) boolean?]
@@ -156,7 +169,7 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
 }
 
 
-@subsubsection[#:tag "in-fp/mediary/set/mediary-set-sys"]{Mediary sets themselves}
+@subsubsubsection[#:tag "in-fp/mediary/set/mediary-set-sys"]{Mediary sets themselves}
 
 @deftogether[(
   @defproc[(mediary-set-sys? [v any/c]) boolean?]
@@ -189,8 +202,45 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
 }
 
 
-@subsubsection[#:tag "in-fp/mediary/set/util"]{Utilities based on mediary sets}
+@subsubsubsection[#:tag "in-fp/mediary/set/util"]{Utilities based on mediary sets}
 
 @defproc[(ok/c [example any/c]) (flat-contract-accepting/c example)]{
   Given a value, returns a contract that recognizes values that are @tech{close enough} to it in the sense of an atomic set element. When the given value is indeed an @racket[atomic-set-element-sys?], this uses its @racket[atomic-set-element-sys-accepts/c] contract. Otherwise, it considers any value (@racket[any/c]) to be close enough.
+}
+
+
+@subsection[#:tag "in-fp/set"]{Sets}
+
+@defmodule[lathe-morphisms/in-fp/set]
+
+@deftogether[(
+  @defproc[(set-sys? [v any/c]) boolean?]
+  @defproc[(set-sys-impl? [v any/c]) boolean?]
+  @defthing[prop:set-sys (struct-type-property/c set-sys-impl?)]
+)]{
+  Structure type property operations for sets, which have a type of elements represented by a contract and an @tt{...-accepts/c} method.
+}
+
+@defproc[(set-sys-element/c [ss set-sys?]) contract?]{
+  Returns a contract which recognizes any element of the given set.
+}
+
+@defproc[
+  (set-sys-element-accepts/c
+    [ss set-sys?]
+    [element (set-sys-element/c ss)])
+  (flat-contract-accepting/c element)
+]{
+  Given an element of a given set, returns a contract which recognizes values that are @tech{close enough} to it.
+}
+
+@defproc[
+  (make-set-sys-impl-from-contract
+    [element/c (-> set-sys? contract?)]
+    [element-accepts/c
+      (->i ([_ss set-sys?] [_element (_ss) (set-sys-element/c _ss)])
+        [_ (_element) (flat-contract-accepting/c _element)])])
+  set-sys-impl?
+]{
+  Given implementations for @racket[set-sys-element/c] and @racket[set-sys-element-accepts/c], returns something a struct can use to implement the @racket[prop:set-sys] interface.
 }
