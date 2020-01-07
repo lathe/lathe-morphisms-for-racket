@@ -70,7 +70,7 @@
             (set-element-good-behavior-value element)))])]
   [set-element-good-behavior-with-value/c (-> contract? contract?)]
   [set-element-good-behavior-for-mediary-set-sys/c
-    (-> mediary-category-sys? contract?)])
+    (-> mediary-set-sys? contract?)])
 
 (provide #/contract-out
   [atomic-set-element-sys? (-> any/c boolean?)]
