@@ -265,7 +265,10 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
 @deftogether[(
   @defproc[(category-sys? [v any/c]) boolean?]
   @defproc[(category-sys-impl? [v any/c]) boolean?]
-  @defthing[prop:category-sys (struct-type-property/c category-sys-impl?)]
+  @defthing[
+    prop:category-sys
+    (struct-type-property/c category-sys-impl?)
+  ]
 )]{
   Structure type property operations for categories, which have a set (@racket[set-sys?]) of objects and for every two objects, a set of morphisms from one to the other.
 }
@@ -319,7 +322,7 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
 ]{
   Returns the morphism which is the composition of two given morphisms fenceposted by three given objects in the given category.
   
-  This composition operation is written in @deftech{diagrammatic order}, where in the process of reading off the arguments from left to right, we proceed from the source to the target of each morphism. Composition in category theory literature is most often written with its arguments the other way around.
+  This composition operation is written in @emph{diagrammatic order}, where in the process of reading off the arguments from left to right, we proceed from the source to the target of each morphism. Composition in category theory literature is most often written with its arguments the other way around.
 }
 
 @defproc[
@@ -395,4 +398,213 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
           _ab
           (morphism-chain-two _cs _b _c _d _bc _cd))))
   ]
+}
+
+@deftogether[(
+  @defproc[(functor-sys? [v any/c]) boolean?]
+  @defproc[(functor-sys-impl? [v any/c]) boolean?]
+  @defthing[
+    prop:functor-sys
+    (struct-type-property/c functor-sys-impl?)
+  ]
+)]{
+  Structure type property operations for functors, structure-preserving transformations of objects and morphisms from a source category to a target category.
+}
+
+@defproc[(functor-sys-source [fs functor-sys?]) category-sys?]{
+  Returns a functor's source category.
+}
+
+@defproc[
+  (functor-sys-replace-source [fs functor-sys?] [new-s category-sys?])
+  functor-sys?
+]{
+  Returns a functor like the given one, but with its source category replaced with the given one. This may raise an error if the given value isn't similar enough to the one being replaced. This is intended only for use by @racket[functor-sys/c] and similar error-detection systems as a way to replace a value with one that reports better errors.
+}
+
+@defproc[(functor-sys-target [fs functor-sys?]) category-sys?]{
+  Returns a functor's target category.
+}
+
+@defproc[
+  (functor-sys-replace-target [fs functor-sys?] [new-t category-sys?])
+  functor-sys?
+]{
+  Returns a functor like the given one, but with its target category replaced with the given one. This may raise an error if the given value isn't similar enough to the one being replaced. This is intended only for use by @racket[functor-sys/c] and similar error-detection systems as a way to replace a value with one that reports better errors.
+}
+
+@defproc[
+  (functor-sys-apply-to-object
+    [fs functor-sys?]
+    [object (category-sys-object/c (functor-sys-source fs))])
+  (category-sys-object/c (functor-sys-target fs))
+]{
+  Transforms an object according to the given functor.
+}
+
+@defproc[
+  (functor-sys-apply-to-morphism
+    [fs functor-sys?]
+    [s (category-sys-object/c (functor-sys-source fs))]
+    [t (category-sys-object/c (functor-sys-source fs))]
+    [morphism (category-sys-morphism/c (functor-sys-source fs) s t)])
+  (category-sys-object/c (functor-sys-target fs)
+    (functor-sys-apply-to-object fs s)
+    (functor-sys-apply-to-object fs t))
+]{
+  Uses the given functor to transforms a morphism that originally goes from the given source object @racket[s] to the given target object @racket[t].
+}
+
+@defproc[
+  (make-functor-sys-impl-from-apply
+    [source
+      (-> functor-sys? category-sys?)]
+    [replace-source
+      (-> functor-sys? category-sys? functor-sys?)]
+    [target
+      (-> functor-sys? category-sys?)]
+    [replace-target
+      (-> functor-sys? category-sys? functor-sys?)]
+    [apply-to-object
+      (->i
+        (
+          [fs functor-sys?]
+          [object (fs)
+            (category-sys-object/c (functor-sys-source fs))])
+        [_ (fs) (category-sys-object/c (functor-sys-target fs))])]
+    [apply-to-morphism
+      (->i
+        (
+          [fs functor-sys?]
+          [s (fs) (category-sys-object/c (functor-sys-source fs))]
+          [t (fs) (category-sys-object/c (functor-sys-source fs))]
+          [morphism (fs s t)
+            (category-sys-morphism/c (functor-sys-source fs) s t)])
+        [_ (fs s t)
+          (category-sys-morphism/c (functor-sys-target fs)
+            (functor-sys-apply-to-object fs s)
+            (functor-sys-apply-to-object fs t))])])
+  functor-sys-impl?
+]{
+  Given implementations for @racket[functor-sys-source], @racket[functor-sys-replace-source], @racket[functor-sys-target], @racket[functor-sys-replace-target], @racket[functor-sys-apply-to-object], and @racket[functor-sys-apply-to-morphism], returns something a struct can use to implement the @racket[prop:functor-sys] interface.
+  
+  When the @tt{replace} methods don't raise errors, they should observe the lens laws: The result of getting a value after it's been replaced should be the same as just using the value that was passed to the replacer. The result of replacing a value with itself should be the same as not using the replacer at all. The of replacing a value and replacing it a second time should be the same as just skipping to the second replacement.
+  
+  Moreover, the @tt{replace} methods should not raise an error when a value is replaced with itself. They're intended only for use by @racket[functor-sys/c] and similar error-detection systems, which will tend to replace a replace a value with one that reports better errors.
+  
+  The other given method implementations should observe some algebraic laws. Namely, the @racket[apply-to-morphism] operation should respect the identity and associativity laws of the @racket[category-sys-object-identity-morphism] and @racket[category-sys-morphism-chain-two] operations. In more symbolic terms (using a pseudocode DSL):
+  
+  @racketblock[
+    (#:for-all
+      _fs functor-sys?
+      #:let _s (functor-sys-source _fs)
+      #:let _t (functor-sys-target _fs)
+      _a (category-sys-object/c _s)
+      
+      (#:should-be-equal
+        (apply-to-morphism _fs _a _a
+          (category-sys-object-identity-morphism _s _a))
+        (category-sys-object-identity-morphism _t
+          (apply-to-object _fs _a))))
+    
+    (#:for-all
+      _fs functor-sys?
+      #:let _s (functor-sys-source _fs)
+      #:let _t (functor-sys-target _fs)
+      _a (category-sys-object/c _s)
+      _b (category-sys-object/c _s)
+      _c (category-sys-object/c _s)
+      _ab (category-sys-morphism/c _s _a _b)
+      _bc (category-sys-morphism/c _s _b _c)
+      
+      (#:should-be-equal
+        (apply-to-morphism _fs _a _c
+          (category-sys-morphism-chain-two _s _a _b _c _ab _bc))
+        (category-sys-morphism-chain-two _t
+          (apply-to-object _fs _a)
+          (apply-to-object _fs _b)
+          (apply-to-object _fs _c)
+          (apply-to-morphism _fs _a _b _ab)
+          (apply-to-morphism _fs _b _c _bc))))
+  ]
+}
+
+@defproc[
+  (functor-sys/c [source/c contract?] [target/c contract?])
+  contract?
+]{
+  Returns a contract that recognizes any functor whose source and target categories are recognized by the given contracts.
+}
+
+@defproc[
+  (makeshift-functor-sys
+    [s category-sys?]
+    [t category-sys?]
+    [apply-to-object
+      (-> (category-sys-object/c s) (category-sys-object/c t))]
+    [apply-to-morphism
+      (->i
+        (
+          [a (category-sys-object/c s)]
+          [b (category-sys-object/c s)]
+          [ab (a b) (category-sys-morphism/c s a b)])
+        [_ (a b)
+          (category-sys-morphism/c t
+            (apply-to-object a)
+            (apply-to-object b))])])
+  (functor-sys/c (ok/c s) (ok/c t))
+]{
+  Returns a functor that goes from the source category @racket[s] to the target category @racket[t], transforming objects and morphisms using the given procedures.
+  
+  This may be more convenient than defining an instance of @racket[prop:category-sys].
+  
+  The given procedures should satisfy algebraic laws. Namely, the @racket[apply-to-morphism] operation should respect the identity and associativity laws of the @racket[category-sys-object-identity-morphism] and @racket[category-sys-morphism-chain-two] operations. In more symbolic terms (using a pseudocode DSL):
+  
+  @racketblock[
+    (#:for-all
+      _a (category-sys-object/c _s)
+      
+      (#:should-be-equal
+        (apply-to-morphism _a _a
+          (category-sys-object-identity-morphism _s _a))
+        (category-sys-object-identity-morphism _t
+          (apply-to-object _a))))
+    
+    (#:for-all
+      _a (category-sys-object/c _s)
+      _b (category-sys-object/c _s)
+      _c (category-sys-object/c _s)
+      _ab (category-sys-morphism/c _s _a _b)
+      _bc (category-sys-morphism/c _s _b _c)
+      
+      (#:should-be-equal
+        (apply-to-morphism _a _c
+          (category-sys-morphism-chain-two _s _a _b _c _ab _bc))
+        (category-sys-morphism-chain-two _t
+          (apply-to-object _a)
+          (apply-to-object _b)
+          (apply-to-object _c)
+          (apply-to-morphism _a _b _ab)
+          (apply-to-morphism _b _c _bc))))
+  ]
+}
+
+@defproc[
+  (functor-sys-identity [endpoint category-sys?])
+  (functor-sys/c (ok/c endpoint) (ok/c endpoint))
+]{
+  Returns the identity functor on the given category. This is a functor that goes from the given category to itself, taking every object and every morphism to itself.
+}
+
+@defproc[
+  (functor-sys-chain-two
+    [ab functor-sys?]
+    [bc (functor-sys/c (ok/c (functor-sys-target ab)) any/c)])
+  (functor-sys/c
+    (ok/c (functor-sys-source ab))
+    (ok/c (functor-sys-target bc)))
+]{
+  Returns the composition of the two given functors. This is a functor that goes from the first functor's source category to the second functor's target category, transforming every object and every morphism by applying the first functor and then the second. The target of the first functor should match the source of the second.
+  
+  This composition operation is written in @emph{diagrammatic order}, where in the process of reading off the arguments from left to right, we proceed from the source to the target of each functor. Composition in category theory literature is most often written with its arguments the other way around.
 }
