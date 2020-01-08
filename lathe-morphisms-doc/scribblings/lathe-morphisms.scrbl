@@ -256,3 +256,143 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
 ]{
   Given implementations for @racket[set-sys-element/c] and @racket[set-sys-element-accepts/c], returns something a struct can use to implement the @racket[prop:set-sys] interface.
 }
+
+
+@subsection[#:tag "in-fp/category"]{Categories}
+
+@defmodule[lathe-morphisms/in-fp/category]
+
+@deftogether[(
+  @defproc[(category-sys? [v any/c]) boolean?]
+  @defproc[(category-sys-impl? [v any/c]) boolean?]
+  @defthing[prop:category-sys (struct-type-property/c category-sys-impl?)]
+)]{
+  Structure type property operations for categories, which have a set (@racket[set-sys?]) of objects and for every two objects, a set of morphisms from one to the other.
+}
+
+@defproc[(category-sys-object-set-sys [cs category-sys?]) set-sys?]{
+  Returns the set of objects in the given category.
+}
+
+@defproc[(category-sys-object/c [cs category-sys?]) contract?]{
+  Returns a contract which recognizes any object of the given category.
+}
+
+@defproc[
+  (category-sys-morphism-set-sys
+    [cs category-sys?]
+    [s (category-sys-object/c cs)]
+    [t (category-sys-object/c cs)])
+  set-sys?
+]{
+  Returns the set of morphisms that go from the given object @racket[s] (the source) to the given object @racket[t] (the target) in the given category.
+}
+
+@defproc[
+  (category-sys-morphism/c
+    [cs category-sys?]
+    [s (category-sys-object/c cs)]
+    [t (category-sys-object/c cs)])
+  contract?
+]{
+  Returns a contract which recognizes any morphism that goes from the given object @racket[s] (the source) to the given object @racket[t] (the target) in the given category.
+}
+
+@defproc[
+  (category-sys-object-identity-morphism
+    [cs category-sys?]
+    [object (category-sys-object/c cs)])
+  (category-sys-morphism/c cs object object)
+]{
+  Returns the identity morphism which goes from the given object to itself in the given category.
+}
+
+@defproc[
+  (category-sys-morphism-chain-two
+    [cs category-sys?]
+    [a (category-sys-object/c cs)]
+    [b (category-sys-object/c cs)]
+    [c (category-sys-object/c cs)]
+    [ab (category-sys-morphism/c cs a b)]
+    [bc (category-sys-morphism/c cs b c)])
+  (category-sys-morphism/c cs a c)
+]{
+  Returns the morphism which is the composition of two given morphisms fenceposted by three given objects in the given category.
+  
+  This composition operation is written in @deftech{diagrammatic order}, where in the process of reading off the arguments from left to right, we proceed from the source to the target of each morphism. Composition in category theory literature is most often written with its arguments the other way around.
+}
+
+@defproc[
+  (make-category-sys-impl-from-chain-two
+    [object-set-sys (-> category-sys? set-sys?)]
+    [morphism-set-sys
+      (->i
+        (
+          [cs category-sys?]
+          [s (cs) (category-sys-object/c cs)]
+          [t (cs) (category-sys-object/c cs)])
+        [_ set-sys?])]
+    [object-identity-morphism
+      (->i
+        ([cs category-sys?] [object (cs) (category-sys-object/c cs)])
+        [_ (cs object) (category-sys-morphism/c cs object object)])]
+    [morphism-chain-two
+      (->i
+        (
+          [cs category-sys?]
+          [a (cs) (category-sys-object/c cs)]
+          [b (cs) (category-sys-object/c cs)]
+          [c (cs) (category-sys-object/c cs)]
+          [ab (cs a b) (category-sys-morphism/c cs a b)]
+          [bc (cs b c) (category-sys-morphism/c cs b c)])
+        [_ (cs a c) (category-sys-morphism/c cs a c)])])
+  category-sys-impl?
+]{
+  Given implementations for @racket[category-sys-object-set-sys], @racket[category-sys-morphism-set-sys], @racket[category-sys-object-identity-morphism], and @racket[category-sys-morphism-chain-two], returns something a struct can use to implement the @racket[prop:category-sys] interface.
+  
+  The given method implementations should observe some algebraic laws. Namely, the @racket[morphism-chain-two] operation should be associative, and @racket[object-identity-morphism] should act as an identity element for it. In more symbolic terms (using a pseudocode DSL):
+  
+  @racketblock[
+    (#:for-all
+      _cs category-sys?
+      _a (category-sys-object/c _cs)
+      _b (category-sys-object/c _cs)
+      _ab (category-sys-morphism/c _cs _a _b)
+      
+      (#:should-be-equal
+        (morphism-chain-two _cs _a _a _b
+          (object-identity-morphism _cs _a)
+          _ab)
+        _ab))
+    
+    (#:for-all
+      _cs category-sys?
+      _a (category-sys-object/c _cs)
+      _b (category-sys-object/c _cs)
+      _ab (category-sys-morphism/c _cs _a _b)
+      
+      (#:should-be-equal
+        (morphism-chain-two _cs _a _b _b
+          _ab
+          (object-identity-morphism _cs _b))
+        _ab))
+    
+    (#:for-all
+      _cs category-sys?
+      _a (category-sys-object/c _cs)
+      _b (category-sys-object/c _cs)
+      _c (category-sys-object/c _cs)
+      _d (category-sys-object/c _cs)
+      _ab (category-sys-morphism/c _cs _a _b)
+      _bc (category-sys-morphism/c _cs _b _c)
+      _cd (category-sys-morphism/c _cs _c _d)
+      
+      (#:should-be-equal
+        (morphism-chain-two _cs _a _c _d
+          (morphism-chain-two _cs _a _b _c _ab _bc)
+          _cd)
+        (morphism-chain-two _cs _a _b _d
+          _ab
+          (morphism-chain-two _cs _b _c _d _bc _cd))))
+  ]
+}
