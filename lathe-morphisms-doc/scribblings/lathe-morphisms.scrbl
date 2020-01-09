@@ -445,14 +445,14 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
 @defproc[
   (functor-sys-apply-to-morphism
     [fs functor-sys?]
-    [s (category-sys-object/c (functor-sys-source fs))]
-    [t (category-sys-object/c (functor-sys-source fs))]
-    [morphism (category-sys-morphism/c (functor-sys-source fs) s t)])
+    [a (category-sys-object/c (functor-sys-source fs))]
+    [b (category-sys-object/c (functor-sys-source fs))]
+    [ab (category-sys-morphism/c (functor-sys-source fs) a b)])
   (category-sys-object/c (functor-sys-target fs)
-    (functor-sys-apply-to-object fs s)
-    (functor-sys-apply-to-object fs t))
+    (functor-sys-apply-to-object fs a)
+    (functor-sys-apply-to-object fs b))
 ]{
-  Uses the given functor to transforms a morphism that originally goes from the given source object @racket[s] to the given target object @racket[t].
+  Uses the given functor to transform a morphism that originally goes from the given source object @racket[a] to the given target object @racket[b].
 }
 
 @defproc[
@@ -476,17 +476,26 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
       (->i
         (
           [fs functor-sys?]
-          [s (fs) (category-sys-object/c (functor-sys-source fs))]
-          [t (fs) (category-sys-object/c (functor-sys-source fs))]
-          [morphism (fs s t)
-            (category-sys-morphism/c (functor-sys-source fs) s t)])
-        [_ (fs s t)
+          [a (fs) (category-sys-object/c (functor-sys-source fs))]
+          [b (fs) (category-sys-object/c (functor-sys-source fs))]
+          [morphism (fs a b)
+            (category-sys-morphism/c (functor-sys-source fs) a b)])
+        [_ (fs a b)
           (category-sys-morphism/c (functor-sys-target fs)
-            (functor-sys-apply-to-object fs s)
-            (functor-sys-apply-to-object fs t))])])
+            (functor-sys-apply-to-object fs a)
+            (functor-sys-apply-to-object fs b))])])
   functor-sys-impl?
 ]{
-  Given implementations for @racket[functor-sys-source], @racket[functor-sys-replace-source], @racket[functor-sys-target], @racket[functor-sys-replace-target], @racket[functor-sys-apply-to-object], and @racket[functor-sys-apply-to-morphism], returns something a struct can use to implement the @racket[prop:functor-sys] interface.
+  Given implementations for the following methods, returns something a struct can use to implement the @racket[prop:functor-sys] interface.
+  
+  @itemlist[
+    @item{@racket[functor-sys-source]}
+    @item{@racket[functor-sys-replace-source]}
+    @item{@racket[functor-sys-target]}
+    @item{@racket[functor-sys-replace-target]}
+    @item{@racket[functor-sys-apply-to-object]}
+    @item{@racket[functor-sys-apply-to-morphism]}
+  ]
   
   When the @tt{replace} methods don't raise errors, they should observe the lens laws: The result of getting a value after it's been replaced should be the same as just using the value that was passed to the replacer. The result of replacing a value with itself should be the same as not using the replacer at all. The of replacing a value and replacing it a second time should be the same as just skipping to the second replacement.
   
@@ -556,7 +565,7 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
 ]{
   Returns a functor that goes from the source category @racket[s] to the target category @racket[t], transforming objects and morphisms using the given procedures.
   
-  This may be more convenient than defining an instance of @racket[prop:category-sys].
+  This may be more convenient than defining an instance of @racket[prop:functor-sys].
   
   The given procedures should satisfy algebraic laws. Namely, the @racket[apply-to-morphism] operation should respect the identity and associativity laws of the @racket[category-sys-object-identity-morphism] and @racket[category-sys-morphism-chain-two] operations. In more symbolic terms (using a pseudocode DSL):
   
@@ -607,4 +616,386 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
   Returns the composition of the two given functors. This is a functor that goes from the first functor's source category to the second functor's target category, transforming every object and every morphism by applying the first functor and then the second. The target of the first functor should match the source of the second.
   
   This composition operation is written in @emph{diagrammatic order}, where in the process of reading off the arguments from left to right, we proceed from the source to the target of each functor. Composition in category theory literature is most often written with its arguments the other way around.
+}
+
+@deftogether[(
+  @defproc[(natural-transformation-sys? [v any/c]) boolean?]
+  @defproc[(natural-transformation-sys-impl? [v any/c]) boolean?]
+  @defthing[
+    prop:natural-transformation-sys
+    (struct-type-property/c natural-transformation-sys-impl?)
+  ]
+)]{
+  Structure type property operations for natural transformations, transformations of morphisms that relate a source functor (@racket[functor-sys?]) to a target functor.
+}
+
+@defproc[
+  (natural-transformation-sys-endpoint-source
+    [nts natural-transformation-sys?])
+  category-sys?
+]{
+  Returns a natural transformation's endpoint functors' source category.
+}
+
+@defproc[
+  (natural-transformation-sys-replace-endpoint-source
+    [nts natural-transformation-sys?]
+    [new-es category-sys?])
+  natural-transformation-sys?
+]{
+  Returns a natural transformation like the given one, but with its endpoint functors' source category replaced with the given one. This may raise an error if the given value isn't similar enough to the one being replaced. This is intended only for use by @racket[natural-transformation-sys/c] and similar error-detection systems as a way to replace a value with one that reports better errors.
+}
+
+@defproc[
+  (natural-transformation-sys-endpoint-target
+    [nts natural-transformation-sys?])
+  category-sys?
+]{
+  Returns a natural transformation's endpoint functors' target category.
+}
+
+@defproc[
+  (natural-transformation-sys-replace-endpoint-target
+    [nts natural-transformation-sys?]
+    [new-et category-sys?])
+  natural-transformation-sys?
+]{
+  Returns a natural transformation like the given one, but with its endpoint functors' target category replaced with the given one. This may raise an error if the given value isn't similar enough to the one being replaced. This is intended only for use by @racket[natural-transformation-sys/c] and similar error-detection systems as a way to replace a value with one that reports better errors.
+}
+
+@defproc[
+  (natural-transformation-sys-endpoint/c
+    [nts natural-transformation-sys?])
+  contract?
+]{
+  Returns a contract that recognizes any functor that goes from the natural transformation's endpoint functors' source category to their target category.
+}
+
+@defproc[
+  (natural-transformation-sys-source
+    [nts natural-transformation-sys?])
+  (natural-transformation-sys-endpoint/c nts)
+]{
+  Returns a natural transformation's source functor.
+}
+
+@defproc[
+  (natural-transformation-sys-replace-source
+    [nts natural-transformation-sys?]
+    [new-s (natural-transformation-sys-endpoint/c nts)])
+  natural-transformation-sys?
+]{
+  Returns a natural transformation like the given one, but with its source functor replaced with the given one. This may raise an error if the given value isn't similar enough to the one being replaced. This is intended only for use by @racket[natural-transformation-sys/c] and similar error-detection systems as a way to replace a value with one that reports better errors.
+}
+
+@defproc[
+  (natural-transformation-sys-target
+    [nts natural-transformation-sys?])
+  (natural-transformation-sys-endpoint/c nts)
+]{
+  Returns a natural transformation's target functor.
+}
+
+@defproc[
+  (natural-transformation-sys-replace-target
+    [nts natural-transformation-sys?]
+    [new-t (natural-transformation-sys-endpoint/c nts)])
+  natural-transformation-sys?
+]{
+  Returns a natural transformation like the given one, but with its target functor replaced with the given one. This may raise an error if the given value isn't similar enough to the one being replaced. This is intended only for use by @racket[natural-transformation-sys/c] and similar error-detection systems as a way to replace a value with one that reports better errors.
+}
+
+@defproc[
+  (natural-transformation-sys-apply-to-morphism
+    [nts natural-transformation-sys?]
+    [a
+      (category-sys-object/c
+        (natural-transformation-sys-endpoint-source nts))]
+    [b
+      (category-sys-object/c
+        (natural-transformation-sys-endpoint-source nts))]
+    [ab
+      (category-sys-morphism/c
+        (natural-transformation-sys-endpoint-source nts)
+        a
+        b)])
+  (category-sys-morphism/c
+    (natural-transformation-sys-endpoint-target nts)
+    (functor-sys-apply-to-object
+      (natural-transformation-sys-source nts)
+      a)
+    (functor-sys-apply-to-object
+      (natural-transformation-sys-target nts)
+      b))
+]{
+  Uses the given natural transformation to transform a morphism that originally goes from the given source object @racket[a] to the given target object @racket[b].
+}
+
+@defproc[
+  (make-natural-transformation-sys-impl-from-apply
+    [endpoint-source
+      (-> natural-transformation-sys? category-sys?)]
+    [replace-endpoint-source
+      (-> natural-transformation-sys? category-sys?
+        natural-transformation-sys?)]
+    [endpoint-target
+      (-> natural-transformation-sys? category-sys?)]
+    [replace-endpoint-target
+      (-> natural-transformation-sys? category-sys?
+        natural-transformation-sys?)]
+    [source
+      (->i ([nts natural-transformation-sys?])
+        [_ (nts) (natural-transformation-sys-endpoint/c nts)])]
+    [replace-source
+      (->i
+        (
+          [nts natural-transformation-sys?]
+          [s (nts) (natural-transformation-sys-endpoint/c nts)])
+        [_ natural-transformation-sys?])]
+    [target
+      (->i ([nts natural-transformation-sys?])
+        [_ (nts) (natural-transformation-sys-endpoint/c nts)])]
+    [replace-target
+      (->i
+        (
+          [nts natural-transformation-sys?]
+          [s (nts) (natural-transformation-sys-endpoint/c nts)])
+        [_ natural-transformation-sys?])]
+    [apply-to-morphism
+      (->i
+        (
+          [nts natural-transformation-sys?]
+          [a (nts)
+            (category-sys-object/c
+              (natural-transformation-sys-endpoint-source nts))]
+          [b (nts)
+            (category-sys-object/c
+              (natural-transformation-sys-endpoint-source nts))]
+          [ab (nts a b)
+            (category-sys-morphism/c
+              (natural-transformation-sys-endpoint-source nts)
+              a
+              b)])
+        [_ (nts a b ab)
+          (category-sys-morphism/c
+            (natural-transformation-sys-endpoint-target nts)
+            (functor-sys-apply-to-object
+              (natural-transformation-sys-source nts)
+              a)
+            (functor-sys-apply-to-object
+              (natural-transformation-sys-target nts)
+              b))])])
+  natural-transformation-sys-impl?
+]{
+  Given implementations for the following methods, returns something a struct can use to implement the @racket[prop:natural-transformation-sys] interface.
+  
+  @itemlist[
+    @item{@racket[natural-transformation-sys-endpoint-source]}
+    @item{@racket[natural-transformation-sys-replace-endpoint-source]}
+    @item{@racket[natural-transformation-sys-endpoint-target]}
+    @item{@racket[natural-transformation-sys-replace-endpoint-target]}
+    @item{@racket[natural-transformation-sys-source]}
+    @item{@racket[natural-transformation-sys-replace-source]}
+    @item{@racket[natural-transformation-sys-target]}
+    @item{@racket[natural-transformation-sys-replace-target]}
+    @item{@racket[natural-transformation-sys-apply-to-morphism]}
+  ]
+  
+  When the @tt{replace} methods don't raise errors, they should observe the lens laws: The result of getting a value after it's been replaced should be the same as just using the value that was passed to the replacer. The result of replacing a value with itself should be the same as not using the replacer at all. The of replacing a value and replacing it a second time should be the same as just skipping to the second replacement.
+  
+  Moreover, the @tt{replace} methods should not raise an error when a value is replaced with itself. They're intended only for use by @racket[natural-transformation-sys/c] and similar error-detection systems, which will tend to replace a replace a value with one that reports better errors.
+  
+  The other given method implementations should observe some algebraic laws. Namely, applying the @racket[apply-to-morphism] operation to a composed morphism should be the same as applying it to just one composed part of that morphism and applying the source and target functors to the other parts so that it joins up. In more symbolic terms (using a pseudocode DSL):
+  
+  @racketblock[
+    (#:for-all
+      _nts natural-transformation-sys?
+      #:let _es (natural-transformation-sys-endpoint-source _nts)
+      #:let _et (natural-transformation-sys-endpoint-target _nts)
+      #:let _s (natural-transformation-sys-source _nts)
+      #:let _t (natural-transformation-sys-target _nts)
+      _a (category-sys-object/c _es)
+      _b (category-sys-object/c _es)
+      _c (category-sys-object/c _es)
+      _ab (category-sys-morphism/c _es _a _b)
+      _bc (category-sys-morphism/c _es _b _c)
+      
+      (#:should-be-equal
+        (apply-to-morphism _nts _a _c
+          (category-sys-morphism-chain-two _es _a _b _c _ab _bc))
+        (category-sys-morphism-chain-two _t
+          (functor-sys-apply-to-object _s _a)
+          (functor-sys-apply-to-object _s _b)
+          (functor-sys-apply-to-object _t _c)
+          (functor-sys-apply-to-morphism _s _a _b _ab)
+          (apply-to-morphism _nts _b _c _bc)))
+      
+      (#:should-be-equal
+        (apply-to-morphism _nts _a _c
+          (category-sys-morphism-chain-two _es _a _b _c _ab _bc))
+        (category-sys-morphism-chain-two _t
+          (functor-sys-apply-to-object _s _a)
+          (functor-sys-apply-to-object _t _b)
+          (functor-sys-apply-to-object _t _c)
+          (apply-to-morphism _nts _a _b _ab)
+          (functor-sys-apply-to-morphism _t _b _c _bc))))
+  ]
+  
+  Using an infix notation where we infer most arguments and write @tt{(ab ; bc)} for the @racket[category-sys-morphism-chain-two] operation, these laws can be written like so:
+  
+  @codeblock[#:keep-lang-line? #f]{
+    #lang scribble/manual
+    s ab ; nts bc = nts (ab ; bc) = nts ab ; t bc
+  }
+  
+  Using more math-style variable name choices:
+  
+  @codeblock[#:keep-lang-line? #f]{
+    #lang scribble/manual
+    F f ; alpha g = alpha (f ; g) = alpha f ; G g
+  }
+  
+  In category theory literature, it's common for natural transformations' component functions to go from objects to morphisms, not morphisms to morphisms. We consider a natural transformation to act on an object by applying to its identity morphism. In that case the usual naturality square law looks like this:
+  
+  @codeblock[#:keep-lang-line? #f]{
+    #lang scribble/manual
+    F f ; alpha (id y) = alpha (id x) ; G f
+  }
+  
+  We can derive that law like so:
+  
+  @codeblock[#:keep-lang-line? #f]{
+    #lang scribble/manual
+       F f ; alpha (id y)
+    =  alpha (f ; id y)
+    =  alpha f
+    =  alpha (id x ; f)
+    =  alpha (id x) ; G f
+  }
+}
+
+@defproc[
+  (natural-transformation-sys/c
+    [endpoint-source/c contract?]
+    [endpoint-target/c contract?]
+    [source/c contract?]
+    [target/c contract?])
+  contract?
+]{
+  Returns a contract that recognizes any natural transformation for which the source and target functors and their source and target categories are recognized by the given contracts.
+}
+
+@defproc[
+  (makeshift-natural-transformation-sys
+    [es category-sys?]
+    [et category-sys?]
+    [s (functor-sys/c (ok/c es) (ok/c et))]
+    [t (functor-sys/c (ok/c es) (ok/c et))]
+    [apply-to-morphism
+      (->i
+        (
+          [a (category-sys-object/c es)]
+          [b (category-sys-object/c es)]
+          [ab (a b) (category-sys-morphism/c es a b)])
+        [_ (a b ab)
+          (category-sys-morphism/c et
+            (functor-sys-apply-to-object s a)
+            (functor-sys-apply-to-object t b))])])
+  (natural-transformation-sys/c (ok/c es) (ok/c et) (ok/c s) (ok/c t))
+]{
+  Returns a natural transformation that goes from the source functor @racket[s] to the target functor @racket[t], transforming morphisms using the given procedure.
+  
+  This may be more convenient than defining an instance of @racket[prop:natural-transformation-sys].
+  
+  The given procedure should satisfy algebraic laws. Namely, applying the @racket[apply-to-morphism] operation to a composed morphism should be the same as applying it to just one composed part of that morphism and applying the source and target functors to the other parts so that it joins up. In more symbolic terms (using a pseudocode DSL):
+  
+  @racketblock[
+    (#:for-all
+      _a (category-sys-object/c _es)
+      _b (category-sys-object/c _es)
+      _c (category-sys-object/c _es)
+      _ab (category-sys-morphism/c _es _a _b)
+      _bc (category-sys-morphism/c _es _b _c)
+      
+      (#:should-be-equal
+        (apply-to-morphism _a _c
+          (category-sys-morphism-chain-two _es _a _b _c _ab _bc))
+        (category-sys-morphism-chain-two _t
+          (functor-sys-apply-to-object _s _a)
+          (functor-sys-apply-to-object _s _b)
+          (functor-sys-apply-to-object _t _c)
+          (functor-sys-apply-to-morphism _s _a _b _ab)
+          (apply-to-morphism _b _c _bc)))
+      
+      (#:should-be-equal
+        (apply-to-morphism _a _c
+          (category-sys-morphism-chain-two _es _a _b _c _ab _bc))
+        (category-sys-morphism-chain-two _t
+          (functor-sys-apply-to-object _s _a)
+          (functor-sys-apply-to-object _t _b)
+          (functor-sys-apply-to-object _t _c)
+          (apply-to-morphism _a _b _ab)
+          (functor-sys-apply-to-morphism _t _b _c _bc))))
+  ]
+  
+  For a little more discussion about how our choice of natural transformation laws relates to the more common naturality square law, see the documentation for @racket[make-natural-transformation-sys-impl-from-apply].
+}
+
+@defproc[
+  (natural-transformation-sys-identity [endpoint functor-sys?])
+  (natural-transformation-sys/c
+    (ok/c (functor-sys-source endpoint))
+    (ok/c (functor-sys-target endpoint))
+    (ok/c endpoint)
+    (ok/c endpoint))
+]{
+  Returns the identity natural transformation on the given functor. This is a natural transformation that goes from the given functor to itself, taking every morphism to itself.
+}
+
+@defproc[
+  (natural-transformation-sys-chain-two
+    [ab natural-transformation-sys?]
+    [bc
+      (natural-transformation-sys/c
+        (ok/c (natural-transformation-sys-endpoint-source ab))
+        (ok/c (natural-transformation-sys-endpoint-target ab))
+        (ok/c (natural-transformation-sys-target ab))
+        any/c)])
+  (natural-transformation-sys/c
+    (ok/c (natural-transformation-sys-endpoint-source ab))
+    (ok/c (natural-transformation-sys-endpoint-target ab))
+    (ok/c (natural-transformation-sys-source ab))
+    (ok/c (natural-transformation-sys-target bc)))
+]{
+  Returns the vertical composition of the two given natural transformations. This is a natural transformation that goes from the first natural transformation's source functor to the second natural transformation's target functor. The target functor of the first natural transformation should match the source functor of the second.
+  
+  If all the algebraic structures involved obey their laws, then the way this natural transformation transforms a morphism that's composed from two morphisms is equivalent to applying the first natural transformation to the first part of the morphism, applying the second natural transformation to the second part of the morphism, and composing the results. Moreover, every morphism is the composition of itself and an identity morphism, so this specification determines the behavior on all morphisms. However, if any of the algebraic structures involved doesn't obey its laws, this operation may leak some Lathe Morphisms implementation details that are subject to change.
+  
+  This composition operation is written in @emph{diagrammatic order}, where in the process of reading off the arguments from left to right, we proceed from the source to the target of each natural transformation. Composition in category theory literature is most often written with its arguments the other way around.
+}
+
+@defproc[
+  (natural-transformation-sys-chain-two-along-end
+    [ab natural-transformation-sys?]
+    [bc
+      (natural-transformation-sys/c
+        (ok/c (natural-transformation-sys-endpoint-target ab))
+        any/c
+        any/c
+        any/c)])
+  (natural-transformation-sys/c
+    (ok/c (natural-transformation-sys-endpoint-source ab))
+    (ok/c (natural-transformation-sys-endpoint-target bc))
+    (ok/c
+      (functor-sys-chain-two
+        (natural-transformation-sys-source ab)
+        (natural-transformation-sys-source bc)))
+    (ok/c
+      (functor-sys-chain-two
+        (natural-transformation-sys-target ab)
+        (natural-transformation-sys-target bc))))
+]{
+  Returns the horizontal composition of the two given natural transformations. This is a natural transformation that goes from the composition of their source functors to the composition of their target functors, transforming every morphism by applying the first natural transformation and then the second. The first natural transformation's endpoint functors' target category should match the second's endpoint functors' source category.
+  
+  This composition operation is written in @emph{diagrammatic order}, where in the process of reading off the arguments from left to right, we proceed from the endpoint source to the endpoint target of each natural transformation. Composition in category theory literature is most often written with its arguments the other way around.
 }

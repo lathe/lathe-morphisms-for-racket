@@ -526,14 +526,14 @@
     (->i
       (
         [fs functor-sys?]
-        [s (fs) (category-sys-object/c #/functor-sys-source fs)]
-        [t (fs) (category-sys-object/c #/functor-sys-source fs)]
-        [morphism (fs s t)
-          (category-sys-morphism/c (functor-sys-source fs) s t)])
-      [_ (fs s t)
+        [a (fs) (category-sys-object/c #/functor-sys-source fs)]
+        [b (fs) (category-sys-object/c #/functor-sys-source fs)]
+        [ab (fs a b)
+          (category-sys-morphism/c (functor-sys-source fs) a b)])
+      [_ (fs a b)
         (category-sys-object/c (functor-sys-target fs)
-          (functor-sys-apply-to-object fs s)
-          (functor-sys-apply-to-object fs t))])]
+          (functor-sys-apply-to-object fs a)
+          (functor-sys-apply-to-object fs b))])]
   [prop:functor-sys (struct-type-property/c functor-sys-impl?)]
   [make-functor-sys-impl-from-apply
     (->
@@ -550,14 +550,14 @@
       (->i
         (
           [fs functor-sys?]
-          [s (fs) (category-sys-object/c #/functor-sys-source fs)]
-          [t (fs) (category-sys-object/c #/functor-sys-source fs)]
-          [morphism (fs s t)
-            (category-sys-morphism/c (functor-sys-source fs) s t)])
-        [_ (fs s t)
+          [a (fs) (category-sys-object/c #/functor-sys-source fs)]
+          [b (fs) (category-sys-object/c #/functor-sys-source fs)]
+          [ab (fs a b)
+            (category-sys-morphism/c (functor-sys-source fs) a b)])
+        [_ (fs a b)
           (category-sys-morphism/c (functor-sys-target fs)
-            (functor-sys-apply-to-object fs s)
-            (functor-sys-apply-to-object fs t))])
+            (functor-sys-apply-to-object fs a)
+            (functor-sys-apply-to-object fs b))])
       functor-sys-impl?)]
   [functor-sys/c (-> contract? contract? contract?)]
   [makeshift-functor-sys
@@ -640,7 +640,7 @@
             (natural-transformation-sys-endpoint-source nts)
             a
             b)])
-      [_ (nts a b ab)
+      [_ (nts a b)
         (category-sys-morphism/c
           (natural-transformation-sys-endpoint-target nts)
           (functor-sys-apply-to-object
@@ -659,12 +659,20 @@
       (-> natural-transformation-sys? category-sys?)
       (-> natural-transformation-sys? category-sys?
         natural-transformation-sys?)
-      (-> natural-transformation-sys? functor-sys?)
-      (-> natural-transformation-sys? functor-sys?
-        natural-transformation-sys?)
-      (-> natural-transformation-sys? functor-sys?)
-      (-> natural-transformation-sys? functor-sys?
-        natural-transformation-sys?)
+      (->i ([nts natural-transformation-sys?])
+        [_ (nts) (natural-transformation-sys-endpoint/c nts)])
+      (->i
+        (
+          [nts natural-transformation-sys?]
+          [s (nts) (natural-transformation-sys-endpoint/c nts)])
+        [_ natural-transformation-sys?])
+      (->i ([nts natural-transformation-sys?])
+        [_ (nts) (natural-transformation-sys-endpoint/c nts)])
+      (->i
+        (
+          [nts natural-transformation-sys?]
+          [s (nts) (natural-transformation-sys-endpoint/c nts)])
+        [_ natural-transformation-sys?])
       (->i
         (
           [nts natural-transformation-sys?]
@@ -679,7 +687,7 @@
               (natural-transformation-sys-endpoint-source nts)
               a
               b)])
-        [_ (nts a b ab)
+        [_ (nts a b)
           (category-sys-morphism/c
             (natural-transformation-sys-endpoint-target nts)
             (functor-sys-apply-to-object
@@ -698,12 +706,16 @@
         [et category-sys?]
         [s (es et) (functor-sys/c (ok/c es) (ok/c et))]
         [t (es et) (functor-sys/c (ok/c es) (ok/c et))]
-        [apply-to-object (es et s t)
-          (->i ([object (category-sys-object/c es)])
-            [_ (object)
+        [apply-to-morphism (es et s t)
+          (->i
+            (
+              [a (category-sys-object/c es)]
+              [b (category-sys-object/c es)]
+              [ab (a b) (category-sys-morphism/c es a b)])
+            [_ (a b)
               (category-sys-morphism/c et
-                (functor-sys-apply-to-object s object)
-                (functor-sys-apply-to-object t object))])])
+                (functor-sys-apply-to-object s a)
+                (functor-sys-apply-to-object t b))])])
       [_ (es et s t)
         (natural-transformation-sys/c
           (ok/c es)
