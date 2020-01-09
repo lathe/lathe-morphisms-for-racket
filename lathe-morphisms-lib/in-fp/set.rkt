@@ -26,15 +26,15 @@
 (require #/only-in lathe-morphisms/private/in-fp/in-fp
   set-sys?
   set-sys-impl?
+  prop:set-sys
   set-sys-element/c
   set-sys-element-accepts/c
-  prop:set-sys
   make-set-sys-impl-from-contract)
 
 (provide #/recontract-out
   set-sys?
   set-sys-impl?
+  prop:set-sys
   set-sys-element/c
   set-sys-element-accepts/c
-  prop:set-sys
   make-set-sys-impl-from-contract)

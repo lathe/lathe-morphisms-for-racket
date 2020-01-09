@@ -75,13 +75,13 @@
 (provide #/contract-out
   [atomic-set-element-sys? (-> any/c boolean?)]
   [atomic-set-element-sys-impl? (-> any/c boolean?)]
+  [prop:atomic-set-element-sys
+    (struct-type-property/c atomic-set-element-sys-impl?)]
   [atomic-set-element-sys-good-behavior
     (-> atomic-set-element-sys? set-element-good-behavior?)]
   [atomic-set-element-sys-accepts/c
     (->i ([element atomic-set-element-sys?])
       [_ (element) (flat-contract-accepting/c element)])]
-  [prop:atomic-set-element-sys
-    (struct-type-property/c atomic-set-element-sys-impl?)]
   [make-atomic-set-element-sys-impl-from-good-behavior
     (-> (-> atomic-set-element-sys? set-element-good-behavior?)
       atomic-set-element-sys-impl?)])
@@ -89,9 +89,9 @@
 (provide #/contract-out
   [mediary-set-sys? (-> any/c boolean?)]
   [mediary-set-sys-impl? (-> any/c boolean?)]
-  [mediary-set-sys-element/c (-> mediary-set-sys? contract?)]
   [prop:mediary-set-sys
     (struct-type-property/c mediary-set-sys-impl?)]
+  [mediary-set-sys-element/c (-> mediary-set-sys? contract?)]
   [make-mediary-set-sys-impl-from-contract
     (-> (-> mediary-set-sys? contract?) mediary-set-sys-impl?)])
 
@@ -103,11 +103,11 @@
 (provide #/contract-out
   [set-sys? (-> any/c boolean?)]
   [set-sys-impl? (-> any/c boolean?)]
+  [prop:set-sys (struct-type-property/c set-sys-impl?)]
   [set-sys-element/c (-> set-sys? contract?)]
   [set-sys-element-accepts/c
     (->i ([ss set-sys?] [element (ss) (set-sys-element/c ss)])
       [_ (element) (flat-contract-accepting/c element)])]
-  [prop:set-sys (struct-type-property/c set-sys-impl?)]
   [make-set-sys-impl-from-contract
     (->
       (-> set-sys? contract?)
@@ -120,6 +120,7 @@
 (provide #/contract-out
   [function-sys? (-> any/c boolean?)]
   [function-sys-impl? (-> any/c boolean?)]
+  [prop:function-sys (struct-type-property/c function-sys-impl?)]
   [function-sys-source (-> function-sys? set-sys?)]
   [function-sys-replace-source
     (-> function-sys? set-sys? function-sys?)]
@@ -132,7 +133,6 @@
         [fs function-sys?]
         [element (fs) (set-sys-element/c #/function-sys-source fs)])
       [_ (fs) (set-sys-element/c #/function-sys-target fs)])]
-  [prop:function-sys (struct-type-property/c function-sys-impl?)]
   [make-function-sys-impl-from-apply
     (->
       (-> function-sys? set-sys?)
@@ -174,6 +174,8 @@
 (provide #/contract-out
   [mediary-quiver-sys? (-> any/c boolean?)]
   [mediary-quiver-sys-impl? (-> any/c boolean?)]
+  [prop:mediary-quiver-sys
+    (struct-type-property/c mediary-quiver-sys-impl?)]
   [mediary-quiver-sys-node-mediary-set-sys
     (-> mediary-quiver-sys? mediary-set-sys?)]
   [mediary-quiver-sys-node/c (-> mediary-quiver-sys? contract?)]
@@ -191,8 +193,6 @@
         [s (mqs) (mediary-quiver-sys-node/c mqs)]
         [t (mqs) (mediary-quiver-sys-node/c mqs)])
       [_ contract?])]
-  [prop:mediary-quiver-sys
-    (struct-type-property/c mediary-quiver-sys-impl?)]
   [make-mediary-quiver-sys-impl-from-mediary-set-systems
     (->
       (-> mediary-quiver-sys? mediary-set-sys?)
@@ -245,6 +245,8 @@
 (provide #/contract-out
   [atomic-category-object-sys? (-> any/c boolean?)]
   [atomic-category-object-sys-impl? (-> any/c boolean?)]
+  [prop:atomic-category-object-sys
+    (struct-type-property/c atomic-category-object-sys-impl?)]
   [atomic-category-object-sys-uncoverer-of-good-behavior
     (-> atomic-category-object-sys?
       (-> atomic-category-object-sys?
@@ -261,8 +263,6 @@
       [_ (object) (flat-contract-accepting/c object)])]
   [atomic-category-object-sys-identity-morphism-good-behavior
     (-> atomic-category-object-sys? category-morphism-good-behavior?)]
-  [prop:atomic-category-object-sys
-    (struct-type-property/c atomic-category-object-sys-impl?)]
   [make-atomic-category-object-sys-impl-from-good-behavior
     (->
       (-> atomic-category-object-sys?
@@ -313,6 +313,8 @@
 (provide #/contract-out
   [atomic-category-morphism-sys? (-> any/c boolean?)]
   [atomic-category-morphism-sys-impl? (-> any/c boolean?)]
+  [prop:atomic-category-morphism-sys
+    (struct-type-property/c atomic-category-morphism-sys-impl?)]
   [atomic-category-morphism-sys-source
     (-> atomic-category-morphism-sys? any/c)]
   [atomic-category-morphism-sys-replace-source
@@ -339,8 +341,6 @@
   [atomic-category-morphism-sys-accepts/c
     (->i ([morphism atomic-category-morphism-sys?])
       [_ (morphism) (flat-contract-accepting/c morphism)])]
-  [prop:atomic-category-morphism-sys
-    (struct-type-property/c atomic-category-morphism-sys-impl?)]
   [make-atomic-category-morphism-sys-impl-from-good-behavior
     (->
       (-> atomic-category-morphism-sys? any/c)
@@ -365,6 +365,8 @@
 (provide #/contract-out
   [mediary-category-sys? (-> any/c boolean?)]
   [mediary-category-sys-impl? (-> any/c boolean?)]
+  [prop:mediary-category-sys
+    (struct-type-property/c mediary-category-sys-impl?)]
   [mediary-category-sys-object-mediary-set-sys
     (-> mediary-category-sys? mediary-set-sys?)]
   [mediary-category-sys-object/c (-> mediary-category-sys? contract?)]
@@ -408,8 +410,6 @@
       [_ (mcs a c)
         (category-morphism-good-behavior-for-mediary-category-sys/c
           mcs a c)])]
-  [prop:mediary-category-sys
-    (struct-type-property/c mediary-category-sys-impl?)]
   [make-mediary-category-sys-impl-from-chain-two
     (->
       (-> mediary-category-sys? mediary-set-sys?)
@@ -454,6 +454,7 @@
 (provide #/contract-out
   [category-sys? (-> any/c boolean?)]
   [category-sys-impl? (-> any/c boolean?)]
+  [prop:category-sys (struct-type-property/c category-sys-impl?)]
   [category-sys-object-set-sys (-> category-sys? set-sys?)]
   [category-sys-object/c (-> category-sys? contract?)]
   [category-sys-morphism-set-sys
@@ -483,7 +484,6 @@
         [ab (cs a b) (category-sys-morphism/c cs a b)]
         [bc (cs b c) (category-sys-morphism/c cs b c)])
       [_ (cs a c) (category-sys-morphism/c cs a c)])]
-  [prop:category-sys (struct-type-property/c category-sys-impl?)]
   [make-category-sys-impl-from-chain-two
     (->
       (-> category-sys? set-sys?)
@@ -510,6 +510,7 @@
 (provide #/contract-out
   [functor-sys? (-> any/c boolean?)]
   [functor-sys-impl? (-> any/c boolean?)]
+  [prop:functor-sys (struct-type-property/c functor-sys-impl?)]
   [functor-sys-source (-> functor-sys? category-sys?)]
   [functor-sys-replace-source
     (-> functor-sys? category-sys? functor-sys?)]
@@ -534,7 +535,6 @@
         (category-sys-object/c (functor-sys-target fs)
           (functor-sys-apply-to-object fs a)
           (functor-sys-apply-to-object fs b))])]
-  [prop:functor-sys (struct-type-property/c functor-sys-impl?)]
   [make-functor-sys-impl-from-apply
     (->
       (-> functor-sys? category-sys?)
@@ -595,6 +595,8 @@
 (provide #/contract-out
   [natural-transformation-sys? (-> any/c boolean?)]
   [natural-transformation-sys-impl? (-> any/c boolean?)]
+  [prop:natural-transformation-sys
+    (struct-type-property/c natural-transformation-sys-impl?)]
   [natural-transformation-sys-endpoint-source
     (-> natural-transformation-sys? category-sys?)]
   [natural-transformation-sys-replace-endpoint-source
@@ -649,8 +651,6 @@
           (functor-sys-apply-to-object
             (natural-transformation-sys-target nts)
             b))])]
-  [prop:natural-transformation-sys
-    (struct-type-property/c natural-transformation-sys-impl?)]
   [make-natural-transformation-sys-impl-from-apply
     (->
       (-> natural-transformation-sys? category-sys?)

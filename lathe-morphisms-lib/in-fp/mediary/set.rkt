@@ -36,15 +36,15 @@
   
   atomic-set-element-sys?
   atomic-set-element-sys-impl?
+  prop:atomic-set-element-sys
   atomic-set-element-sys-good-behavior
   atomic-set-element-sys-accepts/c
-  prop:atomic-set-element-sys
   make-atomic-set-element-sys-impl-from-good-behavior
   
   mediary-set-sys?
   mediary-set-sys-impl?
-  mediary-set-sys-element/c
   prop:mediary-set-sys
+  mediary-set-sys-element/c
   make-mediary-set-sys-impl-from-contract
   
   ok/c)
@@ -63,16 +63,16 @@
 (provide #/recontract-out
   atomic-set-element-sys?
   atomic-set-element-sys-impl?
+  prop:atomic-set-element-sys
   atomic-set-element-sys-good-behavior
   atomic-set-element-sys-accepts/c
-  prop:atomic-set-element-sys
   make-atomic-set-element-sys-impl-from-good-behavior)
 
 (provide #/recontract-out
   mediary-set-sys?
   mediary-set-sys-impl?
-  mediary-set-sys-element/c
   prop:mediary-set-sys
+  mediary-set-sys-element/c
   make-mediary-set-sys-impl-from-contract)
 
 (provide #/recontract-out

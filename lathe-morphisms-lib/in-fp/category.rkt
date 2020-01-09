@@ -27,24 +27,24 @@
   
   category-sys?
   category-sys-impl?
+  prop:category-sys
   category-sys-object-set-sys
   category-sys-object/c
   category-sys-morphism-set-sys
   category-sys-morphism/c
   category-sys-object-identity-morphism
   category-sys-morphism-chain-two
-  prop:category-sys
   make-category-sys-impl-from-chain-two
   
   functor-sys?
   functor-sys-impl?
+  prop:functor-sys
   functor-sys-source
   functor-sys-replace-source
   functor-sys-target
   functor-sys-replace-target
   functor-sys-apply-to-object
   functor-sys-apply-to-morphism
-  prop:functor-sys
   make-functor-sys-impl-from-apply
   functor-sys/c
   makeshift-functor-sys
@@ -53,6 +53,7 @@
   
   natural-transformation-sys?
   natural-transformation-sys-impl?
+  prop:natural-transformation-sys
   natural-transformation-sys-endpoint-source
   natural-transformation-sys-replace-endpoint-source
   natural-transformation-sys-endpoint-target
@@ -63,7 +64,6 @@
   natural-transformation-sys-target
   natural-transformation-sys-replace-target
   natural-transformation-sys-apply-to-morphism
-  prop:natural-transformation-sys
   make-natural-transformation-sys-impl-from-apply
   natural-transformation-sys/c
   makeshift-natural-transformation-sys
@@ -75,24 +75,24 @@
   
   category-sys?
   category-sys-impl?
+  prop:category-sys
   category-sys-object-set-sys
   category-sys-object/c
   category-sys-morphism-set-sys
   category-sys-morphism/c
   category-sys-object-identity-morphism
   category-sys-morphism-chain-two
-  prop:category-sys
   make-category-sys-impl-from-chain-two
   
   functor-sys?
   functor-sys-impl?
+  prop:functor-sys
   functor-sys-source
   functor-sys-replace-source
   functor-sys-target
   functor-sys-replace-target
   functor-sys-apply-to-object
   functor-sys-apply-to-morphism
-  prop:functor-sys
   make-functor-sys-impl-from-apply
   functor-sys/c
   makeshift-functor-sys
@@ -101,6 +101,7 @@
   
   natural-transformation-sys?
   natural-transformation-sys-impl?
+  prop:natural-transformation-sys
   natural-transformation-sys-endpoint-source
   natural-transformation-sys-replace-endpoint-source
   natural-transformation-sys-endpoint-target
@@ -111,7 +112,6 @@
   natural-transformation-sys-target
   natural-transformation-sys-replace-target
   natural-transformation-sys-apply-to-morphism
-  prop:natural-transformation-sys
   make-natural-transformation-sys-impl-from-apply
   natural-transformation-sys/c
   makeshift-natural-transformation-sys
