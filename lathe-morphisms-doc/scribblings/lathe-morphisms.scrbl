@@ -178,6 +178,22 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
   atomic-set-element-sys-impl?
 ]{
   Given an implementation for @racket[atomic-set-element-sys-good-behavior], returns something a struct can use to implement the @racket[prop:atomic-set-element-sys] interface.
+  
+  When @racket[good-behavior] is called with an element @racket[_element] to obtain a @racket[set-element-good-behavior?] value, the result of calling the @racket[set-element-good-behavior-getter-of-value] getter of that value should be @racket[_element].
+  
+  Most of the time, @tt{make-atomic-set-element-sys-impl-from-good-behavior} is more general-purpose than necessary, and @racket[make-atomic-set-element-sys-impl-from-contract] can be used instead.
+}
+
+@defproc[
+  (make-atomic-set-element-sys-impl-from-contract
+    [accepts/c
+      (->i ([element atomic-set-element-sys?])
+        [_ (element) (flat-contract-accepting/c element)])])
+  atomic-set-element-sys-impl?
+]{
+  Given an implementation for @racket[atomic-set-element-sys-accepts/c], returns something a struct can use to implement the @racket[prop:atomic-set-element-sys] interface.
+  
+  While this is more convenient, @racket[make-atomic-set-element-sys-impl-from-good-behavior] is technically more general-purpose. That alternative gives more comprehensive control over things like the @racket[eq?] identity of various values, the timing of side effects, the particular @racket[prop:procedure]-implementing structs that implement the procedures, the presence of impersonators in various places, and whether the @racket[set-element-good-behavior-getter-of-value] getter returns @racket[element] (which it should) or some other value (which it shouldn't). For an API-compliant pure FP style with little use of impersonators, there's virtually no need for that extra generality.
 }
 
 

@@ -84,6 +84,11 @@
       [_ (element) (flat-contract-accepting/c element)])]
   [make-atomic-set-element-sys-impl-from-good-behavior
     (-> (-> atomic-set-element-sys? set-element-good-behavior?)
+      atomic-set-element-sys-impl?)]
+  [make-atomic-set-element-sys-impl-from-contract
+    (->
+      (->i ([element atomic-set-element-sys?])
+        [_ (element) (flat-contract-accepting/c element)])
       atomic-set-element-sys-impl?)])
 
 (provide #/contract-out
@@ -1533,6 +1538,16 @@
 (define (atomic-set-element-sys-accepts/c es)
   ( #/set-element-good-behavior-getter-of-accepts/c
     (atomic-set-element-sys-good-behavior es)))
+
+(define (make-atomic-set-element-sys-impl-from-contract accepts/c)
+  (make-atomic-set-element-sys-impl-from-good-behavior
+    ; atomic-set-element-sys-good-behavior
+    (fn es
+      (set-element-good-behavior
+        ; set-element-good-behavior-getter-for-value
+        (fn es)
+        ; set-element-good-behavior-getter-for-accepts/c
+        (fn #/accepts/c es)))))
 
 (define-imitation-simple-generics
   mediary-set-sys? mediary-set-sys-impl?

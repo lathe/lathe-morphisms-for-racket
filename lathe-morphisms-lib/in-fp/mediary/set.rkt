@@ -40,6 +40,7 @@
   atomic-set-element-sys-good-behavior
   atomic-set-element-sys-accepts/c
   make-atomic-set-element-sys-impl-from-good-behavior
+  make-atomic-set-element-sys-impl-from-contract
   
   mediary-set-sys?
   mediary-set-sys-impl?
@@ -66,7 +67,8 @@
   prop:atomic-set-element-sys
   atomic-set-element-sys-good-behavior
   atomic-set-element-sys-accepts/c
-  make-atomic-set-element-sys-impl-from-good-behavior)
+  make-atomic-set-element-sys-impl-from-good-behavior
+  make-atomic-set-element-sys-impl-from-contract)
 
 (provide #/recontract-out
   mediary-set-sys?
