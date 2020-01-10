@@ -559,6 +559,8 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
   contract?
 ]{
   Returns a contract that recognizes any functor whose source and target categories are recognized by the given contracts.
+  
+  The result is a flat contract as long as the given contracts are flat.
 }
 
 @defproc[
@@ -682,9 +684,9 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
 @defproc[
   (natural-transformation-sys-endpoint/c
     [nts natural-transformation-sys?])
-  contract?
+  flat-contract?
 ]{
-  Returns a contract that recognizes any functor that goes from the natural transformation's endpoint functors' source category to their target category.
+  Returns a flat contract that recognizes any functor that goes from the natural transformation's endpoint functors' source category to their target category.
 }
 
 @defproc[
@@ -899,6 +901,8 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
   contract?
 ]{
   Returns a contract that recognizes any natural transformation for which the source and target functors and their source and target categories are recognized by the given contracts.
+  
+  The result is a flat contract as long as the given contracts are flat.
 }
 
 @defproc[

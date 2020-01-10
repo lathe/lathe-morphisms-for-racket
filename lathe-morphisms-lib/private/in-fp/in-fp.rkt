@@ -613,7 +613,7 @@
     (-> natural-transformation-sys? category-sys?
       natural-transformation-sys?)]
   [natural-transformation-sys-endpoint/c
-    (-> natural-transformation-sys? contract?)]
+    (-> natural-transformation-sys? flat-contract?)]
   [natural-transformation-sys-source
     (->i ([nts natural-transformation-sys?])
       [_ (nts) (natural-transformation-sys-endpoint/c nts)])]
