@@ -273,6 +273,17 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
   Given implementations for @racket[set-sys-element/c] and @racket[set-sys-element-accepts/c], returns something a struct can use to implement the @racket[prop:set-sys] interface.
 }
 
+@defproc[
+  (makeshift-set-sys-from-contract
+    [element/c (-> contract?)]
+    [element-accepts/c
+      (->i ([_element (element/c)])
+        [_ (_element) (flat-contract-accepting/c _element)])])
+  set-sys?
+]{
+  Given implementations for @racket[set-sys-element/c] and @racket[set-sys-element-accepts/c], returns a set.
+}
+
 
 @subsection[#:tag "in-fp/category"]{Categories}
 

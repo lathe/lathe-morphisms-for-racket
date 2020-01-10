@@ -29,7 +29,8 @@
   prop:set-sys
   set-sys-element/c
   set-sys-element-accepts/c
-  make-set-sys-impl-from-contract)
+  make-set-sys-impl-from-contract
+  makeshift-set-sys-from-contract)
 
 (provide #/recontract-out
   set-sys?
@@ -37,4 +38,5 @@
   prop:set-sys
   set-sys-element/c
   set-sys-element-accepts/c
-  make-set-sys-impl-from-contract)
+  make-set-sys-impl-from-contract
+  makeshift-set-sys-from-contract)

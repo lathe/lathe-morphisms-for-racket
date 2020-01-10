@@ -118,7 +118,15 @@
       (-> set-sys? contract?)
       (->i ([ss set-sys?] [element (ss) (set-sys-element/c ss)])
         [_ (element) (flat-contract-accepting/c element)])
-      set-sys-impl?)])
+      set-sys-impl?)]
+  [makeshift-set-sys-from-contract
+    (->i
+      (
+        [element/c (-> contract?)]
+        [element-accepts/c (element/c)
+          (->i ([_element (element/c)])
+            [_ (_element) (flat-contract-accepting/c _element)])])
+      [_ set-sys?])])
 
 ; TODO: Export these from `lathe-morphisms/in-fp/set` once we need
 ; them.
@@ -1566,6 +1574,27 @@
   (#:method set-sys-element-accepts/c (#:this) ())
   prop:set-sys make-set-sys-impl-from-contract
   'set-sys 'set-sys-impl (list))
+
+(define-imitation-simple-struct
+  (makeshift-set-sys?
+    makeshift-set-sys-element/c
+    makeshift-set-sys-element-accepts/c)
+  unguarded-makeshift-set-sys
+  'makeshift-set-sys (current-inspector)
+  (#:prop prop:set-sys
+    (make-set-sys-impl-from-contract
+      ; set-sys-element/c
+      (dissectfn
+        (unguarded-makeshift-set-sys element/c element-accepts/c)
+        (element/c))
+      ; set-sys-element-accepts/c
+      (fn ss element
+        (dissect ss
+          (unguarded-makeshift-set-sys element/c element-accepts/c)
+        #/element-accepts/c element)))))
+
+(define (makeshift-set-sys-from-contract element/c element-accepts/c)
+  (unguarded-makeshift-set-sys element/c element-accepts/c))
 
 ; TODO: See if we should have functions between mediary sets too, i.e.
 ; `mediary-function-sys?`. A `mediary-function-sys?` would have a
