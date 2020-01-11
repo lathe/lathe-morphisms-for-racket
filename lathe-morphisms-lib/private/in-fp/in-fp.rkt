@@ -545,7 +545,7 @@
         [ab (fs a b)
           (category-sys-morphism/c (functor-sys-source fs) a b)])
       [_ (fs a b)
-        (category-sys-object/c (functor-sys-target fs)
+        (category-sys-morphism/c (functor-sys-target fs)
           (functor-sys-apply-to-object fs a)
           (functor-sys-apply-to-object fs b))])]
   [make-functor-sys-impl-from-apply
