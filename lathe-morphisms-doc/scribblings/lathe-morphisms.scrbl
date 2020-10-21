@@ -524,7 +524,7 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
     @item{@racket[functor-sys-apply-to-morphism]}
   ]
   
-  When the @tt{replace} methods don't raise errors, they should observe the lens laws: The result of getting a value after it's been replaced should be the same as just using the value that was passed to the replacer. The result of replacing a value with itself should be the same as not using the replacer at all. The of replacing a value and replacing it a second time should be the same as just skipping to the second replacement.
+  When the @tt{replace} methods don't raise errors, they should observe the lens laws: The result of getting a value after it's been replaced should be the same as just using the value that was passed to the replacer. The result of replacing a value with itself should be the same as not using the replacer at all. The result of replacing a value and replacing it a second time should be the same as just skipping to the second replacement.
   
   Moreover, the @tt{replace} methods should not raise an error when a value is replaced with itself. They're intended only for use by @racket[functor-sys/c] and similar error-detection systems, which will tend to replace a replace a value with one that reports better errors.
   
@@ -830,7 +830,7 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
     @item{@racket[natural-transformation-sys-apply-to-morphism]}
   ]
   
-  When the @tt{replace} methods don't raise errors, they should observe the lens laws: The result of getting a value after it's been replaced should be the same as just using the value that was passed to the replacer. The result of replacing a value with itself should be the same as not using the replacer at all. The of replacing a value and replacing it a second time should be the same as just skipping to the second replacement.
+  When the @tt{replace} methods don't raise errors, they should observe the lens laws: The result of getting a value after it's been replaced should be the same as just using the value that was passed to the replacer. The result of replacing a value with itself should be the same as not using the replacer at all. The result of replacing a value and replacing it a second time should be the same as just skipping to the second replacement.
   
   Moreover, the @tt{replace} methods should not raise an error when a value is replaced with itself. They're intended only for use by @racket[natural-transformation-sys/c] and similar error-detection systems, which will tend to replace a replace a value with one that reports better errors.
   
