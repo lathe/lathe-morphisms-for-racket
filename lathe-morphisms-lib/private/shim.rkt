@@ -47,10 +47,6 @@
 
 (ifc debugging-with-contracts-suppressed
   (begin
-    (require #/only-in racket/contract/base
-      [contract-out shim-contract-out]
-      [recontract-out shim-recontract-out]))
-  (begin
     (require #/for-syntax #/only-in racket/provide-transform
       expand-export make-provide-transformer)
     
@@ -64,4 +60,8 @@
     (define-syntax shim-recontract-out
       (make-provide-transformer #/fn stx modes
         (syntax-parse stx #/ (_ var:id ...)
-        #/expand-export #'(combine-out var ...) modes)))))
+        #/expand-export #'(combine-out var ...) modes))))
+  (begin
+    (require #/only-in racket/contract/base
+      [contract-out shim-contract-out]
+      [recontract-out shim-recontract-out])))
