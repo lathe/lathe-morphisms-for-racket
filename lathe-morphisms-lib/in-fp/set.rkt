@@ -21,6 +21,8 @@
 ;   language governing permissions and limitations under the License.
 
 
+(require lathe-morphisms/private/shim)
+
 (require #/only-in lathe-morphisms/private/in-fp/in-fp
   set-sys?
   set-sys-impl?
@@ -29,8 +31,6 @@
   set-sys-element-accepts/c
   make-set-sys-impl-from-contract
   makeshift-set-sys-from-contract)
-
-(require lathe-morphisms/private/shim)
 
 
 (provide #/shim-recontract-out

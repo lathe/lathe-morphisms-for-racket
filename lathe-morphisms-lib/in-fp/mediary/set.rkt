@@ -22,6 +22,8 @@
 ;   language governing permissions and limitations under the License.
 
 
+(require lathe-morphisms/private/shim)
+
 (require #/only-in lathe-morphisms/private/in-fp/in-fp
   
   set-element-good-behavior
@@ -47,8 +49,6 @@
   make-mediary-set-sys-impl-from-contract
   
   ok/c)
-
-(require lathe-morphisms/private/shim)
 
 
 (provide

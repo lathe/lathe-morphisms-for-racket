@@ -21,6 +21,8 @@
 ;   language governing permissions and limitations under the License.
 
 
+(require lathe-morphisms/private/shim)
+
 (require #/only-in lathe-morphisms/private/in-fp/in-fp
   
   category-sys?
@@ -68,8 +70,6 @@
   natural-transformation-sys-identity
   natural-transformation-sys-chain-two
   natural-transformation-sys-chain-two-along-end)
-
-(require lathe-morphisms/private/shim)
 
 
 (provide #/shim-recontract-out
