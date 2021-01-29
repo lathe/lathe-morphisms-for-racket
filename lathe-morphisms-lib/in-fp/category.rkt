@@ -6,7 +6,7 @@
 ; computationally, but where we still go to some lengths to ensure we
 ; can write informative contracts.
 
-;   Copyright 2019, 2020 The Lathe Authors
+;   Copyright 2019-2021 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -20,20 +20,6 @@
 ;   either express or implied. See the License for the specific
 ;   language governing permissions and limitations under the License.
 
-
-(require #/only-in racket/contract/base recontract-out)
-; TODO WITH-PLACEBO-CONTRACTS: Figure out what to do with this
-; section. Should we provide `.../with-placebo-contracts/...` modules?
-; For now, we have this here for testing. Note that if we enable this
-; code, we also need to comment out the `recontract-out` import above.
-#;
-(begin
-  (require #/for-syntax
-    racket/base racket/provide-transform syntax/parse lathe-comforts)
-  (define-syntax recontract-out
-    (make-provide-transformer #/fn stx modes
-      (syntax-parse stx #/ (_ var:id ...)
-      #/expand-export #'(combine-out var ...) modes))))
 
 (require #/only-in lathe-morphisms/private/in-fp/in-fp
   
@@ -83,7 +69,10 @@
   natural-transformation-sys-chain-two
   natural-transformation-sys-chain-two-along-end)
 
-(provide #/recontract-out
+(require lathe-morphisms/private/shim)
+
+
+(provide #/shim-recontract-out
   
   category-sys?
   category-sys-impl?

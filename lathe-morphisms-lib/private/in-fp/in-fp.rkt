@@ -7,7 +7,7 @@
 ; to ensure these interfaces carry enough information to write
 ; informative contracts.
 
-;   Copyright 2019, 2020 The Lathe Authors
+;   Copyright 2019-2021 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -34,20 +34,8 @@
 (require #/only-in racket/contract
   get/build-late-neg-projection struct-type-property/c)
 (require #/only-in racket/contract/base
-  -> ->i and/c any/c contract? contract-name contract-out
-  flat-contract? list/c rename-contract unconstrained-domain->)
-; TODO WITH-PLACEBO-CONTRACTS: Figure out what to do with this
-; section. Should we provide `.../with-placebo-contracts/...` modules?
-; For now, we have this here for testing. Note that if we enable this
-; code, we also need to comment out the `contract-out` import above.
-#;
-(begin
-  (require #/for-syntax
-    racket/base racket/provide-transform syntax/parse lathe-comforts)
-  (define-syntax contract-out
-    (make-provide-transformer #/fn stx modes
-      (syntax-parse stx #/ (_ [var:id contract:expr] ...)
-      #/expand-export #'(combine-out var ...) modes))))
+  -> ->i and/c any/c contract? contract-name flat-contract? list/c
+  rename-contract unconstrained-domain->)
 (require #/only-in racket/contract/combinator
   blame-add-context coerce-contract contract-first-order-passes?
   make-contract make-flat-contract)
@@ -65,10 +53,12 @@
   auto-equal auto-write define-imitation-simple-generics
   define-imitation-simple-struct)
 
+(require lathe-morphisms/private/shim)
+
 
 (provide
   set-element-good-behavior)
-(provide #/contract-out
+(provide #/shim-contract-out
   [set-element-good-behavior? (-> any/c boolean?)]
   [set-element-good-behavior-getter-of-value
     (-> set-element-good-behavior? (-> any/c))]
@@ -84,7 +74,7 @@
   [set-element-good-behavior-for-mediary-set-sys/c
     (-> mediary-set-sys? contract?)])
 
-(provide #/contract-out
+(provide #/shim-contract-out
   [atomic-set-element-sys? (-> any/c boolean?)]
   [atomic-set-element-sys-impl? (-> any/c boolean?)]
   [prop:atomic-set-element-sys
@@ -103,7 +93,7 @@
         [_ (element) (flat-contract-accepting/c element)])
       atomic-set-element-sys-impl?)])
 
-(provide #/contract-out
+(provide #/shim-contract-out
   [mediary-set-sys? (-> any/c boolean?)]
   [mediary-set-sys-impl? (-> any/c boolean?)]
   [prop:mediary-set-sys
@@ -112,12 +102,12 @@
   [make-mediary-set-sys-impl-from-contract
     (-> (-> mediary-set-sys? contract?) mediary-set-sys-impl?)])
 
-(provide #/contract-out
+(provide #/shim-contract-out
   [ok/c
     (->i ([example any/c])
       [_ (example) (flat-contract-accepting/c example)])])
 
-(provide #/contract-out
+(provide #/shim-contract-out
   [set-sys? (-> any/c boolean?)]
   [set-sys-impl? (-> any/c boolean?)]
   [prop:set-sys (struct-type-property/c set-sys-impl?)]
@@ -142,7 +132,7 @@
 
 ; TODO: Export these from `lathe-morphisms/in-fp/set` once we need
 ; them.
-(provide #/contract-out
+(provide #/shim-contract-out
   [function-sys? (-> any/c boolean?)]
   [function-sys-impl? (-> any/c boolean?)]
   [prop:function-sys (struct-type-property/c function-sys-impl?)]
@@ -196,7 +186,7 @@
 
 ; TODO: Export these from `lathe-morphisms/in-fp/mediary/quiver` once
 ; we need them.
-(provide #/contract-out
+(provide #/shim-contract-out
   [mediary-quiver-sys? (-> any/c boolean?)]
   [mediary-quiver-sys-impl? (-> any/c boolean?)]
   [prop:mediary-quiver-sys
@@ -243,7 +233,7 @@
 ; once we need them.
 (provide
   category-object-good-behavior)
-(provide #/contract-out
+(provide #/shim-contract-out
   [category-object-good-behavior? (-> any/c boolean?)]
   [category-object-good-behavior-getter-of-value
     (-> category-object-good-behavior? (-> any/c))]
@@ -267,7 +257,7 @@
 
 ; TODO: Export these from `lathe-morphisms/in-fp/mediary/category`
 ; once we need them.
-(provide #/contract-out
+(provide #/shim-contract-out
   [atomic-category-object-sys? (-> any/c boolean?)]
   [atomic-category-object-sys-impl? (-> any/c boolean?)]
   [prop:atomic-category-object-sys
@@ -304,7 +294,7 @@
 ; once we need them.
 (provide
   category-morphism-good-behavior)
-(provide #/contract-out
+(provide #/shim-contract-out
   [category-morphism-good-behavior? (-> any/c boolean?)]
   [category-morphism-good-behavior-getter-of-value
     (-> category-morphism-good-behavior? (-> any/c))]
@@ -335,7 +325,7 @@
 
 ; TODO: Export these from `lathe-morphisms/in-fp/mediary/category`
 ; once we need them.
-(provide #/contract-out
+(provide #/shim-contract-out
   [atomic-category-morphism-sys? (-> any/c boolean?)]
   [atomic-category-morphism-sys-impl? (-> any/c boolean?)]
   [prop:atomic-category-morphism-sys
@@ -387,7 +377,7 @@
 
 ; TODO: Export these from `lathe-morphisms/in-fp/mediary/category`
 ; once we need them.
-(provide #/contract-out
+(provide #/shim-contract-out
   [mediary-category-sys? (-> any/c boolean?)]
   [mediary-category-sys-impl? (-> any/c boolean?)]
   [prop:mediary-category-sys
@@ -472,11 +462,11 @@
 
 ; TODO: Export this from `lathe-morphisms/in-fp/mediary/quiver` or
 ; `lathe-morphisms/in-fp/mediary/category` once we need it.
-(provide #/contract-out
+(provide #/shim-contract-out
   [mediary-category-sys-mediary-quiver-sys
     (-> mediary-category-sys? mediary-quiver-sys?)])
 
-(provide #/contract-out
+(provide #/shim-contract-out
   [category-sys? (-> any/c boolean?)]
   [category-sys-impl? (-> any/c boolean?)]
   [prop:category-sys (struct-type-property/c category-sys-impl?)]
@@ -532,7 +522,7 @@
         [_ (cs a c) (category-sys-morphism/c cs a c)])
       category-sys-impl?)])
 
-(provide #/contract-out
+(provide #/shim-contract-out
   [functor-sys? (-> any/c boolean?)]
   [functor-sys-impl? (-> any/c boolean?)]
   [prop:functor-sys (struct-type-property/c functor-sys-impl?)]
@@ -617,7 +607,7 @@
           (ok/c #/functor-sys-source ab)
           (ok/c #/functor-sys-target bc))])])
 
-(provide #/contract-out
+(provide #/shim-contract-out
   [natural-transformation-sys? (-> any/c boolean?)]
   [natural-transformation-sys-impl? (-> any/c boolean?)]
   [prop:natural-transformation-sys
