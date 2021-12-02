@@ -2,6 +2,5 @@
 
 (define collection "lathe-morphisms")
 
-(define deps
-  (list "base" "lathe-morphisms-lib" "parendown-lib" "rackunit-lib"))
-(define build-deps (list))
+(define deps (list "base" "rackunit-lib"))
+(define build-deps (list "parendown-lib"))
