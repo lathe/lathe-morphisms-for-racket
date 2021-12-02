@@ -1,6 +1,6 @@
 # Lathe Morphisms for Racket
 
-[![Travis build](https://travis-ci.org/lathe/lathe-morphisms-for-racket.svg?branch=main)](https://travis-ci.org/lathe/lathe-morphisms-for-racket)
+[![CI](https://github.com/lathe/lathe-morphisms-for-racket/actions/workflows/ci.yml/badge.svg)](https://github.com/lathe/lathe-morphisms-for-racket/actions/workflows/ci.yml)
 
 Lathe Morphisms for Racket isn't much yet, but it's going to be a library centering around category theory and foundational mathematics. We recognize not everyone is going to *want* to wade through specialized mathematical terminology, so as we design and document Lathe Morphisms, we hope to first consider the needs of those people who have little choice.
 
