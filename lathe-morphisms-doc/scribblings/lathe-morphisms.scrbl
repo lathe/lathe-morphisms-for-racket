@@ -115,7 +115,7 @@ At its strictest, the implementation of a value's @tt{...-accepts/c} method will
 )]{
   Struct-like operations which construct and deconstruct a value that represents the behavior that makes a set element well-behaved. Namely, this behavior consists of a way to get the value itself (@racket[getter-of-value-expr]) and a way to get a contract that recognizes values that are @tech{close enough} to it (@racket[getter-of-accepts/c-expr]).
   
-  Two @tt{set-element-good-behavior} values are @racket[equal?] if they contain @racket[equal?] elements.
+  Two @tt{set-element-good-behavior} values are equivalent by @racket[equal-always?] or @racket[equal?] if their corresponding fields are similarly equivalent.
 }
 
 @defproc[

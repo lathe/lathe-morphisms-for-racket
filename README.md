@@ -61,7 +61,7 @@ In terms of exotic modifications to the metatheory, we have a few ideas. A few o
 
 * Some algebraic theories are *decidable*, like decidable equivalence relations and decidable partial orders. Essentially, these theories can exhibit example proof witnesses. It may be interesting to consider algebraic theories that can exhibit other kinds of cell inhabitants as well, such as sets that can exhibit example elements, not unlike Racket's `contract-random-generate`.
 
-* Some algebraic theories may have only *partial* operations. Mediary theories may be good for open definitions, but partial theories may serve that purpose in an even more expressive way, by allowing a theory to be built up as an aggregation of partial information. If we follow this path far enough that we allow individual elements to bring along their own extensions to the theory they belong to, we might arrive at a generalized discipline which can guide the design of overloadable operators like `equal?` and `contract-stronger?`.
+* Some algebraic theories may have only *partial* operations. Mediary theories may be good for open definitions, but partial theories may serve that purpose in an even more expressive way, by allowing a theory to be built up as an aggregation of partial information. If we follow this path far enough that we allow individual elements to bring along their own extensions to the theory they belong to, we might arrive at a generalized discipline which can guide the design of overloadable operators like `equal-always?` and `contract-stronger?`.
 
 Finally, in terms of specializations, we only have two in mind so far:
 
