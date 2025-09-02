@@ -6,7 +6,7 @@
 ; itself is classical, the way we construct proofs or derivations can
 ; still be constructive.
 
-;   Copyright 2018 The Lathe Authors
+;   Copyright 2018, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -201,7 +201,7 @@
   (-> symbol? #/-> any/c boolean?)
   (fn v #/eq? sym v))
 
-(define-simple-macro
+(define-syntax-parse-rule/autoptic
   (define-matchable-syntax name:id on-expr:expr on-match:expr)
   (define-syntax name
     (let ([on-expr-result on-expr] [on-match-result on-match])
@@ -212,13 +212,13 @@
         (fn self stx #/on-match-result stx))
       (name))))
 
-(define-simple-macro
+(define-syntax-parse-rule/autoptic
   (struct-with-contracts
     internal-name:id
     faux-predicate?:id
     faux-unmatchable-constructor:id
     faux-constructor:id
-    [field:id field/c:expr]
+    {~autoptic-list [field:id field/c:expr]}
     ...)
   (begin
     (struct-easy (internal-name field ...))
@@ -235,22 +235,22 @@
         faux-constructor))
     
     (define-matchable-syntax faux-constructor
-      (fn stx
-        (syntax-parse stx #/ (_ arg:expr ...)
-        #/syntax-protect
-          #'(faux-unmatchable-constructor arg ...)))
-      (fn stx
-        (syntax-parse stx #/ (_ arg:expr ...)
-        #/syntax-protect
-          #'(internal-name arg ...))))))
+      (syntax-parser #/ {~autoptic-list (_ arg:expr ...)}
+        #'(faux-unmatchable-constructor arg ...))
+      (syntax-parser #/ {~autoptic-list (_ arg:expr ...)}
+        #'(internal-name arg ...)))))
 
-(define-simple-macro
+(define-syntax-parse-rule/autoptic
   (struct-of-procedures
     internal-name:id
     faux-predicate?:id
     faux-unmatchable-constructor:id
     faux-constructor:id
-    [field:id field-method:id [arg:id arg/c:expr] ... result/c:expr]
+    {~autoptic-list
+      [ field:id field-method:id
+        {~autoptic-list [arg:id arg/c:expr]}
+        ...
+        result/c:expr]}
     ...)
   (begin
     (struct-with-contracts

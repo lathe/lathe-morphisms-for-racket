@@ -7,7 +7,7 @@
 ; to ensure these interfaces carry enough information to write
 ; informative contracts.
 
-;   Copyright 2019-2021 The Lathe Authors
+;   Copyright 2019-2021, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -40,10 +40,10 @@
   blame-add-context coerce-contract contract-first-order-passes?
   make-contract make-flat-contract)
 (require #/only-in racket/contract/region define/contract)
-(require #/only-in syntax/parse/define
-  define-simple-macro)
+(require #/only-in syntax/parse/define define-syntax-parse-rule)
 
-(require #/only-in lathe-comforts dissect dissectfn fn w-)
+(require #/only-in lathe-comforts
+  define-syntax-parse-rule/autoptic dissect dissectfn fn w-)
 (require #/only-in lathe-comforts/contract
   by-own-method/c flat-contract-accepting/c value-name-for-contract)
 (require #/only-in lathe-comforts/match
@@ -1078,7 +1078,7 @@
             v))))))
 
 
-(define-simple-macro
+(define-syntax-parse-rule/autoptic
   (define-makeshift-morphism
     makeshift-morphism-sys:id
     morphism-sys-identity:id
@@ -1199,7 +1199,7 @@
                 endpoints-and-guest))))
         ...))))
 
-(define-simple-macro
+(define-syntax-parse-rule/autoptic
   (define-makeshift-2-cell
     makeshift-cell-sys:id
     cell-sys-identity:id

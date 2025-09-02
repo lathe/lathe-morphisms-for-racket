@@ -5,7 +5,7 @@
 ; Import lists, debugging constants, and other utilities that are
 ; useful primarily for this codebase.
 
-;   Copyright 2021 The Lathe Authors
+;   Copyright 2021, 2025 The Lathe Authors
 ;
 ;   Licensed under the Apache License, Version 2.0 (the "License");
 ;   you may not use this file except in compliance with the License.
@@ -25,6 +25,10 @@
 (require #/for-syntax #/only-in racket/syntax syntax-local-eval)
 (require #/for-syntax #/only-in syntax/parse expr id syntax-parse)
 
+(require #/for-syntax #/only-in lathe-comforts/syntax ~autoptic-list)
+
+(require #/only-in syntax/parse/define define-syntax-parser)
+
 
 (provide
   shim-contract-out
@@ -34,10 +38,9 @@
 ; NOTE DEBUGGABILITY: These are here for debugging.
 (define-for-syntax debugging-with-contracts-suppressed #f)
 
-(define-syntax (ifc stx)
-  (syntax-protect
-  #/syntax-parse stx #/ (_ condition:expr then:expr else:expr)
-  #/if (syntax-local-eval #'condition)
+(define-syntax-parser ifc #/
+  {~autoptic-list (_ condition:expr then:expr else:expr)}
+  (if (syntax-local-eval #'condition)
     #'then
     #'else))
 
@@ -54,12 +57,14 @@
     
     (define-syntax shim-contract-out
       (make-provide-transformer #/fn stx modes
-        (syntax-parse stx #/ (_ [var:id contract:expr] ...)
+        (syntax-parse stx #/
+          {~autoptic-list
+            (_ {~autoptic-list [var:id contract:expr]} ...)}
         #/expand-export #'(combine-out var ...) modes)))
     
     (define-syntax shim-recontract-out
       (make-provide-transformer #/fn stx modes
-        (syntax-parse stx #/ (_ var:id ...)
+        (syntax-parse stx #/ {~autoptic-list (_ var:id ...)}
         #/expand-export #'(combine-out var ...) modes))))
   (begin
     (require #/only-in racket/contract/base
