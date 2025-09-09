@@ -33,17 +33,51 @@
 @(require #/for-label lathe-morphisms/in-fp/mediary/set)
 @(require #/for-label lathe-morphisms/in-fp/set)
 
+@(require #/for-syntax racket/base)
+@(require #/for-syntax #/only-in syntax/parse
+  ~alt ~optional ~seq ~var expr expr/c)
+
+@(require #/for-syntax #/only-in lathe-comforts/syntax ~autoptic)
+
+@(require #/only-in racket/contract listof or/c)
+@(require #/only-in scribble/core style?)
 @(require #/only-in scribble/decode part-start)
 
-@(require #/only-in lathe-comforts dissect)
+@(require #/only-in lathe-comforts
+  define-syntax-parse-rule/autoptic dissect)
 
 
 @(define (sub ps)
+  style?
   (dissect ps (part-start depth tag-prefix tags style title)
   #/part-start (add1 depth) tag-prefix tags style title))
 
-@(define-syntax-rule (subsubsubsection args ...)
-  (sub #/subsubsection args ...))
+@(define-syntax-parse-rule/autoptic
+  (subsubsubsection
+    {~alt
+      {~optional
+        {~seq {~autoptic #:tag}
+          {~var tag
+            (expr/c #'(or/c #f string? (listof string?))
+              #:name "the tag argument")}}
+        #:defaults ([tag.c #'#f])}
+      {~optional
+        {~seq {~autoptic #:tag-prefix}
+          {~var tag-prefix
+            (expr/c #'(or/c #f string? module-path?)
+              #:name "the tag-prefix argument")}}
+        #:defaults ([tag-prefix.c #'#f])}
+      {~optional
+        {~seq {~autoptic #:style}
+          {~var style
+            (expr/c
+              #'(or/c style? #f string? symbol? (listof symbol?))
+              #:name "the style argument")}}
+        #:defaults ([style.c #'#f])}}
+    ...
+    args:expr ...)
+  (sub #/subsubsection
+    #:tag tag.c #:tag-prefix tag-prefix.c #:style style.c args ...))
 
 
 @title{Lathe Morphisms}
